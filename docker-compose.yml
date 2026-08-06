@@ -5,7 +5,7 @@ services:
   # API Gateway
   # ==========================================
   traefik:
-    image: traefik:v3.1
+    image: traefik:v3.7.10
     container_name: traefik
     command:
       - "--api.insecure=true"
@@ -26,7 +26,7 @@ services:
   # Core Database (FactoryOS Microservices)
   # ==========================================
   factoryos-db:
-    image: timescale/timescaledb:2.16.0-pg17
+    image: timescale/timescaledb:2.18.0-pg17
     container_name: factoryos_db
     environment:
       POSTGRES_USER: factoryos
@@ -46,11 +46,16 @@ services:
     image: postgres:17.0
     container_name: zitadel_db
     environment:
-      POSTGRES_USER: zitadel
+      POSTGRES_USER: postgres
       POSTGRES_PASSWORD: zitadel_password
       POSTGRES_DB: zitadel
     ports:
       - "5433:5432" # Exposed on 5433 to avoid conflict with FactoryOS DB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
     volumes:
       - zitadel_db_data:/var/lib/postgresql/data
     networks:
@@ -63,20 +68,28 @@ services:
     image: ghcr.io/zitadel/zitadel:v4.16.2
     container_name: zitadel
     depends_on:
-      - zitadel-db
+      zitadel-db:
+        condition: service_healthy
     command:
       - 'start-from-init'
       - '--masterkey'
-      - 'a-32-byte-long-secret-key-change-me'
+      - '12345678901234567890123456789012'
       - '--tlsMode'
-      - 'external'
+      - 'disabled'
     environment:
       ZITADEL_DATABASE_POSTGRES_HOST: zitadel-db
       ZITADEL_DATABASE_POSTGRES_PORT: 5432
       ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
-      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: postgres
       ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: zitadel_password
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: postgres
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: zitadel_password
+      ZITADEL_EXTERNALPORT: 8081
+      ZITADEL_EXTERNALDOMAIN: localhost
       ZITADEL_EXTERNALSECURE: 'false'
+      ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: 'false'
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAILVERIFIED: 'true'
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: 'Password123!'
     ports:
       - "8081:8080"
     networks:

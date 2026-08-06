@@ -13,6 +13,31 @@ Before starting, ensure you have the following installed on your machine:
 
 ---
 
+## 1.1 Development Environment Options
+
+Developers have **two choices** for setting up their workspace. Dev Container is **optional** but recommended.
+
+### Option A: Dev Container (Recommended - Zero Local Tool Setup)
+If you use VS Code or cursor:
+1. Ensure Docker Desktop is running.
+2. Open the project in VS Code.
+3. Click **"Reopen in Container"** when prompted (or `Cmd+Shift+P` -> `Dev Containers: Reopen in Container`).
+4. VS Code will spin up a pre-configured Ubuntu container with **Java 21, Go, Node.js, and Protobuf plugins** pre-installed.
+
+### Option B: Native Host Machine (Manual Setup)
+If you prefer coding directly on your Mac/Linux/Windows machine without Dev Containers, install these manually:
+* **JDK 21** (Amazon Corretto, Temurin, or Zulu)
+* **Go 1.22+**
+* **Node.js 20+**
+* **Protobuf Compiler (`protoc`)** & Go plugins:
+  ```bash
+  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+  go install github.com/bufbuild/buf/cmd/buf@latest
+  ```
+
+---
+
 ## 2. Spinning Up the Infrastructure
 
 FactoryOS relies on a comprehensive local infrastructure stack (Kafka, Postgres, Zitadel, Valkey). To start the entire stack:
@@ -43,10 +68,10 @@ Once the stack is up, the following services and ports are available on your `lo
 | **Traefik Ingress** | `80` | Main entrypoint for HTTP requests | http://localhost |
 | **Traefik gRPC** | `50051` | Main entrypoint for gRPC requests | `localhost:50051` |
 | **FactoryOS DB** | `5432` | TimescaleDB for core services & telemetry | User: `factoryos` / Pass: `factoryos_password` / DB: `factoryos` |
-| **Zitadel DB** | `5433` | Dedicated Postgres for IAM | User: `zitadel` / Pass: `zitadel_password` / DB: `zitadel` |
+| **Zitadel DB** | `5433` | Dedicated Postgres for IAM | User: `postgres` / Pass: `zitadel_password` / DB: `zitadel` |
 | **Kafka (KRaft)** | `9092` | Event Bus broker | `localhost:9092` |
 | **Valkey (Cache)** | `6379` | Redis drop-in replacement | `localhost:6379` |
-| **Zitadel Console** | `8081` | IAM Web Interface | http://localhost:8081 |
+| **Zitadel Console** | `8081` | IAM Web Interface | http://localhost:8081/ui/console (User: `zitadel-admin@zitadel.localhost` / Pass: `Password123!`) |
 
 ---
 
