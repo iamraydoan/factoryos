@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package factoryos.resource.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/iamraydoan/factoryos/api/contracts/resource/v1";
+
+// ----------------------------------------------------------------------------
+// Entity Models (ISA-95 Equipment Hierarchy)
+// ----------------------------------------------------------------------------
+
+message Site {
+  string id = 1;              // UUIDv7
+  string name = 2;            // e.g., "Austin Gigafactory"
+  string location = 3;        // Physical address or region
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message Area {
+  string id = 1;              // UUIDv7
+  string site_id = 2;         // Foreign key to Site
+  string name = 3;            // e.g., "Stamping Area"
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message WorkCenter {
+  string id = 1;              // UUIDv7
+  string area_id = 2;         // Foreign key to Area
+  string name = 3;            // e.g., "Press Line 1"
+  string equipment_class = 4; // Capability spec (e.g., "Heavy Press")
+  google.protobuf.Timestamp created_at = 5;
+}
+
+enum WorkUnitStatus {
+  WORK_UNIT_STATUS_UNSPECIFIED = 0;
+  WORK_UNIT_STATUS_AVAILABLE = 1;
+  WORK_UNIT_STATUS_ALLOCATED = 2;
+  WORK_UNIT_STATUS_IN_PRODUCTION = 3;
+  WORK_UNIT_STATUS_FAULTED = 4;
+}
+
+message WorkUnit {
+  string id = 1;              // UUIDv7
+  string work_center_id = 2;  // Foreign key to WorkCenter
+  string name = 3;            // e.g., "Press Station 1A"
+  WorkUnitStatus status = 4;  // Current operational status
+  string physical_asset_id = 5; // Optional: Link to Physical Asset currently installed
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// ----------------------------------------------------------------------------
+// gRPC Service & Request/Response Models
+// ----------------------------------------------------------------------------
+
+service EquipmentService {
+  // Work Unit API
+  rpc CreateWorkUnit(CreateWorkUnitRequest) returns (CreateWorkUnitResponse);
+  rpc GetWorkUnit(GetWorkUnitRequest) returns (GetWorkUnitResponse);
+  rpc ListWorkUnits(ListWorkUnitsRequest) returns (ListWorkUnitsResponse);
+  rpc UpdateWorkUnitStatus(UpdateWorkUnitStatusRequest) returns (UpdateWorkUnitStatusResponse);
+}
+
+message CreateWorkUnitRequest {
+  string work_center_id = 1;
+  string name = 2;
+}
+
+message CreateWorkUnitResponse {
+  WorkUnit work_unit = 1;
+}
+
+message GetWorkUnitRequest {
+  string id = 1;
+}
+
+message GetWorkUnitResponse {
+  WorkUnit work_unit = 1;
+}
+
+message ListWorkUnitsRequest {
+  string work_center_id = 1; // Filter by Work Center
+}
+
+message ListWorkUnitsResponse {
+  repeated WorkUnit work_units = 1;
+}
+
+message UpdateWorkUnitStatusRequest {
+  string id = 1;
+  WorkUnitStatus status = 2;
+}
+
+message UpdateWorkUnitStatusResponse {
+  WorkUnit work_unit = 1;
+}

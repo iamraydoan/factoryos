@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package factoryos.telemetry.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/iamraydoan/factoryos/api/contracts/telemetry/v1";
+
+// The standardized payload sent from the Edge to the Cloud
+message TelemetryPayload {
+  // UUIDv7 of the Physical Asset emitting the data
+  string physical_asset_id = 1;
+  
+  // The exact time the reading was taken at the edge (NOT cloud receive time)
+  google.protobuf.Timestamp edge_timestamp = 2;
+  
+  // Array of sensor readings to support batching
+  repeated SensorReading readings = 3;
+}
+
+// An individual sensor reading from a machine
+message SensorReading {
+  // E.g., "temperature_celsius", "spindle_vibration", "cycle_count"
+  string metric_name = 1;
+  
+  // The value of the reading
+  double value = 2;
+  
+  // Optional: Data quality flag (e.g., "GOOD", "BAD", "UNCERTAIN")
+  string quality = 3;
+}
