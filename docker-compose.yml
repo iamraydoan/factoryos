@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # API Gateway
+  # ==========================================
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.grpc.address=:50051"
+    ports:
+      - "80:80"
+      - "8080:8080" # Dashboard
+      - "50051:50051" # gRPC
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - factoryos_net
+
+  # ==========================================
+  # Core Database (FactoryOS Microservices)
+  # ==========================================
+  factoryos-db:
+    image: timescale/timescaledb:2.16.0-pg17
+    container_name: factoryos_db
+    environment:
+      POSTGRES_USER: factoryos
+      POSTGRES_PASSWORD: factoryos_password
+      POSTGRES_DB: factoryos
+    ports:
+      - "5432:5432"
+    volumes:
+      - factoryos_db_data:/var/lib/postgresql/data
+    networks:
+      - factoryos_net
+
+  # ==========================================
+  # IAM Database (Dedicated for Zitadel)
+  # ==========================================
+  zitadel-db:
+    image: postgres:17.0
+    container_name: zitadel_db
+    environment:
+      POSTGRES_USER: zitadel
+      POSTGRES_PASSWORD: zitadel_password
+      POSTGRES_DB: zitadel
+    ports:
+      - "5433:5432" # Exposed on 5433 to avoid conflict with FactoryOS DB
+    volumes:
+      - zitadel_db_data:/var/lib/postgresql/data
+    networks:
+      - factoryos_net
+
+  # ==========================================
+  # Identity & Access Management (Zitadel)
+  # ==========================================
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:v4.16.2
+    container_name: zitadel
+    depends_on:
+      - zitadel-db
+    command:
+      - 'start-from-init'
+      - '--masterkey'
+      - 'a-32-byte-long-secret-key-change-me'
+      - '--tlsMode'
+      - 'external'
+    environment:
+      ZITADEL_DATABASE_POSTGRES_HOST: zitadel-db
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: zitadel_password
+      ZITADEL_EXTERNALSECURE: 'false'
+    ports:
+      - "8081:8080"
+    networks:
+      - factoryos_net
+
+  # ==========================================
+  # Event Platform (Apache Kafka in KRaft mode)
+  # ==========================================
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - factoryos_net
+
+  # ==========================================
+  # Distributed Cache (Valkey)
+  # ==========================================
+  valkey:
+    image: valkey/valkey:9.1.1
+    container_name: valkey
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    networks:
+      - factoryos_net
+
+volumes:
+  factoryos_db_data:
+  zitadel_db_data:
+  kafka_data:
+  valkey_data:
+
+networks:
+  factoryos_net:
+    driver: bridge

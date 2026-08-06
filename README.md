@@ -23,6 +23,7 @@ For full product strategy, technical architecture, governance standards, and lon
 * [Strategic Roadmap & Milestones](docs/08-roadmap/MILESTONES.md)
 * [Task Epics](docs/09-epics/)
 * [Developer Contributing Guide](docs/10-developer-guide/CONTRIBUTING.md)
+* [Local Environment Setup (Docker)](docs/10-developer-guide/Local-Environment-Setup.md)
 
 ---
 
