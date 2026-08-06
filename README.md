@@ -14,14 +14,15 @@ For full product strategy, technical architecture, governance standards, and lon
 
 * [Project Bible & Governance](docs/00-governance/PROJECT_BIBLE.md)
 * [Product Overview & Vision](docs/01-overview/PRODUCT_VISION.md)
-* [Bounded Context Domains](docs/02-domain/)
-* [System Architecture & C4 Diagrams](docs/03-architecture/)
-* [Architecture Decision Records (ADRs)](docs/04-adr/)
-* [Request for Comments (RFCs)](docs/05-rfc/)
-* [Async Event Catalog](docs/06-api/ASYNC_EVENT_CATALOG.md)
-* [Strategic Roadmap & Milestones](docs/07-roadmap/MILESTONES.md)
-* [Task Epics](docs/08-epics/)
-* [Developer Contributing Guide](docs/09-developer-guide/CONTRIBUTING.md)
+* [Business Processes & User Roles](docs/02-business/)
+* [Domain Model & Bounded Contexts](docs/03-domain/)
+* [System Architecture & C4 Diagrams](docs/04-architecture/)
+* [Architecture Decision Records (ADRs)](docs/05-adr/)
+* [Request for Comments (RFCs)](docs/06-rfc/)
+* [Async Event Catalog](docs/07-api/ASYNC_EVENT_CATALOG.md)
+* [Strategic Roadmap & Milestones](docs/08-roadmap/MILESTONES.md)
+* [Task Epics](docs/09-epics/)
+* [Developer Contributing Guide](docs/10-developer-guide/CONTRIBUTING.md)
 
 ---
 
@@ -32,14 +33,15 @@ factoryos/
 ├── docs/                 # Central product & engineering documentation hierarchy
 │   ├── 00-governance/    # Project Bible & core engineering standards
 │   ├── 01-overview/      # Product vision, value proposition, glossary
-│   ├── 02-domain/        # Bounded contexts (ISA-95, Production, Genealogy, Quality, CMMS)
-│   ├── 03-architecture/  # C4 diagrams & system overview
-│   ├── 04-adr/           # Architecture Decision Records
-│   ├── 05-rfc/           # Feature & capability RFC proposals
-│   ├── 06-api/           # Async event catalog & API specs
-│   ├── 07-roadmap/       # Evolution milestones & strategic roadmap
-│   ├── 08-epics/         # Development task epics & execution checklists
-│   └── 09-developer-guide/# Developer contributing guide & onboarding
+│   ├── 02-business/      # Business processes, user roles & user stories
+│   ├── 03-domain/        # Bounded contexts (ISA-95, Production, Genealogy, Quality, CMMS)
+│   ├── 04-architecture/  # C4 diagrams & system overview
+│   ├── 05-adr/           # Architecture Decision Records
+│   ├── 06-rfc/           # Feature & capability RFC proposals
+│   ├── 07-api/           # Async event catalog & API specs
+│   ├── 08-roadmap/       # Evolution milestones & strategic roadmap
+│   ├── 09-epics/         # Development task epics & execution checklists
+│   └── 10-developer-guide/# Developer contributing guide & onboarding
 
 ├── api/                  # API contracts, schemas & architecture models
 │   ├── contracts/        # Schema definitions (gRPC Protobuf, AsyncAPI, OpenAPI)

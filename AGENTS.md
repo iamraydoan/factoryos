@@ -32,6 +32,6 @@ Do NOT write implementation code for new features without following this lifecyc
 
 ## 3. Documentation Governance & File Naming
 
-* Keep folder numbers sequential: `00-governance`, `01-overview`, `02-domain`, `03-architecture`, `04-adr`, `05-rfc`, `06-api`, `07-roadmap`, `08-epics`, `09-developer-guide`.
+* Keep folder numbers sequential: `00-governance`, `01-overview`, `02-business`, `03-domain`, `04-architecture`, `05-adr`, `06-rfc`, `07-api`, `08-roadmap`, `09-epics`, `10-developer-guide`.
 * Use semantic uppercase names for core entrypoints (`PROJECT_BIBLE.md`, `PRODUCT_VISION.md`).
 * Use serial IDs for RFCs (`0001-xxxx.md`), ADRs (`0001-xxxx.md`), and Epics (`EPIC-001-xxxx.md`).
