@@ -9,7 +9,7 @@ graph TB
     end
 
     subgraph API Layer
-        Gateway[API Gateway - Envoy / Traefik]
+        Gateway[API Gateway - Traefik]
     end
 
     subgraph Core Microservices
@@ -23,6 +23,8 @@ graph TB
         EventBus[Apache Kafka Event Bus]
         DB[(PostgreSQL + Outbox)]
         TSDB[(TimescaleDB Historian)]
+        Cache[(Valkey - Redis Drop-in Replacement)]
+        Observability[OpenTelemetry + Prometheus + Jaeger + Loki]
     end
 
     subgraph Edge Layer

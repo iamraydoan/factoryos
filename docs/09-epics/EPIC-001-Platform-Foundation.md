@@ -13,6 +13,9 @@
 - [ ] Configure PostgreSQL with Transactional Outbox table schema.
 - [ ] Setup Apache Kafka event streaming infrastructure.
 - [ ] Setup Zitadel for Identity & Access Management (OIDC).
+- [ ] Setup Traefik API Gateway for gRPC routing.
+- [ ] Setup Valkey (Redis Drop-in Replacement) for distributed caching.
+- [ ] Setup Observability stack (OpenTelemetry, Prometheus, Jaeger, Loki, Grafana).
 
 ### Platform Services
 - [ ] Implement `platform-sdk` event producer/consumer wrappers (Java & Go).
