@@ -8,17 +8,20 @@ FactoryOS is an enterprise-grade, event-driven operational system of action desi
 
 ---
 
-## 🏛️ Platform Architecture & Blueprint
+## 🏛️ Platform Architecture & Governance
 
-For full product strategy, technical architecture, and long-term evolutionary roadmap documents, inspect the `docs/` hierarchy:
+For full product strategy, technical architecture, governance standards, and long-term evolutionary roadmap documents, inspect the `docs/` hierarchy:
 
-* [Product Vision](docs/01-vision/PRODUCT_VISION.md)
-* [System Overview](docs/02-architecture/SYSTEM_OVERVIEW.md)
-* [Event-Driven Paradigm](docs/02-architecture/EVENT_DRIVEN_PARADIGM.md)
-* [Architecture Decision Records (ADRs)](docs/03-adr/)
-* [Async Event Catalog](docs/05-api/ASYNC_EVENT_CATALOG.md)
-* [Strategic Roadmap](docs/06-roadmap/STRATEGIC_ROADMAP.md)
-* [Developer Contributing Guide](docs/08-developer-guide/CONTRIBUTING.md)
+* [Project Bible & Governance](docs/00-governance/PROJECT_BIBLE.md)
+* [Product Overview & Vision](docs/01-overview/PRODUCT_VISION.md)
+* [Bounded Context Domains](docs/02-domain/)
+* [System Architecture & C4 Diagrams](docs/03-architecture/)
+* [Architecture Decision Records (ADRs)](docs/04-adr/)
+* [Request for Comments (RFCs)](docs/05-rfc/)
+* [Async Event Catalog](docs/06-api/ASYNC_EVENT_CATALOG.md)
+* [Strategic Roadmap & Milestones](docs/07-roadmap/MILESTONES.md)
+* [Task Epics](docs/08-epics/)
+* [Developer Contributing Guide](docs/09-developer-guide/CONTRIBUTING.md)
 
 ---
 
@@ -27,6 +30,17 @@ For full product strategy, technical architecture, and long-term evolutionary ro
 ```
 factoryos/
 ├── docs/                 # Central product & engineering documentation hierarchy
+│   ├── 00-governance/    # Project Bible & core engineering standards
+│   ├── 01-overview/      # Product vision, value proposition, glossary
+│   ├── 02-domain/        # Bounded contexts (ISA-95, Production, Genealogy, Quality, CMMS)
+│   ├── 03-architecture/  # C4 diagrams & system overview
+│   ├── 04-adr/           # Architecture Decision Records
+│   ├── 05-rfc/           # Feature & capability RFC proposals
+│   ├── 06-api/           # Async event catalog & API specs
+│   ├── 07-roadmap/       # Evolution milestones & strategic roadmap
+│   ├── 08-epics/         # Development task epics & execution checklists
+│   └── 09-developer-guide/# Developer contributing guide & onboarding
+
 ├── api/                  # API contracts, schemas & architecture models
 │   ├── contracts/        # Schema definitions (gRPC Protobuf, AsyncAPI, OpenAPI)
 │   └── architecture/     # C4 diagrams, threat models, system specifications
@@ -41,6 +55,7 @@ factoryos/
 │   ├── quality-service/      # Inline inspection, SPC, Non-Conformance Reports (NCR)
 │   ├── planning-service/     # Finite capacity dispatching & scheduling optimization
 │   └── analytics-engine/     # Time-series telemetry aggregation (OEE, TEEP, MTBF, MTTR)
+
 ├── deploy/               # Infrastructure & deployment manifests
 │   ├── terraform/        # Infrastructure-as-Code (Terraform/OpenTofu, Terragrunt)
 │   └── helm/             # Kubernetes cloud control plane & edge cluster charts
@@ -51,11 +66,16 @@ factoryos/
 
 ## 🗺️ Evolution Milestones
 
-- **Milestone 1:** Telemetry Ingestion & Real-Time OEE Observability Core
-- **Milestone 2:** Guided Digital Execution, Operator Terminal & Lot Tracking
-- **Milestone 3:** Reactive Distributed Workflows (Quality NCR & Maintenance Auto-Dispatch)
-- **Milestone 4:** Finite Capacity Dispatching & Dynamic Station Re-Routing
-- **Milestone 5:** Enterprise Multi-Plant Control Tower & Open Developer Ecosystem
+> See full detail in [docs/07-roadmap/MILESTONES.md](docs/07-roadmap/MILESTONES.md) and [docs/07-roadmap/STRATEGIC_ROADMAP.md](docs/07-roadmap/STRATEGIC_ROADMAP.md).
+
+| Milestone | Focus | Horizon |
+|---|---|---|
+| **M1** | Physical Ontology & Real-Time OEE Telemetry | Months 0–6 |
+| **M2** | Guided Digital Execution & Lot Genealogy | Months 6–12 |
+| **M3** | Closed-Loop Quality NCR & CMMS Maintenance | Months 12–18 |
+| **M4** | Finite Capacity Scheduling & Edge Resilience | Months 18–24 |
+| **M5** | Multi-Plant Control Tower & Industrial AI | Months 24–36 |
+
 
 ---
 
