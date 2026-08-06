@@ -13,14 +13,14 @@ graph TB
     end
 
     subgraph Core Microservices
-        ProdSvc[Production Service]
-        WhSvc[Warehouse Service]
-        MaintSvc[Maintenance Service]
-        QualSvc[Quality Service]
+        ProdSvc[Production Service - Java/Spring Boot]
+        WhSvc[Warehouse Service - Java/Spring Boot]
+        MaintSvc[Maintenance Service - Java/Spring Boot]
+        QualSvc[Quality Service - Java/Spring Boot]
     end
 
     subgraph Platform Infrastructure
-        EventBus[Kafka / Redpanda Event Bus]
+        EventBus[Apache Kafka Event Bus]
         DB[(PostgreSQL + Outbox)]
         TSDB[(TimescaleDB Historian)]
     end
