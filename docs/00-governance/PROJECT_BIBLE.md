@@ -32,7 +32,7 @@ FactoryOS is an enterprise-grade, event-driven operational system of action desi
 
 ## 4. Engineering & Code Standards
 
-* **Languages:** Go / Rust for high-throughput edge and platform services; TypeScript (React/Next.js) for Web UI.
+* **Languages:** Go / Java for high-throughput edge and platform microservices; TypeScript (React/Next.js) for Web UI.
 * **API Style:** gRPC for internal low-latency RPCs; REST/GraphQL for frontend integration; AsyncAPI/Kafka for event streaming.
 * **Error Handling:** Standardized gRPC status codes & RFC-7807 Problem Details for REST APIs.
 
