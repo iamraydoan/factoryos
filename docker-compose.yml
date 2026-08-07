@@ -133,6 +133,20 @@ services:
     networks:
       - factoryos_net
 
+  # ==========================================
+  # Edge MQTT Broker (Eclipse Mosquitto)
+  # ==========================================
+  mosquitto:
+    image: eclipse-mosquitto:2.0.18
+    container_name: mosquitto
+    ports:
+      - "1883:1883" # Standard MQTT Port
+      - "9001:9001" # WebSockets MQTT Port
+    volumes:
+      - ./deploy/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - factoryos_net
+
 volumes:
   factoryos_db_data:
   zitadel_db_data:
