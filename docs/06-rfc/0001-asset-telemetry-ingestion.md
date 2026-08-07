@@ -98,20 +98,69 @@ SELECT create_hypertable('raw_telemetry', 'time', chunk_time_interval => INTERVA
 
 -- Create index for fast querying by asset
 CREATE INDEX ix_asset_time ON raw_telemetry (physical_asset_id, time DESC);
+
+-- Automated Data Retention Policy (Default: Drop raw data after 30 days)
+-- Configurable via ENV: TELEMETRY_RAW_RETENTION_DAYS (default: 30 days)
+SELECT add_retention_policy('raw_telemetry', INTERVAL '30 days');
+
+-- Continuous Aggregate for Hourly Roll-ups (Kept for 1 year)
+CREATE MATERIALIZED VIEW telemetry_hourly_summary
+WITH (timescaledb.continuous) AS
+SELECT 
+    time_bucket('1 hour', time) AS bucket,
+    physical_asset_id,
+    metric_name,
+    AVG(value) AS avg_value,
+    MIN(value) AS min_value,
+    MAX(value) AS max_value,
+    COUNT(*) AS sample_count
+FROM raw_telemetry
+GROUP BY bucket, physical_asset_id, metric_name;
+
+SELECT add_continuous_aggregate_policy('telemetry_hourly_summary',
+    start_offset => INTERVAL '3 hours',
+    end_offset => INTERVAL '1 hour',
+    schedule_interval => INTERVAL '1 hour');
+
+SELECT add_retention_policy('telemetry_hourly_summary', INTERVAL '365 days');
 ```
 
 ---
 
 ## 6. Event Lifecycle
 
-1. **Edge** publishes `TelemetryPayload` to Kafka topic: `telemetry.raw.v1`
-2. **Telemetry Service** consumes from Kafka.
-3. **Telemetry Service** batch-inserts into TimescaleDB.
-4. **Analytics Engine** queries TimescaleDB every 60 seconds to compute OEE and publishes event: `production.performance.oee_computed`.
+1. **Edge** publishes `TelemetryPayload` to Kafka topic: `telemetry.raw.v1` using native **Snappy / Zstd compression** (`compression.type=snappy`).
+2. **Telemetry Service** consumes from Kafka (transparent decompression by Kafka client).
+3. **Telemetry Service** batch-inserts into TimescaleDB hypertable `raw_telemetry`.
+4. **TimescaleDB Background Workers** continuously run retention policy (purge raw chunks older than 30 days) and update hourly continuous aggregates.
+5. **Analytics Engine** queries TimescaleDB every 60 seconds to compute OEE and publishes event: `production.performance.oee_computed`.
 
 ---
 
-## 7. Open Questions
+## 7. Security & Observability
 
-- [ ] Do we need to compress payloads (e.g., Snappy/GZIP) at the Edge before sending to Kafka to save bandwidth?
-- [ ] What is the data retention policy for raw telemetry in TimescaleDB? (e.g., drop raw data after 30 days, keep hourly roll-ups for 1 year).
+### Security & Authentication
+- **Transport Security:** Edge-to-Cloud telemetry streaming over Kafka/Redpanda is encrypted using TLS 1.3.
+- **Authentication:** Edge IPC instances authenticate using X.509 client certificates (mTLS) or SASL/SCRAM tokens stored in Edge secure enclave / environment secrets.
+- **Data Integrity:** Protobuf payloads include edge-generated SHA256 checksums to verify message integrity during store-and-forward replay.
+
+### Observability & Metrics
+- **Prometheus Metrics:**
+  - `telemetry_ingested_messages_total`: Count of ingested messages labeled by `asset_id` and `quality`.
+  - `telemetry_ingestion_latency_seconds`: Histogram of latency from `edge_timestamp` to TimescaleDB commit time.
+  - `edge_buffer_depth_records`: Number of records queued in local SQLite buffer when offline.
+- **Distributed Tracing:** OpenTelemetry trace contexts (`traceparent`) injected into Kafka record headers by Edge Runtime for end-to-end tracing.
+
+---
+
+## 8. Open Questions
+
+- [x] **Payload Compression at Edge:**
+  - **Decision:** Enable native Kafka producer-level compression using **Snappy** (or **Zstd**).
+  - **Rationale:** Native Kafka compression occurs at the transport batch layer before pushing to broker. It achieves 60-80% bandwidth reduction with minimal CPU overhead on Edge IPCs and requires zero custom application decompression code in downstream consumers.
+- [x] **Data Retention Policy in TimescaleDB:**
+  - **Decision:** Raw telemetry data is retained for **30 days** (`TELEMETRY_RAW_RETENTION_DAYS=30d`), while hourly continuous aggregates (`telemetry_hourly_summary`) are retained for **365 days** (`TELEMETRY_HOURLY_RETENTION_DAYS=365d`).
+  - **Configurability:** Controlled via environment variables during database migration/service startup scripts (`TELEMETRY_RAW_RETENTION_DAYS`, `TELEMETRY_HOURLY_RETENTION_DAYS`).
+
+
+
