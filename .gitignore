@@ -3,6 +3,8 @@
 *.test
 edge-runtime
 simulator
+mock-plc-simulator
+mock-*
 
 # Local Databases & Journals
 *.db

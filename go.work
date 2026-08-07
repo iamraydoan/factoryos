@@ -1,6 +1,7 @@
 go 1.22
 
 use (
+	./examples/mock-plc-simulator
 	./platform/edge-runtime
 	./platform/platform-sdk
 	./services/analytics-engine
