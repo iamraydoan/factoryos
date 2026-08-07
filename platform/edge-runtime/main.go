@@ -11,6 +11,7 @@ import (
 
 	"github.com/iamraydoan/factoryos/platform/edge-runtime/buffer"
 	"github.com/iamraydoan/factoryos/platform/edge-runtime/collector"
+	"github.com/iamraydoan/factoryos/platform/edge-runtime/mqtt"
 	telemetryv1 "github.com/iamraydoan/factoryos/platform/platform-sdk/go/gen/telemetry/v1"
 )
 
@@ -37,6 +38,25 @@ func run(ctx context.Context, dbPath string) error {
 
 	// Start background cloud sync worker
 	go telCollector.StartSyncWorker(ctx, 5*time.Second, 50)
+
+	// Initialize MQTT Subscriber
+	brokerURL := os.Getenv("MQTT_BROKER_URL")
+	if brokerURL == "" {
+		brokerURL = "tcp://localhost:1883"
+	}
+
+	mqttSub, err := mqtt.NewMQTTSubscriber(brokerURL, "factoryos-edge-runtime", telCollector)
+	if err != nil {
+		log.Printf("Warning: Could not initialize MQTT subscriber: %v", err)
+	} else {
+		// Run MQTT connect in background so offline broker doesn't block startup or unit tests
+		go func() {
+			if err := mqttSub.Connect(); err != nil {
+				log.Printf("Warning: MQTT Broker at %s unreachable (%v). Subscriber retrying in background...", brokerURL, err)
+			}
+		}()
+	}
+
 	return nil
 }
 

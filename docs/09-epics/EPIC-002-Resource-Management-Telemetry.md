@@ -29,7 +29,7 @@
 ### Telemetry & OEE
 - [x] Build Go Edge Runtime OPC-UA collector (`platform/edge-runtime`).
 - [x] Configure SQLite store-and-forward buffer for offline tolerance.
-- [ ] Implement MQTT ingestion endpoint for sensor telemetry.
+- [x] Implement MQTT ingestion endpoint for sensor telemetry.
 - [ ] Implement TimescaleDB hypertable for high-frequency telemetry storage.
 - [ ] Implement real-time OEE streaming aggregator (Availability × Performance × Quality) per Work Unit.
 - [ ] Implement OEE alert when Work Unit drops below configured threshold.

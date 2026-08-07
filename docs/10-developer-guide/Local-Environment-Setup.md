@@ -71,6 +71,7 @@ Once the stack is up, the following services and ports are available on your `lo
 | **Zitadel DB** | `5433` | Dedicated Postgres for IAM | User: `postgres` / Pass: `zitadel_password` / DB: `zitadel` |
 | **Kafka (KRaft)** | `9092` | Event Bus broker | `localhost:9092` |
 | **Valkey (Cache)** | `6379` | Redis drop-in replacement | `localhost:6379` |
+| **Mosquitto MQTT** | `1883` | Edge MQTT Broker for IIoT telemetry | `localhost:1883` |
 | **Zitadel Console** | `8081` | IAM Web Interface | http://localhost:8081/ui/console (User: `zitadel-admin@zitadel.localhost` / Pass: `Password123!`) |
 
 ---
@@ -99,7 +100,32 @@ docker compose down -v
 
 ---
 
-## 5. Adding New Services (For Maintainers)
+## 5. Testing Telemetry & Mock PLC Simulation
+
+To test end-to-end telemetry ingestion locally:
+
+1. **Start MQTT Broker:**
+   ```bash
+   docker compose up -d mosquitto
+   ```
+
+2. **Start Edge Runtime (Ingestion & SQLite Buffer):**
+   ```bash
+   cd platform/edge-runtime
+   go run main.go
+   ```
+
+3. **Start Mock PLC Simulator (In a second terminal):**
+   ```bash
+   cd examples/mock-plc-simulator
+   go run main.go
+   ```
+
+*(See full simulator configuration guide in [examples/README.md](../../examples/README.md)).*
+
+---
+
+## 6. Adding New Services (For Maintainers)
 
 When adding a new backing service (e.g., Temporal, OpenTelemetry) to `docker-compose.yml`:
 1. Ensure you use a **specific image version tag** (avoid `latest`).
