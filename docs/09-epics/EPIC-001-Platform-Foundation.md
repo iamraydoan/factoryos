@@ -12,9 +12,9 @@
 - [x] Define Protobuf / AsyncAPI contracts directory hierarchy.
 
 ### Base Project & Build Pipeline Scaffolding
-- [ ] Configure Protobuf compilation pipeline using `buf` (`buf.yaml`, `buf.gen.yaml`) for Go and Java.
-- [ ] Setup Go workspace (`go.work` / `go.mod`) for `platform/edge-runtime`, `platform/platform-sdk`, and `services/analytics-engine`.
-- [ ] Setup Java / Spring Boot base project structure for core microservices (`services/production-service`, `quality-service`, `warehouse-service`, `maintenance-service`).
+- [x] Configure Protobuf compilation pipeline using `buf` (`buf.yaml`, `buf.gen.yaml`) for Go and Java.
+- [x] Setup Go workspace (`go.work` / `go.mod`) for `platform/edge-runtime`, `platform/platform-sdk`, and `services/analytics-engine`.
+- [x] Setup Java / Spring Boot base project structure for core microservices (`services/production-service`, `quality-service`, `warehouse-service`, `maintenance-service`).
 
 ### Infrastructure & Event Streaming
 - [ ] Configure PostgreSQL with Transactional Outbox table schema & Logical Replication (`wal_level = logical`).

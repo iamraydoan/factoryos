@@ -1,0 +1,22 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: quality-service
+  datasource:
+    url: jdbc:postgresql://localhost:5432/factoryos
+    username: factoryos
+    password: factoryos_password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+grpc:
+  server:
+    port: 9091
+
+kafka:
+  bootstrap-servers: localhost:9092

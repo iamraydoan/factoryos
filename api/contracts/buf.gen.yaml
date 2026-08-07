@@ -1,0 +1,12 @@
+version: v1
+plugins:
+  - plugin: buf.build/protocolbuffers/go:v1.34.1
+    out: ../../platform/platform-sdk/go/gen
+    opt: paths=source_relative
+  - plugin: buf.build/grpc/go:v1.3.0
+    out: ../../platform/platform-sdk/go/gen
+    opt: paths=source_relative
+  - plugin: buf.build/protocolbuffers/java:v26.1
+    out: ../../platform/platform-sdk/java/src/main/java
+  - plugin: buf.build/grpc/java:v1.64.0
+    out: ../../platform/platform-sdk/java/src/main/java

@@ -1,0 +1,7 @@
+go 1.22
+
+use (
+	./platform/edge-runtime
+	./platform/platform-sdk
+	./services/analytics-engine
+)
