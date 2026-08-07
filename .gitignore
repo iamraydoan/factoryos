@@ -1,0 +1,20 @@
+# Build artifacts & binaries
+*.out
+*.test
+edge-runtime
+simulator
+
+# Local Databases & Journals
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+
+# IDE & OS files
+.DS_Store
+.idea/
+.vscode/
+
+# Build targets & dependencies
+target/
+bin/
