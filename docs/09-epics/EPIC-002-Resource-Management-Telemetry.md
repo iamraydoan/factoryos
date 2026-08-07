@@ -27,8 +27,8 @@
 - [ ] Implement ProductRoutingSpec: link MaterialDefinition to Work Center sequence.
 
 ### Telemetry & OEE
-- [ ] Build Go Edge Runtime OPC-UA collector (`platform/edge-runtime`).
-- [ ] Configure SQLite store-and-forward buffer for offline tolerance.
+- [x] Build Go Edge Runtime OPC-UA collector (`platform/edge-runtime`).
+- [x] Configure SQLite store-and-forward buffer for offline tolerance.
 - [ ] Implement MQTT ingestion endpoint for sensor telemetry.
 - [ ] Implement TimescaleDB hypertable for high-frequency telemetry storage.
 - [ ] Implement real-time OEE streaming aggregator (Availability × Performance × Quality) per Work Unit.
