@@ -1,0 +1,48 @@
+name: FactoryOS CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-verify:
+    name: Build, Test & Coverage Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Verify Go Workspace Build
+        run: |
+          go build ./platform/edge-runtime/...
+          go build ./examples/mock-plc-simulator/...
+
+      - name: Run Unit Tests & Generate Coverage Report
+        run: |
+          cd platform/edge-runtime
+          go test -v -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+
+      - name: Enforce Code Coverage Threshold (> 80%)
+        run: |
+          cd platform/edge-runtime
+          COVERAGE=$(go tool cover -func=coverage.out | grep total: | awk '{print $3}' | sed 's/%//')
+          echo "Current Total Code Coverage: ${COVERAGE}%"
+          MIN_COVERAGE=80.0
+          
+          IS_BELOW=$(awk -v cov="$COVERAGE" -v min="$MIN_COVERAGE" 'BEGIN {print (cov < min)}')
+          if [ "$IS_BELOW" -eq 1 ]; then
+            echo "❌ Error: Code coverage (${COVERAGE}%) is below required threshold of ${MIN_COVERAGE}%!"
+            exit 1
+          else
+            echo "✅ Success: Code coverage (${COVERAGE}%) satisfies required threshold (>= ${MIN_COVERAGE}%)!"
+          fi

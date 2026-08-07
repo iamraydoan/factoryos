@@ -125,7 +125,22 @@ To test end-to-end telemetry ingestion locally:
 
 ---
 
-## 6. Adding New Services (For Maintainers)
+## 6. CI/CD & Automated Release Pipelines
+
+The repository uses GitHub Actions workflows for continuous integration and automated binary releases:
+
+1. **Continuous Integration (`.github/workflows/ci.yml`):**
+   - Automatically runs unit tests on all Pull Requests and pushes to `main`.
+   - Enforces a strict **Code Coverage Gate (Coverage >= 80%)**. Fails PR builds if total coverage drops below threshold.
+
+2. **Automated Multi-Arch Releases (`.github/workflows/release.yml`):**
+   - Automatically triggers on new version tags (e.g., `git tag v0.1.0 && git push --tags`).
+   - Cross-compiles `edge-runtime` for 4 platforms: `linux-amd64`, `linux-arm64`, `windows-amd64.exe`, and `darwin-arm64`.
+   - Attaches packaged binaries directly to the GitHub Release page.
+
+---
+
+## 7. Adding New Services (For Maintainers)
 
 When adding a new backing service (e.g., Temporal, OpenTelemetry) to `docker-compose.yml`:
 1. Ensure you use a **specific image version tag** (avoid `latest`).

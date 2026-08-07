@@ -1,0 +1,59 @@
+name: FactoryOS Edge Runtime Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Cross-Compile & Publish Edge Runtime Releases
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache: true
+
+      - name: Build Multi-Architecture Binaries
+        run: |
+          mkdir -p bin/
+          
+          # Linux AMD64 (Standard Intel/AMD Edge IPC)
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/edge-runtime-linux-amd64 ./platform/edge-runtime
+          
+          # Linux ARM64 (Raspberry Pi Industrial / ARM Edge Gateways)
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/edge-runtime-linux-arm64 ./platform/edge-runtime
+          
+          # Windows AMD64 (Windows Industrial IPC)
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/edge-runtime-windows-amd64.exe ./platform/edge-runtime
+          
+          # macOS ARM64 (Apple Silicon)
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bin/edge-runtime-darwin-arm64 ./platform/edge-runtime
+
+      - name: Package Archives
+        run: |
+          cd bin
+          tar -czvf edge-runtime-linux-amd64.tar.gz edge-runtime-linux-amd64
+          tar -czvf edge-runtime-linux-arm64.tar.gz edge-runtime-linux-arm64
+          zip edge-runtime-windows-amd64.zip edge-runtime-windows-amd64.exe
+          tar -czvf edge-runtime-darwin-arm64.tar.gz edge-runtime-darwin-arm64
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            bin/edge-runtime-linux-amd64.tar.gz
+            bin/edge-runtime-linux-arm64.tar.gz
+            bin/edge-runtime-windows-amd64.zip
+            bin/edge-runtime-darwin-arm64.tar.gz
+          draft: false
+          prerelease: false
+          generate_release_notes: true
