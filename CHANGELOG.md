@@ -10,7 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Future enhancements and backlog ideas tracked in [INBOX.md](INBOX.md).
+- **Edge Fleet Management Idea ([INBOX.md](INBOX.md)):** Added concept for Cloud-based Edge Fleet monitoring dashboard & anti-spoofing device authentication (mTLS / 1-time activation key / TPM 2.0).
+
+### Changed
+- **RFC-0001 (Asset Telemetry Ingestion Architecture):**
+  - Resolved payload compression decision (Kafka Producer native Snappy/Zstd compression at Edge).
+  - Defined 30-day raw telemetry retention policy & 1-year hourly continuous aggregate roll-up policy in TimescaleDB (configurable via `TELEMETRY_RAW_RETENTION_DAYS`).
+  - Added Security & Observability section (TLS 1.3, mTLS/SASL authentication, Prometheus metrics, OpenTelemetry distributed tracing).
+- **Architecture Governance & Documentation Alignment:**
+  - Standardized all RFCs ([RFC-0001](docs/06-rfc/0001-asset-telemetry-ingestion.md), [RFC-0002](docs/06-rfc/0002-work-order-execution-engine.md), [RFC-0003](docs/06-rfc/0003-material-genealogy-tracking.md)) to strictly follow [0000-rfc-template.md](docs/06-rfc/0000-rfc-template.md).
+  - Standardized all ADRs ([ADR-0001](docs/05-adr/0001-use-event-driven-architecture.md), [ADR-0002](docs/05-adr/0002-schema-first-api-contracts.md), [ADR-0003](docs/05-adr/0003-durable-execution-engine.md)) to strictly follow [0000-adr-template.md](docs/05-adr/0000-adr-template.md).
 
 ---
 

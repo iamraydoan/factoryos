@@ -15,7 +15,9 @@ Welcome to the **FactoryOS Inbox**. This file serves as a light-weight "Parking 
 
 ## 💡 Feature & Product Ideas
 
-- [ ] **[YYYY-MM-DD]** **[Domain]** Title/Description
+- [ ] **[2026-08-07]** **[Edge Platform]** **Cloud-Based Edge Fleet Management & Device Authentication/Anti-Spoofing Engine**
+  - **Fleet Monitoring & Heartbeat:** Centralized Cloud dashboard/control plane to track all active Edge Runtimes in real-time (how many Edge nodes are active, online/offline status, runtime version, SQLite buffer depth, CPU/RAM stats).
+  - **Edge Authentication & Anti-Fake Security:** Prevent unauthorized/fake Edge Runtimes (anyone downloading the binary and spoofing telemetry). Implement 1-time Activation Key provisioning, mTLS (X.509 device certificate issuance), or TPM 2.0 hardware binding so only authorized Edge IPCs can register and publish telemetry to Cloud Kafka.
 
 ---
 
