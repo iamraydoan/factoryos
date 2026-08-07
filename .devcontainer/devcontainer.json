@@ -32,6 +32,10 @@
 			"extensions": [
 				"golang.go",
 				"vscjava.vscode-java-pack",
+				"vscjava.vscode-java-debug",
+				"vscjava.vscode-java-test",
+				"vscjava.vscode-maven",
+				"vmware.vscode-spring-boot",
 				"bufbuild.vscode-buf",
 				"zxh404.vscode-proto3",
 				"ms-azuretools.vscode-docker"

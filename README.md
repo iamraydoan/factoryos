@@ -13,6 +13,7 @@ FactoryOS is an enterprise-grade, event-driven operational system of action desi
 For full product strategy, technical architecture, governance standards, and long-term evolutionary roadmap documents, inspect the `docs/` hierarchy:
 
 * [Documentation Index & Table of Contents](docs/README.md)
+* [Developer Inbox & Idea Backlog](INBOX.md)
 * [Project Bible & Governance](docs/00-governance/PROJECT_BIBLE.md)
 * [Product Overview & Vision](docs/01-overview/PRODUCT_VISION.md)
 * [Business Processes & User Roles](docs/02-business/)

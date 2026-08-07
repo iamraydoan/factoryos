@@ -1,0 +1,33 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Production Service",
+            "request": "launch",
+            "mainClass": "com.factoryos.production.ProductionServiceApplication",
+            "projectName": "production-service"
+        },
+        {
+            "type": "java",
+            "name": "Launch Quality Service",
+            "request": "launch",
+            "mainClass": "com.factoryos.quality.QualityServiceApplication",
+            "projectName": "quality-service"
+        },
+        {
+            "type": "java",
+            "name": "Launch Warehouse Service",
+            "request": "launch",
+            "mainClass": "com.factoryos.warehouse.WarehouseServiceApplication",
+            "projectName": "warehouse-service"
+        },
+        {
+            "type": "java",
+            "name": "Launch Maintenance Service",
+            "request": "launch",
+            "mainClass": "com.factoryos.maintenance.MaintenanceServiceApplication",
+            "projectName": "maintenance-service"
+        }
+    ]
+}
