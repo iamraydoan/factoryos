@@ -10,13 +10,21 @@
 ### Core Setup & Governance
 - [x] Create `PROJECT_BIBLE.md` and repository standards.
 - [x] Define Protobuf / AsyncAPI contracts directory hierarchy.
-- [ ] Configure PostgreSQL with Transactional Outbox table schema.
+
+### Base Project & Build Pipeline Scaffolding
+- [ ] Configure Protobuf compilation pipeline using `buf` (`buf.yaml`, `buf.gen.yaml`) for Go and Java.
+- [ ] Setup Go workspace (`go.work` / `go.mod`) for `platform/edge-runtime`, `platform/platform-sdk`, and `services/analytics-engine`.
+- [ ] Setup Java / Spring Boot base project structure for core microservices (`services/production-service`, `quality-service`, `warehouse-service`, `maintenance-service`).
+
+### Infrastructure & Event Streaming
+- [ ] Configure PostgreSQL with Transactional Outbox table schema & Logical Replication (`wal_level = logical`).
+- [ ] Setup Debezium Kafka Connect service for Change Data Capture (CDC) outbox streaming.
 - [ ] Setup Apache Kafka event streaming infrastructure.
 - [ ] Setup Zitadel for Identity & Access Management (OIDC).
 - [ ] Setup Traefik API Gateway for gRPC routing.
 - [ ] Setup Valkey (Redis Drop-in Replacement) for distributed caching.
 - [ ] Setup Observability stack (OpenTelemetry, Prometheus, Jaeger, Loki, Grafana).
 
-### Platform Services
-- [ ] Implement `platform-sdk` event producer/consumer wrappers (Java & Go).
+### Platform Services & SDK
+- [ ] Implement `platform-sdk` event producer/consumer wrappers with transactional outbox helpers (Java & Go).
 - [ ] Setup Temporal.io cluster for Durable Workflow Engine.

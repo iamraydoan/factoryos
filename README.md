@@ -12,6 +12,7 @@ FactoryOS is an enterprise-grade, event-driven operational system of action desi
 
 For full product strategy, technical architecture, governance standards, and long-term evolutionary roadmap documents, inspect the `docs/` hierarchy:
 
+* [Documentation Index & Table of Contents](docs/README.md)
 * [Project Bible & Governance](docs/00-governance/PROJECT_BIBLE.md)
 * [Product Overview & Vision](docs/01-overview/PRODUCT_VISION.md)
 * [Business Processes & User Roles](docs/02-business/)
@@ -69,7 +70,7 @@ factoryos/
 
 ## 🗺️ Evolution Milestones
 
-> See full detail in [docs/07-roadmap/MILESTONES.md](docs/07-roadmap/MILESTONES.md) and [docs/07-roadmap/STRATEGIC_ROADMAP.md](docs/07-roadmap/STRATEGIC_ROADMAP.md).
+> See full detail in [docs/08-roadmap/MILESTONES.md](docs/08-roadmap/MILESTONES.md).
 
 | Milestone | Focus | Horizon |
 |---|---|---|
