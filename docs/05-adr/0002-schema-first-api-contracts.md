@@ -15,5 +15,5 @@ Enforce **Schema-First API Contracts** managed in a dedicated repository (`api-c
 * **OpenAPI 3.0** for public-facing developer REST APIs.
 
 ### Code Generation & CI Enforcement
-- CI pipelines automatically validate backward compatibility on pull requests using linter rules (`buf breaking`, `spectral`).
-- Platform SDKs in Go, TypeScript, and Python are generated directly from versioned contract releases.
+- **Local Generation:** Developers run `buf generate` locally to generate Go and Java SDK classes/structs directly into `platform/platform-sdk/` and commit them to Git.
+- **CI Validation:** CI pipelines validate backward compatibility and format rules (`buf lint`, `buf breaking`) and execute `buf generate && git diff --exit-code` to ensure committed SDK code is 100% synchronized with `.proto` definitions.

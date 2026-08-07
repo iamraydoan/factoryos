@@ -25,8 +25,9 @@ Welcome to the FactoryOS engineering repository. This document outlines developm
 
 ## 3. Pull Request & RFC Requirements
 
-* All PRs must pass automated linting (`buf lint`, linter checks).
-* Major features require an approved RFC under `docs/05-rfc/` using `0000-rfc-template.md`.
-* Architectural decisions must include an ADR under `docs/04-adr/` using `0000-adr-template.md`.
+* All PRs must pass automated linting (`buf lint`, `buf breaking`, and `buf generate && git diff --exit-code`).
+* When modifying `.proto` files under `api/contracts/`, developers MUST run `buf generate` locally and commit the updated generated SDK code in `platform/platform-sdk/`.
+* Major features require an approved RFC under `docs/06-rfc/` using `0000-rfc-template.md`.
+* Architectural decisions must include an ADR under `docs/05-adr/` using `0000-adr-template.md`.
 * Public API changes must demonstrate backward compatibility verification.
 
