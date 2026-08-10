@@ -21,7 +21,7 @@ func TestNewDB_InvalidURL(t *testing.T) {
 }
 
 func TestDB_CloseNil(t *testing.T) {
-	dbInstance := &DB{Pool: nil}
+	dbInstance := &DB{pool: nil}
 	// Calling Close on nil pool should not panic
 	dbInstance.Close()
 }
