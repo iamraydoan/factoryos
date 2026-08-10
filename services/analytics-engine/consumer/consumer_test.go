@@ -254,3 +254,39 @@ func TestTelemetryConsumer_NilTimestamp(t *testing.T) {
 		t.Fatalf("failed to process payload with nil timestamp: %v", err)
 	}
 }
+
+func TestTelemetryConsumer_ContextCancel(t *testing.T) {
+	reader := newMockReader([]kafka.Message{})
+	consumer := NewTelemetryConsumer(reader, nil, nil, 50*time.Millisecond)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	consumer.Start(ctx)
+
+	// Cancel context immediately
+	cancel()
+	consumer.Stop()
+}
+
+func TestTelemetryConsumer_ConsumeLoop_MalformedPayload(t *testing.T) {
+	reader := newMockReader([]kafka.Message{
+		{Value: []byte("corrupt-bytes-not-protobuf")},
+	})
+	consumer := NewTelemetryConsumer(reader, nil, nil, 20*time.Millisecond)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	consumer.Start(ctx)
+
+	waitForCondition(t, 2*time.Second, func() bool {
+		_, _, errs := consumer.Stats()
+		return errs > 0
+	})
+	consumer.Stop()
+
+	_, _, errs := consumer.Stats()
+	if errs < 1 {
+		t.Fatalf("expected at least 1 error count for malformed msg in loop, got: %d", errs)
+	}
+}
+

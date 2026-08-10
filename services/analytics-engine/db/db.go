@@ -54,6 +54,9 @@ func NewDB(ctx context.Context, cfg config.DatabaseConfig) (*DB, error) {
 // AsBatchInserter returns the underlying pool as a BatchInserter interface,
 // allowing the BatchWriter to use it without exposing the full pgxpool.Pool.
 func (d *DB) AsBatchInserter() BatchInserter {
+	if d == nil || d.pool == nil {
+		return nil
+	}
 	return d.pool
 }
 

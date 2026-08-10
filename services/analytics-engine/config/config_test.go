@@ -121,6 +121,49 @@ func TestConfig_Validate(t *testing.T) {
 	cfg, _ = LoadConfig()
 	cfg.Ingestion.BatchSize = 0
 	if err := cfg.Validate(); err == nil {
-		t.Fatalf("expected error for batch_size <= 0")
+		t.Fatalf("expected validation error when MaxBytes < MinBytes, got nil")
+	}
+}
+
+func TestLoadConfig_MissingRequiredEnv(t *testing.T) {
+	os.Unsetenv("DATABASE_URL")
+	_, err := LoadConfig()
+	if err == nil {
+		t.Fatalf("expected error when DATABASE_URL is missing, got nil")
+	}
+}
+
+func TestConfig_ValidateErrors(t *testing.T) {
+	// Invalid: batch size <= 0
+	cfg := &Config{
+		Server: ServerConfig{MetricsPort: ":8082", ShutdownTimeout: 5 * time.Second},
+		Kafka: KafkaConfig{
+			Brokers:        []string{"localhost:9092"},
+			Topic:          "topic",
+			GroupID:        "group",
+			MinBytes:       1024,
+			MaxBytes:       2048,
+			MaxWait:        100 * time.Millisecond,
+			CommitInterval: 500 * time.Millisecond,
+			RetryBackoff:   50 * time.Millisecond,
+		},
+		Database: DatabaseConfig{
+			URL:              "postgres://localhost:5432/db",
+			TableName:        "raw_telemetry",
+			MaxConns:         10,
+			MinConns:         2,
+			MaxConnLifetime:  time.Hour,
+			MaxConnIdleTime:  15 * time.Minute,
+			PingTimeout:      5 * time.Second,
+			RawRetentionDays: 30,
+		},
+		Ingestion: IngestionConfig{
+			BatchSize:                 0, // Invalid: gt=0
+			FlushInterval:             200 * time.Millisecond,
+			ChannelCapacityMultiplier: 4,
+		},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatalf("expected validation error for BatchSize=0, got nil")
 	}
 }

@@ -163,6 +163,17 @@ func TestNewBatchWriter_DefaultConfig(t *testing.T) {
 	}
 }
 
+func TestBatchWriter_FlushNilInserter(t *testing.T) {
+	cfg := config.IngestionConfig{BatchSize: 2, FlushInterval: 50 * time.Millisecond, ChannelCapacityMultiplier: 4}
+	writer := NewBatchWriter(nil, cfg, "raw_telemetry")
+	writer.Enqueue(TelemetryRecord{Time: time.Now(), PhysicalAssetID: "asset-nil", MetricName: "metric", Value: 1.0})
+	
+	err := writer.Flush(context.Background())
+	if err != nil {
+		t.Fatalf("expected nil error when flushing with nil inserter, got: %v", err)
+	}
+}
+
 
 
 func TestBatchWriter_ChannelBufferFull(t *testing.T) {
@@ -190,5 +201,8 @@ func TestBatchWriter_ChannelBufferFull(t *testing.T) {
 	inserted, _ := writer.Stats()
 	if inserted < 5 {
 		t.Fatalf("expected at least 5 inserted records, got: %d", inserted)
+	}
+	if writer.DroppedCount() == 0 {
+		t.Fatalf("expected DroppedCount > 0 during buffer saturation, got: %d", writer.DroppedCount())
 	}
 }
