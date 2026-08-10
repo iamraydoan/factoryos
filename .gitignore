@@ -20,3 +20,7 @@ mock-*
 # Build targets & dependencies
 target/
 bin/
+
+# Environment secrets — never commit actual credentials
+.env
+*.env.local

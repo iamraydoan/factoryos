@@ -30,6 +30,12 @@
 - [x] Build Go Edge Runtime OPC-UA collector (`platform/edge-runtime`).
 - [x] Configure SQLite store-and-forward buffer for offline tolerance.
 - [x] Implement MQTT ingestion endpoint for sensor telemetry.
-- [ ] Implement TimescaleDB hypertable for high-frequency telemetry storage.
+- [ ] Implement Go Edge Runtime Kafka forwarder with Snappy compression (`platform/edge-runtime/forwarder`).
+- [x] Implement TimescaleDB `raw_telemetry` hypertable migration, 30-day retention policy & continuous aggregate roll-up (`services/analytics-engine/db`).
+- [x] Implement high-throughput Go batch writer using `pgx.CopyFrom` in `services/analytics-engine`.
+- [x] Implement Kafka stream consumer with Snappy decompression in `services/analytics-engine`.
+- [x] Implement real-time in-memory threshold alert evaluator.
 - [ ] Implement real-time OEE streaming aggregator (Availability × Performance × Quality) per Work Unit.
 - [ ] Implement OEE alert when Work Unit drops below configured threshold.
+
+

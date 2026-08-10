@@ -1,7 +1,7 @@
 # RFC-0001: Asset Telemetry Ingestion Architecture
 
 * **Author(s):** AI Architect
-* **Status:** Under Review
+* **Status:** Approved
 * **Target Release:** Milestone 1
 * **Created Date:** 2026-08-06
 
@@ -35,10 +35,14 @@ We will deploy a lightweight **Go-based Edge Runtime** on a local IPC (Industria
 
 1. **Ingestion Layer:** Connects to PLCs via OPC-UA or local MQTT brokers.
 2. **Buffer Layer:** Writes all incoming payloads to a local embedded **SQLite** database.
-3. **Forwarding Layer:** Continuously reads from SQLite and pushes to the Cloud Kafka/Redpanda cluster. If the network is down, the forwarder pauses and SQLite grows locally.
+3. **Forwarding Layer:** Continuously reads from SQLite and pushes to the Cloud Kafka/Redpanda cluster using native Snappy compression. If the network is down, the forwarder pauses and SQLite grows locally.
 
-### 3.2 Cloud Storage (TimescaleDB)
-Telemetry is time-series data. We will use **TimescaleDB** (PostgreSQL extension) with hypertables partitioned by time and `physical_asset_id` to store the raw streams for fast aggregation.
+### 3.2 Cloud Ingestion & TimescaleDB Storage
+A dedicated **Go-based Telemetry & Analytics Engine (`services/analytics-engine`)** consumes from Kafka topic `telemetry.raw.v1`:
+1. **In-Memory Stream Processing:** Evaluates sensor alarm thresholds in RAM for immediate anomaly alerting.
+2. **High-Throughput Micro-Batching:** Accumulates 500–1,000 readings (or flushes every 200ms) and uses **`pgx.CopyFrom` (PostgreSQL Binary COPY Protocol)** to stream batches directly into TimescaleDB hypertables (`raw_telemetry`), achieving 100,000+ writes/sec without SQL parser overhead.
+3. **Automated Lifecycle Policies:** Drops raw data after 30 days and maintains 1-year hourly continuous aggregate roll-ups (`telemetry_hourly_summary`).
+
 
 ---
 
