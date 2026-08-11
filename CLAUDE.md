@@ -123,3 +123,21 @@ Always follow this lifecycle before implementing new features:
   `docs/00-governance`, `docs/01-overview`, `docs/02-business`, `docs/03-domain`, `docs/04-architecture`, `docs/05-adr`, `docs/06-rfc`, `docs/07-api`, `docs/08-roadmap`, `docs/09-epics`, `docs/10-developer-guide`.
 * Use semantic uppercase for core files (`PROJECT_BIBLE.md`, `PRODUCT_VISION.md`).
 * Use serial IDs: RFCs (`0001-xxxx.md`), ADRs (`0001-xxxx.md`), Epics (`EPIC-001-xxxx.md`).
+
+### Changelog & Documentation Update Rules
+
+* **Always update `CHANGELOG.md`** when making any user-facing or system-impacting change. Append entries under the `[Unreleased]` section, grouped by category:
+  - `### Added` — new features, services, endpoints, or capabilities.
+  - `### Changed` — modifications to existing behavior, APIs, or architecture decisions.
+  - `### Deprecated` — features that will be removed in a future release.
+  - `### Removed` — features removed in this release.
+  - `### Fixed` — bug fixes and corrections.
+  - `### Security` — vulnerability fixes and security improvements.
+* **Keep changelog entries concise but descriptive.** Reference the affected component path (e.g., `services/analytics-engine`) and link to relevant docs (ADRs, RFCs, Epics) where applicable.
+* **Update related documentation** when changes affect:
+  - **Architecture** → Update or author an ADR in `docs/05-adr/`.
+  - **API contracts** → Update OpenAPI/Protobuf specs in `api/contracts/` and regenerate SDKs.
+  - **Developer setup** → Update `docs/10-developer-guide/` (e.g., new env vars, infrastructure changes).
+  - **Domain models** → Update `docs/03-domain/` diagrams or narratives.
+  - **Roadmap / Epics** → Mark completed tasks `[x]` in `docs/09-epics/` and update `docs/08-roadmap/MILESTONES.md` if a milestone is reached.
+* **Do not skip documentation for "small" changes.** If it changes behavior, affects another service, or alters a contract, it deserves a changelog entry at minimum.
