@@ -10,12 +10,12 @@ Whenever you assist with this codebase, you MUST strictly obey the project gover
 
 Do NOT write implementation code for new features without following this lifecycle:
 
-1. **Check Strategy & Roadmap:** Review `docs/07-roadmap/MILESTONES.md` to identify the active milestone.
-2. **Verify/Author RFC:** Ensure a feature specification exists under `docs/05-rfc/` using `0000-rfc-template.md`.
-3. **Verify/Author ADR:** If making major technical or infrastructure choices, record an ADR under `docs/04-adr/` using `0000-adr-template.md`.
-4. **Verify/Author Epic:** Ensure actionable tasks are listed under `docs/08-epics/`.
+1. **Check Strategy & Roadmap:** Review `docs/08-roadmap/MILESTONES.md` to identify the active milestone.
+2. **Verify/Author RFC:** Ensure a feature specification exists under `docs/06-rfc/` using `0000-rfc-template.md`.
+3. **Verify/Author ADR:** If making major technical or infrastructure choices, record an ADR under `docs/05-adr/` using `0000-adr-template.md`.
+4. **Verify/Author Epic:** Ensure actionable tasks are listed under `docs/09-epics/`.
 5. **Schema-First Contracts:** Define Protobuf, AsyncAPI, or OpenAPI schemas in `api/contracts/` before microservice implementation.
-6. **Implement & Update Checklist:** After writing tests and code, mark completed tasks as `[x]` in the corresponding Epic document under `docs/08-epics/`.
+6. **Implement & Update Checklist:** After writing tests and code, mark completed tasks as `[x]` in the corresponding Epic document under `docs/09-epics/`.
 
 ---
 
