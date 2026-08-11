@@ -51,7 +51,7 @@ END $$;
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
-        IF NOT EXISTS (SELECT 1 FROM pg_matviews WHERE matviewname = 'telemetry_hourly_summary') THEN
+        IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'telemetry_hourly_summary') THEN
             CREATE MATERIALIZED VIEW telemetry_hourly_summary
             WITH (timescaledb.continuous) AS
             SELECT 

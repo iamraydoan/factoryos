@@ -64,7 +64,7 @@ func NewKafkaReader(cfg config.KafkaConfig) *kafka.Reader {
 		MaxBytes:       cfg.MaxBytes,
 		MaxWait:        cfg.MaxWait,
 		CommitInterval: cfg.CommitInterval,
-		StartOffset:    kafka.LastOffset,
+		StartOffset:    kafka.FirstOffset,
 	})
 }
 
@@ -121,11 +121,32 @@ func (c *TelemetryConsumer) consumeLoop(ctx context.Context) {
 	}
 }
 
-// ProcessPayload unmarshals Protobuf bytes, evaluates alarms, and feeds the batch writer.
+// ProcessPayload unmarshals Protobuf bytes (either RecordBatch or TelemetryPayload),
+// evaluates alarms, and feeds the batch writer.
 func (c *TelemetryConsumer) ProcessPayload(data []byte) error {
+	// 1. Try unmarshaling as RecordBatch first
+	var recordBatch telemetryv1.RecordBatch
+	if err := proto.Unmarshal(data, &recordBatch); err == nil && len(recordBatch.GetPayloads()) > 0 {
+		for _, payload := range recordBatch.GetPayloads() {
+			if err := c.processSinglePayload(payload); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	// 2. Fallback to single TelemetryPayload for backward compatibility
 	var payload telemetryv1.TelemetryPayload
 	if err := proto.Unmarshal(data, &payload); err != nil {
-		return fmt.Errorf("protobuf unmarshal failed: %w", err)
+		return fmt.Errorf("protobuf unmarshal failed (neither RecordBatch nor TelemetryPayload): %w", err)
+	}
+
+	return c.processSinglePayload(&payload)
+}
+
+func (c *TelemetryConsumer) processSinglePayload(payload *telemetryv1.TelemetryPayload) error {
+	if payload == nil {
+		return fmt.Errorf("cannot process nil payload")
 	}
 
 	assetID := payload.GetPhysicalAssetId()

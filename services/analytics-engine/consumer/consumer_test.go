@@ -290,3 +290,43 @@ func TestTelemetryConsumer_ConsumeLoop_MalformedPayload(t *testing.T) {
 	}
 }
 
+func TestTelemetryConsumer_ProcessRecordBatch(t *testing.T) {
+	consumer := NewTelemetryConsumer(nil, nil, nil, 0)
+	recordBatch := &telemetryv1.RecordBatch{
+		BatchId:    "batch-test-101",
+		EdgeNodeId: "node-101",
+		Payloads: []*telemetryv1.TelemetryPayload{
+			{
+				PhysicalAssetId: "cnc-machine-01",
+				EdgeTimestamp:   timestamppb.Now(),
+				Readings: []*telemetryv1.SensorReading{
+					{MetricName: "temp", Value: 42.0, Quality: "GOOD"},
+					{MetricName: "vib", Value: 0.02, Quality: "GOOD"},
+				},
+			},
+			{
+				PhysicalAssetId: "cnc-machine-02",
+				EdgeTimestamp:   timestamppb.Now(),
+				Readings: []*telemetryv1.SensorReading{
+					{MetricName: "speed", Value: 1500.0, Quality: "GOOD"},
+				},
+			},
+		},
+	}
+
+	data, err := proto.Marshal(recordBatch)
+	if err != nil {
+		t.Fatalf("failed to marshal RecordBatch: %v", err)
+	}
+
+	if err := consumer.ProcessPayload(data); err != nil {
+		t.Fatalf("ProcessPayload failed for RecordBatch: %v", err)
+	}
+
+	_, readings, errs := consumer.Stats()
+	if readings != 3 || errs != 0 {
+		t.Errorf("expected 3 readings parsed, got %d (errs: %d)", readings, errs)
+	}
+}
+
+

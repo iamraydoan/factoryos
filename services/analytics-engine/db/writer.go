@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"crypto/sha1"
 	"errors"
 	"fmt"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/iamraydoan/factoryos/services/analytics-engine/config"
 )
 
@@ -157,7 +159,7 @@ func (w *BatchWriter) Flush(ctx context.Context) error {
 	for i, rec := range currentBatch {
 		rows[i] = []any{
 			rec.Time,
-			rec.PhysicalAssetID,
+			ensureUUID(rec.PhysicalAssetID),
 			rec.MetricName,
 			rec.Value,
 			rec.Quality,
@@ -223,3 +225,22 @@ func (w *BatchWriter) DroppedCount() int64 {
 	defer w.mu.Unlock()
 	return w.totalDropped
 }
+
+// ensureUUID formats or deterministically maps a string identifier into a valid pgtype.UUID.
+func ensureUUID(id string) pgtype.UUID {
+	var u pgtype.UUID
+	if err := u.Scan(id); err == nil && u.Valid {
+		return u
+	}
+	// Deterministic UUIDv5-like mapping from arbitrary slug string
+	h := sha1.New()
+	h.Write([]byte("factoryos-asset-namespace"))
+	h.Write([]byte(id))
+	bs := h.Sum(nil)[:16]
+	bs[6] = (bs[6] & 0x0f) | 0x50 // version 5
+	bs[8] = (bs[8] & 0x3f) | 0x80 // RFC 4122 variant
+	copy(u.Bytes[:], bs)
+	u.Valid = true
+	return u
+}
+

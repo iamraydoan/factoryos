@@ -1,10 +1,9 @@
 # Build artifacts & binaries
 *.out
 *.test
-edge-runtime
-simulator
-mock-plc-simulator
-mock-*
+/edge-runtime
+/simulator
+/mock-plc-simulator
 
 # Local Databases & Journals
 *.db

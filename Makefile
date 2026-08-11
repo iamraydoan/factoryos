@@ -6,9 +6,9 @@ SHELL := /bin/bash
 BIN_DIR := bin
 GO_ENV := DATABASE_URL="postgres://factoryos:factoryos_password@localhost:5432/factoryos?sslmode=disable"
 
-.PHONY: all help build build-all build-analytics build-edge build-simulator \
-        test test-all test-analytics test-edge test-sdk test-coverage \
-        run-analytics run-edge run-simulator \
+.PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator \
+        test test-all test-analytics test-ingestion test-edge test-sdk test-coverage \
+        run-analytics run-ingestion run-edge run-simulator \
         proto-lint proto-gen \
         infra-up infra-down infra-ps infra-logs clean
 
@@ -27,7 +27,7 @@ help:
 build: build-all
 
 ## build-all: Build all services, edge runtime, and simulators
-build-all: build-analytics build-edge build-simulator
+build-all: build-analytics build-ingestion build-edge build-simulator
 
 ## build-analytics: Build binary for Analytics Engine into $(BIN_DIR)/analytics-engine
 build-analytics:
@@ -35,6 +35,13 @@ build-analytics:
 	@echo "[BUILD] Compiling services/analytics-engine..."
 	@go build -o $(BIN_DIR)/analytics-engine ./services/analytics-engine
 	@echo "[BUILD] Success -> $(BIN_DIR)/analytics-engine"
+
+## build-ingestion: Build binary for Ingestion Service into $(BIN_DIR)/ingestion-service
+build-ingestion:
+	@mkdir -p $(BIN_DIR)
+	@echo "[BUILD] Compiling services/ingestion-service..."
+	@go build -o $(BIN_DIR)/ingestion-service ./services/ingestion-service
+	@echo "[BUILD] Success -> $(BIN_DIR)/ingestion-service"
 
 ## build-edge: Build binary for Edge Runtime into $(BIN_DIR)/edge-runtime
 build-edge:
@@ -57,13 +64,18 @@ build-simulator:
 ## test: Run unit tests across all Go modules
 test: test-all
 
-## test-all: Run all unit tests for Analytics Engine, Edge Runtime, and Platform SDK
-test-all: test-edge test-sdk test-analytics
+## test-all: Run all unit tests for Analytics Engine, Ingestion Service, Edge Runtime, and Platform SDK
+test-all: test-edge test-sdk test-ingestion test-analytics
 
 ## test-analytics: Run unit tests for Analytics Engine (with coverage & race detector)
 test-analytics:
 	@echo "[TEST] Running tests for analytics-engine..."
 	@cd services/analytics-engine && $(GO_ENV) go test -race -cover -v -timeout 60s ./processor/... ./db/... ./consumer/... ./config/...
+
+## test-ingestion: Run unit tests for Ingestion Service
+test-ingestion:
+	@echo "[TEST] Running tests for ingestion-service..."
+	@cd services/ingestion-service && go test -race -cover -v ./...
 
 ## test-edge: Run unit tests for Edge Runtime
 test-edge:
@@ -88,6 +100,11 @@ test-coverage:
 run-analytics: build-analytics
 	@echo "[RUN] Starting $(BIN_DIR)/analytics-engine..."
 	@$(GO_ENV) $(BIN_DIR)/analytics-engine
+
+## run-ingestion: Build and execute Ingestion Service locally
+run-ingestion: build-ingestion
+	@echo "[RUN] Starting $(BIN_DIR)/ingestion-service..."
+	@$(BIN_DIR)/ingestion-service
 
 ## run-edge: Build and execute Edge Runtime locally
 run-edge: build-edge

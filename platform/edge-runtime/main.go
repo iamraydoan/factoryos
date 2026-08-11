@@ -11,6 +11,7 @@ import (
 
 	"github.com/iamraydoan/factoryos/platform/edge-runtime/buffer"
 	"github.com/iamraydoan/factoryos/platform/edge-runtime/collector"
+	"github.com/iamraydoan/factoryos/platform/edge-runtime/forwarder"
 	"github.com/iamraydoan/factoryos/platform/edge-runtime/mqtt"
 	telemetryv1 "github.com/iamraydoan/factoryos/platform/platform-sdk/go/gen/telemetry/v1"
 )
@@ -33,11 +34,33 @@ func run(ctx context.Context, dbPath string) error {
 		return fmt.Errorf("failed to initialize SQLite buffer: %w", err)
 	}
 
-	publisher := &ConsoleCloudPublisher{}
+	var publisher collector.CloudPublisher
+	gatewayURL := os.Getenv("INGESTION_GATEWAY_URL")
+	if gatewayURL == "" {
+		gatewayURL = "localhost:50051"
+	}
+	edgeNodeID := os.Getenv("EDGE_NODE_ID")
+	if edgeNodeID == "" {
+		edgeNodeID = "factory-edge-site-01"
+	}
+
+	grpcFwd, err := forwarder.NewGRPCForwarder(forwarder.GRPCForwarderConfig{
+		TargetAddress: gatewayURL,
+		EdgeNodeID:    edgeNodeID,
+		Timeout:       5 * time.Second,
+	})
+	if err != nil {
+		log.Printf("Warning: Failed to create gRPC forwarder: %v (falling back to console publisher)", err)
+		publisher = &ConsoleCloudPublisher{}
+	} else {
+		defer grpcFwd.Close()
+		publisher = grpcFwd
+	}
+
 	telCollector := collector.NewTelemetryCollector(buf, publisher)
 
-	// Start background cloud sync worker
-	go telCollector.StartSyncWorker(ctx, 5*time.Second, 50)
+	// Start background cloud sync worker (every 2s, batch size up to 50)
+	go telCollector.StartSyncWorker(ctx, 2*time.Second, 50)
 
 	// Initialize MQTT Subscriber
 	brokerURL := os.Getenv("MQTT_BROKER_URL")

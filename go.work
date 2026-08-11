@@ -5,4 +5,5 @@ use (
 	./platform/edge-runtime
 	./platform/platform-sdk
 	./services/analytics-engine
+	./services/ingestion-service
 )
