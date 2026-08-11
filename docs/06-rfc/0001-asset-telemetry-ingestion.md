@@ -35,14 +35,17 @@ We will deploy a lightweight **Go-based Edge Runtime** on a local IPC (Industria
 
 1. **Ingestion Layer:** Connects to PLCs via OPC-UA or local MQTT brokers.
 2. **Buffer Layer:** Writes all incoming payloads to a local embedded **SQLite** database.
-3. **Forwarding Layer:** Continuously reads from SQLite and pushes to the Cloud Kafka/Redpanda cluster using native Snappy compression. If the network is down, the forwarder pauses and SQLite grows locally.
+3. **Forwarding Layer:** Continuously reads from SQLite and streams `RecordBatch` payloads to the Cloud Ingestion Gateway via **gRPC over HTTP/2 (TLS on Port 443 / 50051)**. If the network is down, the forwarder pauses and SQLite stores records locally.
 
-### 3.2 Cloud Ingestion & TimescaleDB Storage
+### 3.2 Cloud Ingestion Gateway & Kafka Event Bus
+1. **Ingestion Gateway Service:** A lightweight Go gRPC service exposed via Traefik Gateway (`:443`). It validates client mTLS / JWT credentials, checks schema adherence, and produces validated messages to internal Apache Kafka topic `telemetry.raw.v1` with Snappy compression.
+2. **Network Isolation:** Kafka is strictly confined to internal private subnets, eliminating the security vulnerability of exposing brokers to the public Internet.
+
+### 3.3 Analytics Engine & TimescaleDB Storage
 A dedicated **Go-based Telemetry & Analytics Engine (`services/analytics-engine`)** consumes from Kafka topic `telemetry.raw.v1`:
 1. **In-Memory Stream Processing:** Evaluates sensor alarm thresholds in RAM for immediate anomaly alerting.
 2. **High-Throughput Micro-Batching:** Accumulates 500–1,000 readings (or flushes every 200ms) and uses **`pgx.CopyFrom` (PostgreSQL Binary COPY Protocol)** to stream batches directly into TimescaleDB hypertables (`raw_telemetry`), achieving 100,000+ writes/sec without SQL parser overhead.
 3. **Automated Lifecycle Policies:** Drops raw data after 30 days and maintains 1-year hourly continuous aggregate roll-ups (`telemetry_hourly_summary`).
-
 
 ---
 
@@ -50,7 +53,7 @@ A dedicated **Go-based Telemetry & Analytics Engine (`services/analytics-engine`
 
 All telemetry payloads emitted by the Edge Runtime to the Cloud must conform to the following Protobuf schema. 
 
-> *Note: This schema will be stored in `api/contracts/telemetry/v1/ingestion.proto`*
+> *Note: This schema is defined in `api/contracts/telemetry/v1/ingestion.proto`*
 
 ```protobuf
 syntax = "proto3";
@@ -59,7 +62,9 @@ package factoryos.telemetry.v1;
 
 import "google/protobuf/timestamp.proto";
 
-// The standardized payload sent from the Edge to the Cloud
+option go_package = "github.com/iamraydoan/factoryos/api/contracts/telemetry/v1";
+
+// The standardized payload sent from the Edge to the Cloud for an individual machine asset
 message TelemetryPayload {
   // UUIDv7 of the Physical Asset emitting the data
   string physical_asset_id = 1;
@@ -71,6 +76,7 @@ message TelemetryPayload {
   repeated SensorReading readings = 3;
 }
 
+// An individual sensor reading from a machine
 message SensorReading {
   // E.g., "temperature_celsius", "spindle_vibration", "cycle_count"
   string metric_name = 1;
@@ -80,6 +86,37 @@ message SensorReading {
   
   // Optional: Data quality flag (e.g., "GOOD", "BAD", "UNCERTAIN")
   string quality = 3;
+}
+
+// RecordBatch represents a micro-batch of telemetry payloads emitted by an Edge Node runtime
+message RecordBatch {
+  string batch_id = 1;
+  string edge_node_id = 2;
+  google.protobuf.Timestamp dispatched_at = 3;
+  repeated TelemetryPayload payloads = 4;
+}
+
+// Ingestion status code
+enum IngestionStatus {
+  INGESTION_STATUS_UNSPECIFIED = 0;
+  INGESTION_STATUS_ACCEPTED = 1;
+  INGESTION_STATUS_PARTIAL_SUCCESS = 2;
+  INGESTION_STATUS_REJECTED = 3;
+}
+
+// Response returned by the Cloud Ingestion Gateway upon receiving telemetry
+message IngestTelemetryResponse {
+  IngestionStatus status = 1;
+  string batch_id = 2;
+  int64 records_ingested = 3;
+  string message = 4;
+  google.protobuf.Timestamp acknowledged_at = 5;
+}
+
+// TelemetryIngestionService provides high-throughput ingestion of edge telemetry data over gRPC (HTTP/2)
+service TelemetryIngestionService {
+  rpc IngestBatch(RecordBatch) returns (IngestTelemetryResponse);
+  rpc StreamTelemetry(stream RecordBatch) returns (IngestTelemetryResponse);
 }
 ```
 
@@ -133,20 +170,22 @@ SELECT add_retention_policy('telemetry_hourly_summary', INTERVAL '365 days');
 
 ## 6. Event Lifecycle
 
-1. **Edge** publishes `TelemetryPayload` to Kafka topic: `telemetry.raw.v1` using native **Snappy / Zstd compression** (`compression.type=snappy`).
-2. **Telemetry Service** consumes from Kafka (transparent decompression by Kafka client).
-3. **Telemetry Service** batch-inserts into TimescaleDB hypertable `raw_telemetry`.
-4. **TimescaleDB Background Workers** continuously run retention policy (purge raw chunks older than 30 days) and update hourly continuous aggregates.
-5. **Analytics Engine** queries TimescaleDB every 60 seconds to compute OEE and publishes event: `production.performance.oee_computed`.
+1. **Edge Forwarder** reads micro-batches from local SQLite buffer and calls `TelemetryIngestionService.StreamTelemetry` or `IngestBatch` via **gRPC over HTTP/2 (Port 443/50051)**.
+2. **Cloud Ingestion Gateway** validates edge token / mTLS and produces `RecordBatch` to Kafka topic: `telemetry.raw.v1` using native **Snappy compression** (`compression.type=snappy`).
+3. **Analytics Engine** consumes from Kafka (transparent decompression by Kafka client).
+4. **Analytics Engine** evaluates real-time alert thresholds and batch-inserts into TimescaleDB hypertable `raw_telemetry` via `pgx.CopyFrom`.
+5. **TimescaleDB Background Workers** continuously run retention policy (purge raw chunks older than 30 days) and update hourly continuous aggregates (`telemetry_hourly_summary`).
+6. **Analytics Engine** queries TimescaleDB to compute real-time OEE and publishes event: `production.performance.oee_computed`.
 
 ---
 
 ## 7. Security & Observability
 
 ### Security & Authentication
-- **Transport Security:** Edge-to-Cloud telemetry streaming over Kafka/Redpanda is encrypted using TLS 1.3.
-- **Authentication:** Edge IPC instances authenticate using X.509 client certificates (mTLS) or SASL/SCRAM tokens stored in Edge secure enclave / environment secrets.
-- **Data Integrity:** Protobuf payloads include edge-generated SHA256 checksums to verify message integrity during store-and-forward replay.
+- **Transport Security:** Edge-to-Cloud telemetry streaming is encrypted using TLS 1.3 over HTTP/2.
+- **Authentication:** Edge IPC instances authenticate at the Cloud Ingestion Gateway using X.509 client certificates (mTLS) or signed JWT device tokens.
+- **Network Isolation:** Apache Kafka and TimescaleDB run strictly within private cloud subnets with no public ingress.
+- **Data Integrity:** Protobuf payloads include edge-generated UUIDv7 batch IDs and timestamps to verify message integrity and prevent replay duplication.
 
 ### Observability & Metrics
 - **Prometheus Metrics:**

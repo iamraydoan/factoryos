@@ -6,7 +6,7 @@ import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/iamraydoan/factoryos/api/contracts/telemetry/v1";
 
-// The standardized payload sent from the Edge to the Cloud
+// The standardized payload sent from the Edge to the Cloud for an individual machine asset
 message TelemetryPayload {
   // UUIDv7 of the Physical Asset emitting the data
   string physical_asset_id = 1;
@@ -28,4 +28,54 @@ message SensorReading {
   
   // Optional: Data quality flag (e.g., "GOOD", "BAD", "UNCERTAIN")
   string quality = 3;
+}
+
+// RecordBatch represents a micro-batch of telemetry payloads emitted by an Edge Node runtime
+message RecordBatch {
+  // Unique UUIDv7 batch identifier
+  string batch_id = 1;
+
+  // Identifier of the Edge Node runtime / factory site emitting the batch
+  string edge_node_id = 2;
+
+  // Timestamp when the batch was packaged and dispatched by the Edge
+  google.protobuf.Timestamp dispatched_at = 3;
+
+  // Collection of machine telemetry payloads in this batch
+  repeated TelemetryPayload payloads = 4;
+}
+
+// Ingestion status code
+enum IngestionStatus {
+  INGESTION_STATUS_UNSPECIFIED = 0;
+  INGESTION_STATUS_ACCEPTED = 1;
+  INGESTION_STATUS_PARTIAL_SUCCESS = 2;
+  INGESTION_STATUS_REJECTED = 3;
+}
+
+// Response returned by the Cloud Ingestion Gateway upon receiving telemetry
+message IngestTelemetryResponse {
+  // Status of the ingestion
+  IngestionStatus status = 1;
+
+  // Batch identifier acknowledged
+  string batch_id = 2;
+
+  // Number of sensor readings successfully processed and routed to Kafka
+  int64 records_ingested = 3;
+
+  // Optional error or diagnostic message
+  string message = 4;
+
+  // Timestamp when the Cloud Gateway acknowledged the batch
+  google.protobuf.Timestamp acknowledged_at = 5;
+}
+
+// TelemetryIngestionService provides high-throughput ingestion of edge telemetry data over gRPC (HTTP/2)
+service TelemetryIngestionService {
+  // IngestBatch receives a single RecordBatch from an Edge Node
+  rpc IngestBatch(RecordBatch) returns (IngestTelemetryResponse);
+
+  // StreamTelemetry establishes a persistent client-side stream for continuous real-time telemetry forwarding
+  rpc StreamTelemetry(stream RecordBatch) returns (IngestTelemetryResponse);
 }

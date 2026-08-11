@@ -9,7 +9,7 @@ graph TB
     end
 
     subgraph API Layer
-        Gateway[API Gateway - Traefik]
+        Gateway[API & Ingestion Gateway - Traefik]
     end
 
     subgraph Core Microservices
@@ -17,10 +17,11 @@ graph TB
         WhSvc[Warehouse Service - Java/Spring Boot]
         MaintSvc[Maintenance Service - Java/Spring Boot]
         QualSvc[Quality Service - Java/Spring Boot]
+        AnalyticsSvc[Analytics Engine - Go]
     end
 
     subgraph Platform Infrastructure
-        EventBus[Apache Kafka Event Bus]
+        EventBus[Apache Kafka Event Bus (Private Subnet)]
         DB[(PostgreSQL + Outbox)]
         TSDB[(TimescaleDB Historian)]
         Cache[(Valkey - Redis Drop-in Replacement)]
@@ -31,13 +32,16 @@ graph TB
         EdgeAgent[Factory Edge Agent - Go Edge Runtime]
     end
 
-    WebUI --> Gateway
+    WebUI -->|REST/GraphQL| Gateway
     Gateway --> ProdSvc
     Gateway --> WhSvc
-    EdgeAgent -->|MQTT/Protobuf| EventBus
+    Gateway -->|Query OEE/Stats| AnalyticsSvc
+    EdgeAgent -->|gRPC/HTTP2 over TLS| Gateway
+    Gateway -->|Publish Telemetry Batch| EventBus
+    EventBus -->|Consume Stream| AnalyticsSvc
+    AnalyticsSvc -->|Batch CopyFrom| TSDB
     ProdSvc --> DB
     ProdSvc --> EventBus
-    EventBus --> TSDB
 ```
 
 ---

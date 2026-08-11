@@ -30,7 +30,9 @@
 - [x] Build Go Edge Runtime OPC-UA collector (`platform/edge-runtime`).
 - [x] Configure SQLite store-and-forward buffer for offline tolerance.
 - [x] Implement MQTT ingestion endpoint for sensor telemetry.
-- [ ] Implement Go Edge Runtime Kafka forwarder with Snappy compression (`platform/edge-runtime/forwarder`).
+- [x] Define Protobuf `TelemetryIngestionService` and `RecordBatch` contracts (`api/contracts/telemetry/v1/ingestion.proto`).
+- [ ] Implement Go Edge Runtime gRPC Forwarder with SQLite store-and-forward drain loop (`platform/edge-runtime/forwarder`).
+- [ ] Implement Cloud Ingestion Gateway Service (`TelemetryIngestionService` gRPC handler producing to Kafka `telemetry.raw.v1`).
 - [x] Implement TimescaleDB `raw_telemetry` hypertable migration, 30-day retention policy & continuous aggregate roll-up (`services/analytics-engine/db`).
 - [x] Implement high-throughput Go batch writer using `pgx.CopyFrom` in `services/analytics-engine`.
 - [x] Implement Kafka stream consumer with Snappy decompression in `services/analytics-engine`.
