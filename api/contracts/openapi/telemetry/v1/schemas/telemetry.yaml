@@ -1,0 +1,33 @@
+components:
+  schemas:
+    SensorQuality:
+      type: string
+      enum: [GOOD, BAD, UNCERTAIN]
+      default: GOOD
+
+    TelemetryReading:
+      type: object
+      required:
+        - time
+        - physical_asset_id
+        - metric_name
+        - value
+        - quality
+      properties:
+        time:
+          type: string
+          format: date-time
+          example: '2026-08-11T03:00:00Z'
+        physical_asset_id:
+          type: string
+          format: uuid
+          example: 0194eb82-8234-789a-bcde-0123456789ab
+        metric_name:
+          type: string
+          example: motor_torque_nm
+        value:
+          type: number
+          format: double
+          example: 85.4
+        quality:
+          $ref: '#/components/schemas/SensorQuality'

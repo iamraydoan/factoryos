@@ -1,0 +1,54 @@
+get:
+  summary: Get latest sensor readings for assets
+  description: Retrieve the most recent sensor readings across all machines or filtered by asset ID.
+  operationId: getLatestTelemetry
+  tags:
+    - Telemetry
+  parameters:
+    - name: asset_id
+      in: query
+      description: Optional UUID of the physical asset
+      required: false
+      schema:
+        type: string
+        format: uuid
+        example: 0194eb82-8234-789a-bcde-0123456789ab
+    - name: limit
+      in: query
+      description: Maximum number of readings to return
+      required: false
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 1000
+  responses:
+    '200':
+      description: Latest telemetry readings retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - data
+              - total
+            properties:
+              data:
+                type: array
+                items:
+                  $ref: '../schemas/telemetry.yaml#/components/schemas/TelemetryReading'
+              total:
+                type: integer
+                example: 2
+    '400':
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/common.yaml#/components/schemas/ErrorResponse'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/common.yaml#/components/schemas/ErrorResponse'

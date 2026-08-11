@@ -1,0 +1,19 @@
+get:
+  summary: Readiness Probe
+  description: Verifies downstream connectivity to TimescaleDB and Kafka brokers. Returns 200 when ready to receive traffic, 503 if dependencies fail.
+  operationId: getReady
+  tags:
+    - Observability
+  responses:
+    '200':
+      description: Service and all dependencies are operational
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/common.yaml#/components/schemas/ReadinessResponse'
+    '503':
+      description: One or more dependencies are unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/common.yaml#/components/schemas/ReadinessResponse'

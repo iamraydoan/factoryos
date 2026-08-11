@@ -1,0 +1,13 @@
+get:
+  summary: Service Runtime Statistics
+  description: Returns JSON metrics for consumed messages, batch flushes, dropped records, and runtime uptime.
+  operationId: getServiceStats
+  tags:
+    - Observability
+  responses:
+    '200':
+      description: Real-time service metrics
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/stats.yaml#/components/schemas/ServiceStatsResponse'

@@ -1,0 +1,8 @@
+# oapi-codegen configuration for FactoryOS Telemetry & Analytics OpenAPI
+package: telemetryv1
+generate:
+  models: true
+  client: true
+  server: true
+  embedded-spec: true
+output: ../../../../platform/platform-sdk/go/gen/openapi/telemetry/v1/telemetry.gen.go

@@ -1,0 +1,79 @@
+get:
+  summary: Query time-bucketed historical aggregate telemetry
+  description: Returns rolled-up aggregates (AVG, MIN, MAX, COUNT) from TimescaleDB continuous aggregates.
+  operationId: getHistoricalTelemetry
+  tags:
+    - Analytics
+  parameters:
+    - name: asset_id
+      in: query
+      required: true
+      description: UUID of the physical asset
+      schema:
+        type: string
+        format: uuid
+        example: 0194eb82-8234-789a-bcde-0123456789ab
+    - name: metric_name
+      in: query
+      required: true
+      description: Sensor metric name
+      schema:
+        type: string
+        example: temperature_celsius
+    - name: from
+      in: query
+      required: true
+      description: Start ISO8601 timestamp
+      schema:
+        type: string
+        format: date-time
+        example: '2026-08-10T00:00:00Z'
+    - name: to
+      in: query
+      required: true
+      description: End ISO8601 timestamp
+      schema:
+        type: string
+        format: date-time
+        example: '2026-08-11T00:00:00Z'
+    - name: bucket
+      in: query
+      description: Aggregation bucket window (e.g. 1m, 5m, 1h, 1d)
+      required: false
+      schema:
+        type: string
+        default: 1h
+        example: 1h
+  responses:
+    '200':
+      description: Historical aggregates retrieved successfully
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - asset_id
+              - metric_name
+              - buckets
+            properties:
+              asset_id:
+                type: string
+                format: uuid
+              metric_name:
+                type: string
+              buckets:
+                type: array
+                items:
+                  $ref: '../schemas/aggregate.yaml#/components/schemas/TelemetryAggregateBucket'
+    '400':
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/common.yaml#/components/schemas/ErrorResponse'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/common.yaml#/components/schemas/ErrorResponse'

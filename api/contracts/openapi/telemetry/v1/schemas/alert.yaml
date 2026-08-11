@@ -1,0 +1,41 @@
+components:
+  schemas:
+    ActiveAlert:
+      type: object
+      required:
+        - id
+        - physical_asset_id
+        - metric_name
+        - severity
+        - message
+        - triggered_at
+        - value
+        - threshold
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 0194eb82-9999-789a-bcde-0123456789ab
+        physical_asset_id:
+          type: string
+          format: uuid
+        metric_name:
+          type: string
+          example: motor_torque_nm
+        severity:
+          type: string
+          enum: [INFO, WARNING, CRITICAL]
+        message:
+          type: string
+          example: Motor torque exceeded 100.0 Nm limit
+        value:
+          type: number
+          format: double
+          example: 112.5
+        threshold:
+          type: number
+          format: double
+          example: 100.0
+        triggered_at:
+          type: string
+          format: date-time

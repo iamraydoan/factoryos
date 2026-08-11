@@ -1,0 +1,30 @@
+components:
+  schemas:
+    TelemetryAggregateBucket:
+      type: object
+      required:
+        - bucket_time
+        - avg_value
+        - min_value
+        - max_value
+        - sample_count
+      properties:
+        bucket_time:
+          type: string
+          format: date-time
+          example: '2026-08-11T02:00:00Z'
+        avg_value:
+          type: number
+          format: double
+          example: 72.3
+        min_value:
+          type: number
+          format: double
+          example: 68.1
+        max_value:
+          type: number
+          format: double
+          example: 79.5
+        sample_count:
+          type: integer
+          example: 3600

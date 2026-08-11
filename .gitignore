@@ -23,3 +23,9 @@ bin/
 # Environment secrets — never commit actual credentials
 .env
 *.env.local
+
+# Generated OpenAPI bundle artifacts (intermediate build output from redocly bundle)
+api/contracts/openapi/**/dist/
+
+# Generated Go SDK code (output from oapi-codegen and buf generate)
+platform/platform-sdk/go/gen/

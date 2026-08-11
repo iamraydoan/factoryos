@@ -9,7 +9,7 @@ GO_ENV := DATABASE_URL="postgres://factoryos:factoryos_password@localhost:5432/f
 .PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator \
         test test-all test-analytics test-ingestion test-edge test-sdk test-coverage \
         run-analytics run-ingestion run-edge run-simulator \
-        proto-lint proto-gen \
+        proto-lint proto-gen openapi-bundle openapi-gen \
         infra-up infra-down infra-ps infra-logs clean
 
 all: help
@@ -129,6 +129,36 @@ proto-lint:
 proto-gen:
 	@echo "[BUF] Generating code from api/contracts..."
 	@cd api/contracts && buf generate
+
+## openapi-bundle: Bundle all multi-file OpenAPI domain contracts into dist/ (via Redocly)
+##   Auto-discovers every api/contracts/openapi/<domain>/<version>/openapi.yaml
+openapi-bundle:
+	@echo "[OPENAPI] Bundling all domain specs in api/contracts/openapi/..."
+	@find api/contracts/openapi -name "openapi.yaml" -not -path "*/dist/*" | while read spec; do \
+		dir=$$(dirname $$spec); \
+		mkdir -p $$dir/dist; \
+		echo "  [BUNDLE] $$spec"; \
+		redocly bundle $$spec -o $$dir/dist/openapi.bundled.yaml 2>/dev/null; \
+	done
+	@echo "[OPENAPI] Bundle complete -> api/contracts/openapi/**/dist/openapi.bundled.yaml"
+
+## openapi-gen: Bundle all OpenAPI domain contracts then generate Go SDKs for each
+##   Output: platform/platform-sdk/go/gen/openapi/<domain>/<version>/<domain>.gen.go
+openapi-gen: openapi-bundle
+	@echo "[OPENAPI] Generating Go SDKs from all bundled domain specs..."
+	@find api/contracts/openapi -name "openapi.bundled.yaml" | while read bundle; do \
+		version_dir=$$(dirname $$bundle | sed 's|/dist$$||'); \
+		domain=$$(echo $$version_dir | awk -F'/' '{print $$(NF-1)}'); \
+		version=$$(echo $$version_dir | awk -F'/' '{print $$NF}'); \
+		pkg=$${domain}$${version}; \
+		out_dir=platform/platform-sdk/go/gen/openapi/$$domain/$$version; \
+		out_file=$$out_dir/$$domain.gen.go; \
+		mkdir -p $$out_dir; \
+		echo "  [GEN] $$domain/$$version -> $$out_file (package: $$pkg)"; \
+		oapi-codegen -package $$pkg -generate types,client,chi-server,spec \
+			-o $$out_file $$bundle; \
+	done
+	@echo "[OPENAPI] Success -> platform/platform-sdk/go/gen/openapi/"
 
 # ==============================================================================
 # Infrastructure Helpers (Docker Compose)

@@ -16,8 +16,9 @@ make test-all
 
 # Run tests for specific components
 make test-analytics    # Analytics Engine with -race, -cover, and timeout
-make test-edge         # Edge Runtime collector, mqtt, and store-and-forward buffer
-make test-sdk          # Platform SDK (Protobuf stubs & contracts)
+make test-ingestion    # Telemetry Ingestion Gateway Service (gRPC)
+make test-edge         # Edge Runtime collector, mqtt, forwarder, and store-and-forward buffer
+make test-sdk          # Platform SDK (Protobuf stubs, OpenAPI models, Swagger UI)
 
 # Generate code coverage for Analytics Engine
 make test-coverage
@@ -28,22 +29,27 @@ make test-coverage
 # Build all Go binaries into bin/
 make build             # alias for make build-all
 make build-analytics   # Compiles to bin/analytics-engine
+make build-ingestion   # Compiles to bin/ingestion-service
 make build-edge        # Compiles to bin/edge-runtime
 make build-simulator   # Compiles to bin/mock-plc-simulator
 
 # Run services locally
 make run-analytics
+make run-ingestion
 make run-edge
 make run-simulator
 ```
 
-### Schema & Protocol Buffers (Buf)
+### Schema, Protocol Buffers (Buf) & OpenAPI (Swagger)
 ```bash
 # Lint Protobuf schemas
 make proto-lint        # Runs buf lint in api/contracts/
 
-# Generate Go stubs and SDK contracts
+# Generate Go stubs and SDK contracts from Protobuf
 make proto-gen         # Runs buf generate in api/contracts/
+
+# Generate Go models, client, and chi-server from OpenAPI 3.0/3.1 specs
+make openapi-gen       # Runs oapi-codegen on api/contracts/openapi/
 ```
 
 ### Local Infrastructure (Docker Compose)

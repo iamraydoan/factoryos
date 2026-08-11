@@ -1,0 +1,18 @@
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: INVALID_ARGUMENT
+        message:
+          type: string
+          example: Required query parameter is missing or malformed
+        details:
+          type: array
+          items:
+            type: string

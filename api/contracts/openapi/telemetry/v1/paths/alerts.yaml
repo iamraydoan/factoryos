@@ -1,0 +1,29 @@
+get:
+  summary: List active threshold alarms
+  description: Returns real-time alerts evaluated from stream processing.
+  operationId: getActiveAlerts
+  tags:
+    - Alarms
+  parameters:
+    - name: severity
+      in: query
+      description: Filter by alert severity level
+      required: false
+      schema:
+        type: string
+        enum: [INFO, WARNING, CRITICAL]
+  responses:
+    '200':
+      description: Active alerts list
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '../schemas/alert.yaml#/components/schemas/ActiveAlert'
+    '500':
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/common.yaml#/components/schemas/ErrorResponse'

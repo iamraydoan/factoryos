@@ -1,0 +1,58 @@
+openapi: 3.0.3
+info:
+  title: FactoryOS Telemetry & Analytics Query API
+  description: RESTful API for querying real-time equipment telemetry, aggregate history, threshold alerts, and service health.
+  version: 1.0.0
+  contact:
+    name: FactoryOS Architecture Team
+    url: https://github.com/iamraydoan/factoryos
+servers:
+  - url: /api/v1
+    description: Production & Local Gateway
+
+paths:
+  /healthz:
+    $ref: './paths/healthz.yaml'
+  /ready:
+    $ref: './paths/ready.yaml'
+  /stats:
+    $ref: './paths/stats.yaml'
+  /telemetry/latest:
+    $ref: './paths/latest.yaml'
+  /telemetry/history:
+    $ref: './paths/history.yaml'
+  /telemetry/alerts:
+    $ref: './paths/alerts.yaml'
+
+components:
+  responses:
+    BadRequestError:
+      description: Invalid request parameters or payload
+      content:
+        application/json:
+          schema:
+            $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error occurred
+      content:
+        application/json:
+          schema:
+            $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+
+  schemas:
+    HealthStatusResponse:
+      $ref: './schemas/common.yaml#/components/schemas/HealthStatusResponse'
+    ReadinessResponse:
+      $ref: './schemas/common.yaml#/components/schemas/ReadinessResponse'
+    ErrorResponse:
+      $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+    ServiceStatsResponse:
+      $ref: './schemas/stats.yaml#/components/schemas/ServiceStatsResponse'
+    SensorQuality:
+      $ref: './schemas/telemetry.yaml#/components/schemas/SensorQuality'
+    TelemetryReading:
+      $ref: './schemas/telemetry.yaml#/components/schemas/TelemetryReading'
+    TelemetryAggregateBucket:
+      $ref: './schemas/aggregate.yaml#/components/schemas/TelemetryAggregateBucket'
+    ActiveAlert:
+      $ref: './schemas/alert.yaml#/components/schemas/ActiveAlert'

@@ -1,0 +1,25 @@
+components:
+  schemas:
+    ServiceStatsResponse:
+      type: object
+      required:
+        - timestamp
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        kafka_messages_consumed:
+          type: integer
+          example: 154200
+        sensor_readings_parsed:
+          type: integer
+          example: 308400
+        timescaledb_batches:
+          type: integer
+          example: 616
+        timescaledb_inserted:
+          type: integer
+          example: 308000
+        consumer_errors:
+          type: integer
+          example: 0

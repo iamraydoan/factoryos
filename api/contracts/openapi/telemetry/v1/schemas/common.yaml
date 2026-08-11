@@ -1,0 +1,65 @@
+openapi: 3.0.3
+info:
+  title: Common Schemas
+  version: 1.0.0
+components:
+  schemas:
+    HealthStatusResponse:
+      type: object
+      required:
+        - status
+        - service
+      properties:
+        status:
+          type: string
+          enum: [HEALTHY, DEGRADED, UNHEALTHY]
+          example: HEALTHY
+        service:
+          type: string
+          example: analytics-engine
+        timestamp:
+          type: string
+          format: date-time
+          example: '2026-08-11T03:00:00Z'
+
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+        - ready
+        - dependencies
+      properties:
+        status:
+          type: string
+          enum: [READY, NOT_READY]
+          example: READY
+        ready:
+          type: boolean
+          example: true
+        dependencies:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            database: UP
+            kafka: UP
+        timestamp:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: INVALID_ARGUMENT
+        message:
+          type: string
+          example: Required query parameter is missing or malformed
+        details:
+          type: array
+          items:
+            type: string
