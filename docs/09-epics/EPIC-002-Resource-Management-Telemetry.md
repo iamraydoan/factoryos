@@ -37,7 +37,7 @@
 - [x] Implement high-throughput Go batch writer using `pgx.CopyFrom` in `services/analytics-engine`.
 - [x] Implement Kafka stream consumer with Snappy decompression in `services/analytics-engine`.
 - [x] Implement real-time in-memory threshold alert evaluator.
-- [ ] Implement real-time OEE streaming aggregator (Availability × Performance × Quality) per Work Unit.
+- [x] Implement real-time OEE streaming aggregator (Availability × Performance × Quality) per Work Unit.
 - [ ] Implement OEE alert when Work Unit drops below configured threshold.
 
 

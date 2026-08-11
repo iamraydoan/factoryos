@@ -77,7 +77,7 @@ func TestTelemetryConsumer_ProcessPayload(t *testing.T) {
 		evaluatedAlerts = append(evaluatedAlerts, alert)
 	})
 
-	consumer := NewTelemetryConsumer(nil, nil, evaluator, 50*time.Millisecond)
+	consumer := NewTelemetryConsumer(nil, nil, evaluator, nil, 50*time.Millisecond)
 
 	now := time.Now().UTC()
 	payload := &telemetryv1.TelemetryPayload{
@@ -116,7 +116,7 @@ func TestTelemetryConsumer_ProcessPayload(t *testing.T) {
 }
 
 func TestTelemetryConsumer_MalformedPayload(t *testing.T) {
-	consumer := NewTelemetryConsumer(nil, nil, nil, 0)
+	consumer := NewTelemetryConsumer(nil, nil, nil, nil, 0)
 
 	// Invalid bytes
 	err := consumer.ProcessPayload([]byte("invalid-random-data"))
@@ -154,9 +154,9 @@ func TestTelemetryConsumer_ConsumeLoop(t *testing.T) {
 	})
 
 
-	fullCfg, _ := config.LoadConfig()
-	writer := db.NewBatchWriter(nil, fullCfg.Ingestion, fullCfg.Database.TableName)
-	consumer := NewTelemetryConsumer(reader, writer, nil, 50*time.Millisecond)
+	ingestCfg := config.IngestionConfig{BatchSize: 100, FlushInterval: 200 * time.Millisecond, ChannelCapacityMultiplier: 4}
+	writer := db.NewBatchWriter(nil, ingestCfg, "raw_telemetry")
+	consumer := NewTelemetryConsumer(reader, writer, nil, nil, 50*time.Millisecond)
 
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -219,7 +219,7 @@ func (e *errorReader) Close() error {
 
 func TestTelemetryConsumer_ReaderError(t *testing.T) {
 	reader := newErrorReader()
-	consumer := NewTelemetryConsumer(reader, nil, nil, 10*time.Millisecond)
+	consumer := NewTelemetryConsumer(reader, nil, nil, nil, 10*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -241,7 +241,7 @@ func TestTelemetryConsumer_ReaderError(t *testing.T) {
 
 
 func TestTelemetryConsumer_NilTimestamp(t *testing.T) {
-	consumer := NewTelemetryConsumer(nil, nil, nil, 0)
+	consumer := NewTelemetryConsumer(nil, nil, nil, nil, 0)
 	payload := &telemetryv1.TelemetryPayload{
 		PhysicalAssetId: "press-02",
 		EdgeTimestamp:   nil, // Nil timestamp should use time.Now() fallback
@@ -257,7 +257,7 @@ func TestTelemetryConsumer_NilTimestamp(t *testing.T) {
 
 func TestTelemetryConsumer_ContextCancel(t *testing.T) {
 	reader := newMockReader([]kafka.Message{})
-	consumer := NewTelemetryConsumer(reader, nil, nil, 50*time.Millisecond)
+	consumer := NewTelemetryConsumer(reader, nil, nil, nil, 50*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	consumer.Start(ctx)
@@ -271,7 +271,7 @@ func TestTelemetryConsumer_ConsumeLoop_MalformedPayload(t *testing.T) {
 	reader := newMockReader([]kafka.Message{
 		{Value: []byte("corrupt-bytes-not-protobuf")},
 	})
-	consumer := NewTelemetryConsumer(reader, nil, nil, 20*time.Millisecond)
+	consumer := NewTelemetryConsumer(reader, nil, nil, nil, 20*time.Millisecond)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -291,7 +291,7 @@ func TestTelemetryConsumer_ConsumeLoop_MalformedPayload(t *testing.T) {
 }
 
 func TestTelemetryConsumer_ProcessRecordBatch(t *testing.T) {
-	consumer := NewTelemetryConsumer(nil, nil, nil, 0)
+	consumer := NewTelemetryConsumer(nil, nil, nil, nil, 0)
 	recordBatch := &telemetryv1.RecordBatch{
 		BatchId:    "batch-test-101",
 		EdgeNodeId: "node-101",

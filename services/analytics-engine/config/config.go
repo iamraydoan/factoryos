@@ -18,6 +18,7 @@ type Config struct {
 	Kafka     KafkaConfig
 	Database  DatabaseConfig
 	Ingestion IngestionConfig
+	OEE       OEEConfig
 }
 
 // ServerConfig holds HTTP server parameters.
@@ -58,6 +59,13 @@ type IngestionConfig struct {
 	BatchSize                 int           `env:"BATCH_SIZE" envDefault:"500" validate:"gt=0"`
 	FlushInterval             time.Duration `env:"FLUSH_INTERVAL" envDefault:"200ms" validate:"gt=0"`
 	ChannelCapacityMultiplier int           `env:"CHANNEL_CAPACITY_MULTIPLIER" envDefault:"4" validate:"gt=0"`
+}
+
+// OEEConfig holds parameters for the real-time OEE streaming aggregator.
+type OEEConfig struct {
+	WindowDuration        time.Duration `env:"OEE_WINDOW_DURATION" envDefault:"1h" validate:"gt=0"`
+	SnapshotInterval      time.Duration `env:"OEE_SNAPSHOT_INTERVAL" envDefault:"15s" validate:"gt=0"`
+	DefaultIdealCycleTime time.Duration `env:"OEE_DEFAULT_IDEAL_CYCLE_TIME" envDefault:"30s" validate:"gt=0"`
 }
 
 // Validate verifies all configuration parameters using go-playground/validator.

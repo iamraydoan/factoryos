@@ -17,8 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dynamic Rule-Based Alert Engine (`processor/alerts.go`) with thread-safe runtime rule injection and baseline industrial presets.
   - Type-safe Single Source of Truth Configuration with `caarlos0/env/v11`, `godotenv`, YAML file support, and Fail-Fast validation (`config/config.go`).
   - Prometheus metrics (`/metrics`), `/healthz`, and `/stats` HTTP endpoints with graceful shutdown.
+  - **Real-Time OEE Streaming Aggregator (`processor/oee.go`):** In-memory per-asset OEE computation (Availability × Performance × Quality) with rolling window, configurable ideal cycle time, and metric classification heuristic. Exposed via `GET /oee` HTTP endpoint.
+  - TimescaleDB `oee_snapshots` hypertable (`0002_oee_snapshots.sql`) with 1-day chunks and 90-day retention for historical OEE queries.
 
 - **ADR-0004: High-Throughput Telemetry Ingestion Architecture & Driver Strategy ([ADR-0004](docs/05-adr/0004-high-throughput-telemetry-ingestion.md)):** Recorded decision adopting Go `analytics-engine`, Kafka Snappy compression, micro-batching, and `pgx.CopyFrom` binary ingestion into TimescaleDB.
+- **ADR-0006: OEE Streaming Aggregation — Fixed Window with Hard Reset ([ADR-0006](docs/05-adr/0006-oee-streaming-aggregation-window-strategy.md)):** Recorded decision using O(1) fixed-window approach over sliding window for in-memory OEE computation.
 - **Edge Fleet Management Idea ([INBOX.md](INBOX.md)):** Added concept for Cloud-based Edge Fleet monitoring dashboard & anti-spoofing device authentication (mTLS / 1-time activation key / TPM 2.0).
 
 

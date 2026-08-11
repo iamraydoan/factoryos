@@ -29,6 +29,7 @@ type TelemetryConsumer struct {
 	reader       MessageReader
 	writer       *db.BatchWriter
 	evaluator    *processor.AlertEvaluator
+	oeeAgg       *processor.OEEAggregator
 	retryBackoff time.Duration
 
 	done chan struct{}
@@ -41,7 +42,7 @@ type TelemetryConsumer struct {
 }
 
 // NewTelemetryConsumer creates a consumer with validated dependencies.
-func NewTelemetryConsumer(reader MessageReader, writer *db.BatchWriter, evaluator *processor.AlertEvaluator, retryBackoff time.Duration) *TelemetryConsumer {
+func NewTelemetryConsumer(reader MessageReader, writer *db.BatchWriter, evaluator *processor.AlertEvaluator, oeeAgg *processor.OEEAggregator, retryBackoff time.Duration) *TelemetryConsumer {
 	if evaluator == nil {
 		evaluator = processor.NewAlertEvaluator(nil, nil)
 	}
@@ -49,6 +50,7 @@ func NewTelemetryConsumer(reader MessageReader, writer *db.BatchWriter, evaluato
 		reader:       reader,
 		writer:       writer,
 		evaluator:    evaluator,
+		oeeAgg:       oeeAgg,
 		retryBackoff: retryBackoff,
 		done:         make(chan struct{}),
 	}
@@ -172,7 +174,12 @@ func (c *TelemetryConsumer) processSinglePayload(payload *telemetryv1.TelemetryP
 		// 1. Real-time alert evaluation in memory
 		c.evaluator.EvaluateReading(assetID, metricName, val, quality, readingTime)
 
-		// 2. Feed into high-throughput TimescaleDB batch writer
+		// 2. Real-time OEE aggregation in memory
+		if c.oeeAgg != nil {
+			c.oeeAgg.ProcessReading(assetID, metricName, val, string(quality), readingTime)
+		}
+
+		// 3. Feed into high-throughput TimescaleDB batch writer
 		if c.writer != nil {
 			if err := c.writer.Enqueue(db.TelemetryRecord{
 				Time:            readingTime,

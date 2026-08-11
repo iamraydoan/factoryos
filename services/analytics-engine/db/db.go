@@ -2,16 +2,19 @@ package db
 
 import (
 	"context"
-	_ "embed"
+	"embed"
 	"fmt"
 	"log"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/pressly/goose/v3"
+
 	"github.com/iamraydoan/factoryos/services/analytics-engine/config"
 )
 
-//go:embed migrations/0001_init_telemetry.sql
-var initMigrationSQL string
+//go:embed migrations/*.sql
+var embedMigrations embed.FS
 
 // DB wraps the TimescaleDB connection pool.
 type DB struct {
@@ -60,12 +63,26 @@ func (d *DB) AsBatchInserter() BatchInserter {
 	return d.pool
 }
 
-// RunMigrations executes the initial schema and hypertable setup.
+// RunMigrations applies all pending migrations using goose.
+// It opens a database/sql connection via pgx stdlib adapter (required by goose),
+// runs the embedded migrations, and closes the temporary connection.
 func (d *DB) RunMigrations(ctx context.Context) error {
-	log.Println("[TimescaleDB] Running database migrations for raw_telemetry hypertable...")
-	if _, err := d.pool.Exec(ctx, initMigrationSQL); err != nil {
-		return fmt.Errorf("failed to execute migration script: %w", err)
+	log.Println("[TimescaleDB] Running database migrations via goose...")
+
+	// Open a standard database/sql connection for goose (pgx stdlib adapter).
+	db := stdlib.OpenDBFromPool(d.pool)
+	defer db.Close()
+
+	goose.SetBaseFS(embedMigrations)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		return fmt.Errorf("failed to set goose dialect: %w", err)
 	}
+
+	if err := goose.UpContext(ctx, db, "migrations"); err != nil {
+		return fmt.Errorf("failed to apply migrations: %w", err)
+	}
+
 	log.Println("[TimescaleDB] Migrations applied successfully.")
 	return nil
 }

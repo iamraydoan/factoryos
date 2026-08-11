@@ -147,6 +147,8 @@ func TestBatchWriter_ErrorHandling(t *testing.T) {
 }
 
 func TestNewBatchWriter_DefaultConfig(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/testdb?sslmode=disable")
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("failed to load config: %v", err)

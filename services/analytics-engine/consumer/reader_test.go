@@ -33,6 +33,8 @@ func TestNewKafkaReader(t *testing.T) {
 }
 
 func TestNewKafkaReader_Defaults(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/testdb?sslmode=disable")
+
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("failed to load default config: %v", err)

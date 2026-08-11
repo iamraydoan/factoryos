@@ -9,6 +9,8 @@ import (
 )
 
 func TestNewDB_InvalidURL(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/testdb?sslmode=disable")
+
 	ctx := context.Background()
 	cfg, err := config.LoadConfig()
 	if err != nil {

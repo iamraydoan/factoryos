@@ -1,13 +1,5 @@
--- Migration: 0001_init_telemetry.sql
+-- +goose Up
 -- Description: Create raw_telemetry hypertable, indexes, retention policy, and continuous aggregates.
-
--- 0. Migration version tracking table
--- Records applied migrations so future scripts can skip already-executed ones.
-CREATE TABLE IF NOT EXISTS schema_migrations (
-    version     TEXT        PRIMARY KEY,
-    applied_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-INSERT INTO schema_migrations (version) VALUES ('0001') ON CONFLICT DO NOTHING;
 
 -- Enable TimescaleDB extension if available
 CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;
@@ -38,7 +30,6 @@ CREATE INDEX IF NOT EXISTS ix_asset_time ON raw_telemetry (physical_asset_id, ti
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
-        -- Add retention policy if not already attached
         BEGIN
             PERFORM add_retention_policy('raw_telemetry', INTERVAL '30 days', if_not_exists => TRUE);
         EXCEPTION WHEN OTHERS THEN
@@ -54,7 +45,7 @@ BEGIN
         IF NOT EXISTS (SELECT 1 FROM timescaledb_information.continuous_aggregates WHERE view_name = 'telemetry_hourly_summary') THEN
             CREATE MATERIALIZED VIEW telemetry_hourly_summary
             WITH (timescaledb.continuous) AS
-            SELECT 
+            SELECT
                 time_bucket('1 hour', time) AS bucket,
                 physical_asset_id,
                 metric_name,
@@ -76,3 +67,10 @@ BEGIN
         END IF;
     END IF;
 END $$;
+
+-- +goose Down
+-- Note: TimescaleDB extension, continuous aggregate policies, and retention policies
+-- are not dropped here — dropping extensions is dangerous and policies are tied to
+-- the hypertable which is dropped below.
+DROP MATERIALIZED VIEW IF EXISTS telemetry_hourly_summary;
+DROP TABLE IF EXISTS raw_telemetry;

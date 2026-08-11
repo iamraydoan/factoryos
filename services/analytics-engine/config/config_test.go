@@ -1,17 +1,18 @@
 package config
 
 import (
-	"os"
 	"testing"
 	"time"
 )
 
 func TestLoadConfig_Defaults(t *testing.T) {
-	// Clear relevant envs
-	os.Unsetenv("KAFKA_BROKERS")
-	os.Unsetenv("KAFKA_TOPIC")
-	os.Unsetenv("BATCH_SIZE")
-	os.Unsetenv("FLUSH_INTERVAL")
+	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/testdb?sslmode=disable")
+
+	// Clear relevant envs (t.Setenv restores original values after test)
+	t.Setenv("KAFKA_BROKERS", "")
+	t.Setenv("KAFKA_TOPIC", "")
+	t.Setenv("BATCH_SIZE", "")
+	t.Setenv("FLUSH_INTERVAL", "")
 
 	cfg, err := LoadConfig()
 	if err != nil {
@@ -36,20 +37,13 @@ func TestLoadConfig_Defaults(t *testing.T) {
 }
 
 func TestLoadConfig_CustomEnv(t *testing.T) {
-	os.Setenv("KAFKA_BROKERS", "kafka-1:9092,kafka-2:9092")
-	os.Setenv("KAFKA_TOPIC", "custom.telemetry.v1")
-	os.Setenv("BATCH_SIZE", "1000")
-	os.Setenv("FLUSH_INTERVAL", "500ms")
-	os.Setenv("TELEMETRY_RAW_RETENTION_DAYS", "60")
-	os.Setenv("DATABASE_TABLE_NAME", "custom_telemetry")
-	defer func() {
-		os.Unsetenv("KAFKA_BROKERS")
-		os.Unsetenv("KAFKA_TOPIC")
-		os.Unsetenv("BATCH_SIZE")
-		os.Unsetenv("FLUSH_INTERVAL")
-		os.Unsetenv("TELEMETRY_RAW_RETENTION_DAYS")
-		os.Unsetenv("DATABASE_TABLE_NAME")
-	}()
+	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/testdb?sslmode=disable")
+	t.Setenv("KAFKA_BROKERS", "kafka-1:9092,kafka-2:9092")
+	t.Setenv("KAFKA_TOPIC", "custom.telemetry.v1")
+	t.Setenv("BATCH_SIZE", "1000")
+	t.Setenv("FLUSH_INTERVAL", "500ms")
+	t.Setenv("TELEMETRY_RAW_RETENTION_DAYS", "60")
+	t.Setenv("DATABASE_TABLE_NAME", "custom_telemetry")
 
 	cfg, err := LoadConfig()
 	if err != nil {
@@ -77,6 +71,8 @@ func TestLoadConfig_CustomEnv(t *testing.T) {
 }
 
 func TestConfig_Validate(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://test:test@localhost:5432/testdb?sslmode=disable")
+
 	cfg, err := LoadConfig()
 	if err != nil {
 		t.Fatalf("unexpected error loading default config: %v", err)
@@ -126,7 +122,7 @@ func TestConfig_Validate(t *testing.T) {
 }
 
 func TestLoadConfig_MissingRequiredEnv(t *testing.T) {
-	os.Unsetenv("DATABASE_URL")
+	t.Setenv("DATABASE_URL", "")
 	_, err := LoadConfig()
 	if err == nil {
 		t.Fatalf("expected error when DATABASE_URL is missing, got nil")

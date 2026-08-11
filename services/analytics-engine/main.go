@@ -63,15 +63,24 @@ func main() {
 	// 3. Initialize Real-Time Dynamic Alert Evaluator
 	evaluator := processor.NewAlertEvaluator(nil, nil)
 
-	// 4. Initialize Kafka Consumer
+	// 4. Initialize Real-Time OEE Streaming Aggregator
+	oeeCfg := processor.OEEConfig{
+		WindowDuration:        cfg.OEE.WindowDuration,
+		SnapshotInterval:      cfg.OEE.SnapshotInterval,
+		DefaultIdealCycleTime: cfg.OEE.DefaultIdealCycleTime,
+	}
+	oeeAggregator := processor.NewOEEAggregator(oeeCfg, nil)
+	oeeAggregator.Start(ctx)
+
+	// 5. Initialize Kafka Consumer
 	kafkaReader := consumer.NewKafkaReader(cfg.Kafka)
-	telemetryConsumer := consumer.NewTelemetryConsumer(kafkaReader, batchWriter, evaluator, cfg.Kafka.RetryBackoff)
+	telemetryConsumer := consumer.NewTelemetryConsumer(kafkaReader, batchWriter, evaluator, oeeAggregator, cfg.Kafka.RetryBackoff)
 	telemetryConsumer.Start(ctx)
 
-	// 5. Start HTTP Metrics & Health Endpoint
-	httpServer := startHTTPServer(cfg.Server.MetricsPort, telemetryConsumer, batchWriter)
+	// 6. Start HTTP Metrics & Health Endpoint
+	httpServer := startHTTPServer(cfg.Server.MetricsPort, telemetryConsumer, batchWriter, oeeAggregator)
 
-	// 6. Graceful Shutdown Listener
+	// 7. Graceful Shutdown Listener
 	shutdownSig := make(chan os.Signal, 1)
 	signal.Notify(shutdownSig, syscall.SIGINT, syscall.SIGTERM)
 
@@ -83,6 +92,9 @@ func main() {
 
 	// Stop Consumer first (stop accepting new Kafka messages)
 	telemetryConsumer.Stop()
+
+	// Stop OEE Aggregator
+	oeeAggregator.Stop()
 
 	// Flush and stop Batch Writer
 	batchWriter.Stop()
@@ -102,7 +114,7 @@ func main() {
 // startHTTPServer starts the metrics and health HTTP server on the loopback interface.
 // It detects immediate startup failures (port conflict, permission denied) within a
 // short window and calls log.Fatalf so the process exits cleanly instead of running zombie.
-func startHTTPServer(port string, cons *consumer.TelemetryConsumer, writer *db.BatchWriter) *http.Server {
+func startHTTPServer(port string, cons *consumer.TelemetryConsumer, writer *db.BatchWriter, oeeAgg *processor.OEEAggregator) *http.Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +138,27 @@ func startHTTPServer(port string, cons *consumer.TelemetryConsumer, writer *db.B
 
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(stats)
+	})
+
+	// TODO: Add authentication/authorization (API key or mTLS) before production deployment.
+	// OEE data exposes per-asset production efficiency metrics which may be considered sensitive.
+	mux.HandleFunc("/oee", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		assetID := r.URL.Query().Get("asset_id")
+		if assetID != "" {
+			snap := oeeAgg.GetSnapshotForAsset(assetID)
+			if snap == nil {
+				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write([]byte(`{"error":"no OEE data for asset"}`))
+				return
+			}
+			_ = json.NewEncoder(w).Encode(snap)
+			return
+		}
+
+		snapshots := oeeAgg.GetSnapshots()
+		_ = json.NewEncoder(w).Encode(snapshots)
 	})
 
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
