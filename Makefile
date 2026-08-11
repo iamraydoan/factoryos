@@ -87,7 +87,7 @@ test-coverage:
 ## run-analytics: Build and execute Analytics Engine locally
 run-analytics: build-analytics
 	@echo "[RUN] Starting $(BIN_DIR)/analytics-engine..."
-	@$(BIN_DIR)/analytics-engine
+	@$(GO_ENV) $(BIN_DIR)/analytics-engine
 
 ## run-edge: Build and execute Edge Runtime locally
 run-edge: build-edge

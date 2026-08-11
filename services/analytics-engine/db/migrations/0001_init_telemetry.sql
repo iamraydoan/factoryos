@@ -63,7 +63,8 @@ BEGIN
                 MAX(value) AS max_value,
                 COUNT(*) AS sample_count
             FROM raw_telemetry
-            GROUP BY bucket, physical_asset_id, metric_name;
+            GROUP BY bucket, physical_asset_id, metric_name
+            WITH NO DATA;
 
             PERFORM add_continuous_aggregate_policy('telemetry_hourly_summary',
                 start_offset => INTERVAL '3 hours',
