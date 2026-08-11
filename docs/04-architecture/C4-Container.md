@@ -5,31 +5,31 @@
 ```mermaid
 graph TB
     subgraph Client Layer
-        WebUI[Operator Terminal Frontend - React/NextJS]
+        WebUI["Operator Terminal Frontend - React/NextJS"]
     end
 
     subgraph API Layer
-        Gateway[API & Ingestion Gateway - Traefik]
+        Gateway["API & Ingestion Gateway - Traefik"]
     end
 
     subgraph Core Microservices
-        ProdSvc[Production Service - Java/Spring Boot]
-        WhSvc[Warehouse Service - Java/Spring Boot]
-        MaintSvc[Maintenance Service - Java/Spring Boot]
-        QualSvc[Quality Service - Java/Spring Boot]
-        AnalyticsSvc[Analytics Engine - Go]
+        ProdSvc["Production Service - Java/Spring Boot"]
+        WhSvc["Warehouse Service - Java/Spring Boot"]
+        MaintSvc["Maintenance Service - Java/Spring Boot"]
+        QualSvc["Quality Service - Java/Spring Boot"]
+        AnalyticsSvc["Analytics Engine - Go"]
     end
 
     subgraph Platform Infrastructure
-        EventBus[Apache Kafka Event Bus (Private Subnet)]
-        DB[(PostgreSQL + Outbox)]
-        TSDB[(TimescaleDB Historian)]
-        Cache[(Valkey - Redis Drop-in Replacement)]
-        Observability[OpenTelemetry + Prometheus + Jaeger + Loki]
+        EventBus["Apache Kafka Event Bus (Private Subnet)"]
+        DB[("PostgreSQL + Outbox")]
+        TSDB[("TimescaleDB Historian")]
+        Cache[("Valkey - Redis Drop-in Replacement")]
+        Observability["OpenTelemetry + Prometheus + Jaeger + Loki"]
     end
 
     subgraph Edge Layer
-        EdgeAgent[Factory Edge Agent - Go Edge Runtime]
+        EdgeAgent["Factory Edge Agent - Go Edge Runtime"]
     end
 
     WebUI -->|REST/GraphQL| Gateway

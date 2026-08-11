@@ -6,10 +6,10 @@ FactoryOS sits at Level 3 (MES/MOM) of the ISA-95 pyramid, bridging Level 4 (ERP
 
 ```mermaid
 graph TD
-    User[Shop Floor Operator / Manager] -->|HTTP / WebSockets| Platform[FactoryOS Platform]
-    ERP[Enterprise ERP / SAP] <-->|gRPC / REST| Platform
-    Edge[Edge Collector / OPC-UA] -->|MQTT / Protobuf| Platform
-    Platform -->|Kafka Events| Historian[TimescaleDB Telemetry]
+    User["Shop Floor Operator / Manager"] -->|HTTP / WebSockets| Platform["FactoryOS Platform"]
+    ERP["Enterprise ERP / SAP"] <-->|gRPC / REST| Platform
+    Edge["Edge Collector / OPC-UA"] -->|MQTT / Protobuf| Platform
+    Platform -->|Kafka Events| Historian["TimescaleDB Telemetry"]
 ```
 
 ---
