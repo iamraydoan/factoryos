@@ -13,11 +13,12 @@ graph TB
     end
 
     subgraph Core Microservices
+        IngestionSvc["Telemetry Ingestion Service - Go"]
+        AnalyticsSvc["Analytics Engine - Go"]
         ProdSvc["Production Service - Java/Spring Boot"]
         WhSvc["Warehouse Service - Java/Spring Boot"]
         MaintSvc["Maintenance Service - Java/Spring Boot"]
         QualSvc["Quality Service - Java/Spring Boot"]
-        AnalyticsSvc["Analytics Engine - Go"]
     end
 
     subgraph Platform Infrastructure
@@ -36,8 +37,9 @@ graph TB
     Gateway --> ProdSvc
     Gateway --> WhSvc
     Gateway -->|Query OEE/Stats| AnalyticsSvc
-    EdgeAgent -->|gRPC/HTTP2 over TLS| Gateway
-    Gateway -->|Publish Telemetry Batch| EventBus
+    EdgeAgent -->|gRPC Stream over TLS| Gateway
+    Gateway -->|Forward gRPC| IngestionSvc
+    IngestionSvc -->|Produce Snappy Batch| EventBus
     EventBus -->|Consume Stream| AnalyticsSvc
     AnalyticsSvc -->|Batch CopyFrom| TSDB
     ProdSvc --> DB
@@ -48,7 +50,10 @@ graph TB
 
 ## 2. Container Descriptions
 
-* **Edge Agent:** Installed locally at factory sites. Ingests OPC-UA PLC signals and buffers data offline.
+* **Edge Agent:** Installed locally at factory sites. Ingests OPC-UA PLC signals and buffers data in local SQLite when offline.
+* **API Gateway (Traefik):** Single public entrypoint for TLS termination, JWT verification, and routing REST/gRPC traffic.
+* **Telemetry Ingestion Service:** High-throughput Go gRPC service that authenticates edge nodes, validates Protobuf batches, and produces them into Kafka `telemetry.raw.v1`.
+* **Analytics Engine:** Consumes real-time streams from Kafka, evaluates dynamic thresholds in memory, calculates OEE, and streams micro-batches into TimescaleDB via `pgx.CopyFrom`.
 * **Production Service:** Manages station execution, state machine progression, and operator dispatch.
 * **Warehouse Service:** Tracks material lots and genealogy as-built component assembly.
-* **Kafka Event Bus:** Asynchronous backbone routing domain events across microservices.
+* **Kafka Event Bus:** Asynchronous backbone routing domain events across microservices in private cloud subnets.
