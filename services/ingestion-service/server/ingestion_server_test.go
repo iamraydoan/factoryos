@@ -53,19 +53,20 @@ func TestIngestionServer_IngestBatch_Success(t *testing.T) {
 		},
 	}
 
-	resp, err := srv.IngestBatch(context.Background(), batch)
+	resp, err := srv.IngestBatch(context.Background(), &telemetryv1.IngestBatchRequest{Batch: batch})
 	if err != nil {
 		t.Fatalf("IngestBatch failed: %v", err)
 	}
 
-	if resp.GetStatus() != telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED {
-		t.Errorf("expected status ACCEPTED, got %v", resp.GetStatus())
+	result := resp.GetResult()
+	if result.GetStatus() != telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED {
+		t.Errorf("expected status ACCEPTED, got %v", result.GetStatus())
 	}
-	if resp.GetRecordsIngested() != 2 {
-		t.Errorf("expected 2 records ingested, got %d", resp.GetRecordsIngested())
+	if result.GetRecordsIngested() != 2 {
+		t.Errorf("expected 2 records ingested, got %d", result.GetRecordsIngested())
 	}
-	if resp.GetBatchId() != "batch-001" {
-		t.Errorf("expected batch-001, got %s", resp.GetBatchId())
+	if result.GetBatchId() != "batch-001" {
+		t.Errorf("expected batch-001, got %s", result.GetBatchId())
 	}
 
 	batches, records, errs := srv.Stats()
@@ -78,14 +79,14 @@ func TestIngestionServer_IngestBatch_InvalidRequests(t *testing.T) {
 	mockProd := &MockProducer{}
 	srv := NewIngestionServer(mockProd)
 
-	// 1. Nil batch
+	// 1. Nil request
 	_, err := srv.IngestBatch(context.Background(), nil)
 	if status.Code(err) != codes.InvalidArgument {
-		t.Errorf("expected InvalidArgument for nil batch, got %v", err)
+		t.Errorf("expected InvalidArgument for nil request, got %v", err)
 	}
 
 	// 2. Missing batch_id
-	_, err = srv.IngestBatch(context.Background(), &telemetryv1.RecordBatch{})
+	_, err = srv.IngestBatch(context.Background(), &telemetryv1.IngestBatchRequest{Batch: &telemetryv1.RecordBatch{}})
 	if status.Code(err) != codes.InvalidArgument {
 		t.Errorf("expected InvalidArgument for missing batch_id, got %v", err)
 	}
@@ -100,12 +101,12 @@ func TestIngestionServer_IngestBatch_ProducerError(t *testing.T) {
 		EdgeNodeId: "edge-01",
 	}
 
-	resp, err := srv.IngestBatch(context.Background(), batch)
+	resp, err := srv.IngestBatch(context.Background(), &telemetryv1.IngestBatchRequest{Batch: batch})
 	if err == nil {
 		t.Fatalf("expected error when producer fails, got nil")
 	}
-	if resp.GetStatus() != telemetryv1.IngestionStatus_INGESTION_STATUS_REJECTED {
-		t.Errorf("expected REJECTED status, got %v", resp.GetStatus())
+	if resp.GetResult().GetStatus() != telemetryv1.IngestionStatus_INGESTION_STATUS_REJECTED {
+		t.Errorf("expected REJECTED status, got %v", resp.GetResult().GetStatus())
 	}
 }
 
@@ -114,7 +115,7 @@ type MockStreamServer struct {
 	grpc.ServerStream
 	batches []*telemetryv1.RecordBatch
 	idx     int
-	resp    *telemetryv1.IngestTelemetryResponse
+	resp    *telemetryv1.StreamTelemetryResponse
 	ctx     context.Context
 }
 
@@ -125,16 +126,16 @@ func (m *MockStreamServer) Context() context.Context {
 	return context.Background()
 }
 
-func (m *MockStreamServer) Recv() (*telemetryv1.RecordBatch, error) {
+func (m *MockStreamServer) Recv() (*telemetryv1.StreamTelemetryRequest, error) {
 	if m.idx >= len(m.batches) {
 		return nil, io.EOF
 	}
 	b := m.batches[m.idx]
 	m.idx++
-	return b, nil
+	return &telemetryv1.StreamTelemetryRequest{Batch: b}, nil
 }
 
-func (m *MockStreamServer) SendAndClose(resp *telemetryv1.IngestTelemetryResponse) error {
+func (m *MockStreamServer) SendAndClose(resp *telemetryv1.StreamTelemetryResponse) error {
 	m.resp = resp
 	return nil
 }
@@ -167,8 +168,8 @@ func TestIngestionServer_StreamTelemetry(t *testing.T) {
 	if stream.resp == nil {
 		t.Fatalf("expected stream response, got nil")
 	}
-	if stream.resp.GetRecordsIngested() != 2 {
-		t.Errorf("expected 2 records, got %d", stream.resp.GetRecordsIngested())
+	if stream.resp.GetResult().GetRecordsIngested() != 2 {
+		t.Errorf("expected 2 records, got %d", stream.resp.GetResult().GetRecordsIngested())
 	}
 	if len(mockProd.batches) != 2 {
 		t.Errorf("expected 2 batches written to producer, got %d", len(mockProd.batches))

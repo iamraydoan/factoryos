@@ -19,8 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	TelemetryIngestionService_IngestBatch_FullMethodName     = "/factoryos.telemetry.v1.TelemetryIngestionService/IngestBatch"
-	TelemetryIngestionService_StreamTelemetry_FullMethodName = "/factoryos.telemetry.v1.TelemetryIngestionService/StreamTelemetry"
+	TelemetryIngestionService_IngestBatch_FullMethodName     = "/telemetry.v1.TelemetryIngestionService/IngestBatch"
+	TelemetryIngestionService_StreamTelemetry_FullMethodName = "/telemetry.v1.TelemetryIngestionService/StreamTelemetry"
 )
 
 // TelemetryIngestionServiceClient is the client API for TelemetryIngestionService service.
@@ -28,7 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TelemetryIngestionServiceClient interface {
 	// IngestBatch receives a single RecordBatch from an Edge Node
-	IngestBatch(ctx context.Context, in *RecordBatch, opts ...grpc.CallOption) (*IngestTelemetryResponse, error)
+	IngestBatch(ctx context.Context, in *IngestBatchRequest, opts ...grpc.CallOption) (*IngestBatchResponse, error)
 	// StreamTelemetry establishes a persistent client-side stream for continuous real-time telemetry forwarding
 	StreamTelemetry(ctx context.Context, opts ...grpc.CallOption) (TelemetryIngestionService_StreamTelemetryClient, error)
 }
@@ -41,8 +41,8 @@ func NewTelemetryIngestionServiceClient(cc grpc.ClientConnInterface) TelemetryIn
 	return &telemetryIngestionServiceClient{cc}
 }
 
-func (c *telemetryIngestionServiceClient) IngestBatch(ctx context.Context, in *RecordBatch, opts ...grpc.CallOption) (*IngestTelemetryResponse, error) {
-	out := new(IngestTelemetryResponse)
+func (c *telemetryIngestionServiceClient) IngestBatch(ctx context.Context, in *IngestBatchRequest, opts ...grpc.CallOption) (*IngestBatchResponse, error) {
+	out := new(IngestBatchResponse)
 	err := c.cc.Invoke(ctx, TelemetryIngestionService_IngestBatch_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -60,8 +60,8 @@ func (c *telemetryIngestionServiceClient) StreamTelemetry(ctx context.Context, o
 }
 
 type TelemetryIngestionService_StreamTelemetryClient interface {
-	Send(*RecordBatch) error
-	CloseAndRecv() (*IngestTelemetryResponse, error)
+	Send(*StreamTelemetryRequest) error
+	CloseAndRecv() (*StreamTelemetryResponse, error)
 	grpc.ClientStream
 }
 
@@ -69,15 +69,15 @@ type telemetryIngestionServiceStreamTelemetryClient struct {
 	grpc.ClientStream
 }
 
-func (x *telemetryIngestionServiceStreamTelemetryClient) Send(m *RecordBatch) error {
+func (x *telemetryIngestionServiceStreamTelemetryClient) Send(m *StreamTelemetryRequest) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *telemetryIngestionServiceStreamTelemetryClient) CloseAndRecv() (*IngestTelemetryResponse, error) {
+func (x *telemetryIngestionServiceStreamTelemetryClient) CloseAndRecv() (*StreamTelemetryResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(IngestTelemetryResponse)
+	m := new(StreamTelemetryResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (x *telemetryIngestionServiceStreamTelemetryClient) CloseAndRecv() (*Ingest
 // for forward compatibility
 type TelemetryIngestionServiceServer interface {
 	// IngestBatch receives a single RecordBatch from an Edge Node
-	IngestBatch(context.Context, *RecordBatch) (*IngestTelemetryResponse, error)
+	IngestBatch(context.Context, *IngestBatchRequest) (*IngestBatchResponse, error)
 	// StreamTelemetry establishes a persistent client-side stream for continuous real-time telemetry forwarding
 	StreamTelemetry(TelemetryIngestionService_StreamTelemetryServer) error
 	mustEmbedUnimplementedTelemetryIngestionServiceServer()
@@ -99,7 +99,7 @@ type TelemetryIngestionServiceServer interface {
 type UnimplementedTelemetryIngestionServiceServer struct {
 }
 
-func (UnimplementedTelemetryIngestionServiceServer) IngestBatch(context.Context, *RecordBatch) (*IngestTelemetryResponse, error) {
+func (UnimplementedTelemetryIngestionServiceServer) IngestBatch(context.Context, *IngestBatchRequest) (*IngestBatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IngestBatch not implemented")
 }
 func (UnimplementedTelemetryIngestionServiceServer) StreamTelemetry(TelemetryIngestionService_StreamTelemetryServer) error {
@@ -120,7 +120,7 @@ func RegisterTelemetryIngestionServiceServer(s grpc.ServiceRegistrar, srv Teleme
 }
 
 func _TelemetryIngestionService_IngestBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RecordBatch)
+	in := new(IngestBatchRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func _TelemetryIngestionService_IngestBatch_Handler(srv interface{}, ctx context
 		FullMethod: TelemetryIngestionService_IngestBatch_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TelemetryIngestionServiceServer).IngestBatch(ctx, req.(*RecordBatch))
+		return srv.(TelemetryIngestionServiceServer).IngestBatch(ctx, req.(*IngestBatchRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -142,8 +142,8 @@ func _TelemetryIngestionService_StreamTelemetry_Handler(srv interface{}, stream 
 }
 
 type TelemetryIngestionService_StreamTelemetryServer interface {
-	SendAndClose(*IngestTelemetryResponse) error
-	Recv() (*RecordBatch, error)
+	SendAndClose(*StreamTelemetryResponse) error
+	Recv() (*StreamTelemetryRequest, error)
 	grpc.ServerStream
 }
 
@@ -151,12 +151,12 @@ type telemetryIngestionServiceStreamTelemetryServer struct {
 	grpc.ServerStream
 }
 
-func (x *telemetryIngestionServiceStreamTelemetryServer) SendAndClose(m *IngestTelemetryResponse) error {
+func (x *telemetryIngestionServiceStreamTelemetryServer) SendAndClose(m *StreamTelemetryResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func (x *telemetryIngestionServiceStreamTelemetryServer) Recv() (*RecordBatch, error) {
-	m := new(RecordBatch)
+func (x *telemetryIngestionServiceStreamTelemetryServer) Recv() (*StreamTelemetryRequest, error) {
+	m := new(StreamTelemetryRequest)
 	if err := x.ServerStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (x *telemetryIngestionServiceStreamTelemetryServer) Recv() (*RecordBatch, e
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var TelemetryIngestionService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "factoryos.telemetry.v1.TelemetryIngestionService",
+	ServiceName: "telemetry.v1.TelemetryIngestionService",
 	HandlerType: (*TelemetryIngestionServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

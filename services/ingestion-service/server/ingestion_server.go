@@ -34,45 +34,51 @@ func NewIngestionServer(producer kafka.TelemetryProducer) *IngestionServer {
 	}
 }
 
-// IngestBatch handles single RecordBatch unary RPC calls from Edge Nodes.
-func (s *IngestionServer) IngestBatch(ctx context.Context, req *telemetryv1.RecordBatch) (*telemetryv1.IngestTelemetryResponse, error) {
-	if req == nil {
+// IngestBatch handles single IngestBatchRequest unary RPC calls from Edge Nodes.
+func (s *IngestionServer) IngestBatch(ctx context.Context, req *telemetryv1.IngestBatchRequest) (*telemetryv1.IngestBatchResponse, error) {
+	if req == nil || req.GetBatch() == nil {
 		atomic.AddInt64(&s.errorsCount, 1)
-		return nil, status.Error(codes.InvalidArgument, "RecordBatch cannot be nil")
+		return nil, status.Error(codes.InvalidArgument, "IngestBatchRequest or batch cannot be nil")
 	}
 
-	if req.GetBatchId() == "" {
+	batch := req.GetBatch()
+
+	if batch.GetBatchId() == "" {
 		atomic.AddInt64(&s.errorsCount, 1)
 		return nil, status.Error(codes.InvalidArgument, "batch_id is required")
 	}
 
-	payloads := req.GetPayloads()
+	payloads := batch.GetPayloads()
 	var totalReadings int64
 	for _, p := range payloads {
 		totalReadings += int64(len(p.GetReadings()))
 	}
 
-	if err := s.producer.WriteBatch(ctx, req); err != nil {
+	if err := s.producer.WriteBatch(ctx, batch); err != nil {
 		atomic.AddInt64(&s.errorsCount, 1)
-		log.Printf("[IngestionServer][ERROR] Failed to produce batch %s to Kafka: %v", req.GetBatchId(), err)
-		return &telemetryv1.IngestTelemetryResponse{
-			Status:          telemetryv1.IngestionStatus_INGESTION_STATUS_REJECTED,
-			BatchId:         req.GetBatchId(),
-			RecordsIngested: 0,
-			Message:         fmt.Sprintf("internal error producing to event bus: %v", err),
-			AcknowledgedAt:  timestamppb.Now(),
+		log.Printf("[IngestionServer][ERROR] Failed to produce batch %s to Kafka: %v", batch.GetBatchId(), err)
+		return &telemetryv1.IngestBatchResponse{
+			Result: &telemetryv1.IngestTelemetryResponse{
+				Status:          telemetryv1.IngestionStatus_INGESTION_STATUS_REJECTED,
+				BatchId:         batch.GetBatchId(),
+				RecordsIngested: 0,
+				Message:         fmt.Sprintf("internal error producing to event bus: %v", err),
+				AcknowledgedAt:  timestamppb.Now(),
+			},
 		}, status.Errorf(codes.Internal, "failed to persist batch: %v", err)
 	}
 
 	atomic.AddInt64(&s.batchesReceived, 1)
 	atomic.AddInt64(&s.recordsReceived, totalReadings)
 
-	return &telemetryv1.IngestTelemetryResponse{
-		Status:          telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED,
-		BatchId:         req.GetBatchId(),
-		RecordsIngested: totalReadings,
-		Message:         "Batch accepted and enqueued to Kafka event stream",
-		AcknowledgedAt:  timestamppb.Now(),
+	return &telemetryv1.IngestBatchResponse{
+		Result: &telemetryv1.IngestTelemetryResponse{
+			Status:          telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED,
+			BatchId:         batch.GetBatchId(),
+			RecordsIngested: totalReadings,
+			Message:         "Batch accepted and enqueued to Kafka event stream",
+			AcknowledgedAt:  timestamppb.Now(),
+		},
 	}, nil
 }
 
@@ -82,15 +88,17 @@ func (s *IngestionServer) StreamTelemetry(stream telemetryv1.TelemetryIngestionS
 	var lastBatchID string
 
 	for {
-		batch, err := stream.Recv()
+		req, err := stream.Recv()
 		if err == io.EOF {
 			// Stream completed by client, send summary response
-			return stream.SendAndClose(&telemetryv1.IngestTelemetryResponse{
-				Status:          telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED,
-				BatchId:         lastBatchID,
-				RecordsIngested: totalStreamReadings,
-				Message:         "Telemetry stream ingested successfully",
-				AcknowledgedAt:  timestamppb.Now(),
+			return stream.SendAndClose(&telemetryv1.StreamTelemetryResponse{
+				Result: &telemetryv1.IngestTelemetryResponse{
+					Status:          telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED,
+					BatchId:         lastBatchID,
+					RecordsIngested: totalStreamReadings,
+					Message:         "Telemetry stream ingested successfully",
+					AcknowledgedAt:  timestamppb.Now(),
+				},
 			})
 		}
 		if err != nil {
@@ -98,10 +106,11 @@ func (s *IngestionServer) StreamTelemetry(stream telemetryv1.TelemetryIngestionS
 			return status.Errorf(codes.Unknown, "error reading telemetry stream: %v", err)
 		}
 
-		if batch == nil {
+		if req == nil || req.GetBatch() == nil {
 			continue
 		}
 
+		batch := req.GetBatch()
 		lastBatchID = batch.GetBatchId()
 		var batchReadings int64
 		for _, p := range batch.GetPayloads() {

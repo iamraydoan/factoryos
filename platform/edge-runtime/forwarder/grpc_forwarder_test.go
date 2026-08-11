@@ -18,19 +18,22 @@ type MockIngestionClient struct {
 	status    telemetryv1.IngestionStatus
 }
 
-func (m *MockIngestionClient) IngestBatch(ctx context.Context, in *telemetryv1.RecordBatch, opts ...grpc.CallOption) (*telemetryv1.IngestTelemetryResponse, error) {
+func (m *MockIngestionClient) IngestBatch(ctx context.Context, in *telemetryv1.IngestBatchRequest, opts ...grpc.CallOption) (*telemetryv1.IngestBatchResponse, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
-	m.lastBatch = in
+	batch := in.GetBatch()
+	m.lastBatch = batch
 	st := m.status
 	if st == telemetryv1.IngestionStatus_INGESTION_STATUS_UNSPECIFIED {
 		st = telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED
 	}
-	return &telemetryv1.IngestTelemetryResponse{
-		Status:          st,
-		BatchId:         in.GetBatchId(),
-		RecordsIngested: int64(len(in.GetPayloads())),
+	return &telemetryv1.IngestBatchResponse{
+		Result: &telemetryv1.IngestTelemetryResponse{
+			Status:          st,
+			BatchId:         batch.GetBatchId(),
+			RecordsIngested: int64(len(batch.GetPayloads())),
+		},
 	}, nil
 }
 

@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	EquipmentService_CreateWorkUnit_FullMethodName       = "/factoryos.resource.v1.EquipmentService/CreateWorkUnit"
-	EquipmentService_GetWorkUnit_FullMethodName          = "/factoryos.resource.v1.EquipmentService/GetWorkUnit"
-	EquipmentService_ListWorkUnits_FullMethodName        = "/factoryos.resource.v1.EquipmentService/ListWorkUnits"
-	EquipmentService_UpdateWorkUnitStatus_FullMethodName = "/factoryos.resource.v1.EquipmentService/UpdateWorkUnitStatus"
+	EquipmentService_CreateWorkUnit_FullMethodName       = "/resource.v1.EquipmentService/CreateWorkUnit"
+	EquipmentService_GetWorkUnit_FullMethodName          = "/resource.v1.EquipmentService/GetWorkUnit"
+	EquipmentService_ListWorkUnits_FullMethodName        = "/resource.v1.EquipmentService/ListWorkUnits"
+	EquipmentService_UpdateWorkUnitStatus_FullMethodName = "/resource.v1.EquipmentService/UpdateWorkUnitStatus"
 )
 
 // EquipmentServiceClient is the client API for EquipmentService service.
@@ -197,7 +197,7 @@ func _EquipmentService_UpdateWorkUnitStatus_Handler(srv interface{}, ctx context
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var EquipmentService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "factoryos.resource.v1.EquipmentService",
+	ServiceName: "resource.v1.EquipmentService",
 	HandlerType: (*EquipmentServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

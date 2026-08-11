@@ -97,13 +97,14 @@ func (f *GRPCForwarder) PublishBatch(ctx context.Context, payloads []*telemetryv
 	rpcCtx, cancel := context.WithTimeout(ctx, f.cfg.Timeout)
 	defer cancel()
 
-	resp, err := f.client.IngestBatch(rpcCtx, recordBatch)
+	resp, err := f.client.IngestBatch(rpcCtx, &telemetryv1.IngestBatchRequest{Batch: recordBatch})
 	if err != nil {
 		return fmt.Errorf("gRPC IngestBatch RPC failed to %s: %w", f.cfg.TargetAddress, err)
 	}
 
-	if resp.GetStatus() == telemetryv1.IngestionStatus_INGESTION_STATUS_REJECTED {
-		return fmt.Errorf("cloud rejected telemetry batch %s: %s", batchID, resp.GetMessage())
+	result := resp.GetResult()
+	if result.GetStatus() == telemetryv1.IngestionStatus_INGESTION_STATUS_REJECTED {
+		return fmt.Errorf("cloud rejected telemetry batch %s: %s", batchID, result.GetMessage())
 	}
 
 	return nil

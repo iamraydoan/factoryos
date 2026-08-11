@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package factoryos.telemetry.v1;
+package telemetry.v1;
 
 import "google/protobuf/timestamp.proto";
 
@@ -71,11 +71,31 @@ message IngestTelemetryResponse {
   google.protobuf.Timestamp acknowledged_at = 5;
 }
 
+// Request message for the IngestBatch RPC
+message IngestBatchRequest {
+  RecordBatch batch = 1;
+}
+
+// Response message for the IngestBatch RPC
+message IngestBatchResponse {
+  IngestTelemetryResponse result = 1;
+}
+
+// Request message for the StreamTelemetry RPC (client-side stream)
+message StreamTelemetryRequest {
+  RecordBatch batch = 1;
+}
+
+// Response message for the StreamTelemetry RPC
+message StreamTelemetryResponse {
+  IngestTelemetryResponse result = 1;
+}
+
 // TelemetryIngestionService provides high-throughput ingestion of edge telemetry data over gRPC (HTTP/2)
 service TelemetryIngestionService {
   // IngestBatch receives a single RecordBatch from an Edge Node
-  rpc IngestBatch(RecordBatch) returns (IngestTelemetryResponse);
+  rpc IngestBatch(IngestBatchRequest) returns (IngestBatchResponse);
 
   // StreamTelemetry establishes a persistent client-side stream for continuous real-time telemetry forwarding
-  rpc StreamTelemetry(stream RecordBatch) returns (IngestTelemetryResponse);
+  rpc StreamTelemetry(stream StreamTelemetryRequest) returns (StreamTelemetryResponse);
 }

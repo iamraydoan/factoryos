@@ -96,18 +96,19 @@ func TestE2E_TelemetryPipeline(t *testing.T) {
 		},
 	}
 
-	resp, err := client.IngestBatch(ctx, batch)
+	resp, err := client.IngestBatch(ctx, &telemetryv1.IngestBatchRequest{Batch: batch})
 	if err != nil {
 		t.Fatalf("E2E IngestBatch failed: %v", err)
 	}
 
-	if resp.GetStatus() != telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED {
-		t.Fatalf("expected status ACCEPTED, got %v (msg: %s)", resp.GetStatus(), resp.GetMessage())
+	result := resp.GetResult()
+	if result.GetStatus() != telemetryv1.IngestionStatus_INGESTION_STATUS_ACCEPTED {
+		t.Fatalf("expected status ACCEPTED, got %v (msg: %s)", result.GetStatus(), result.GetMessage())
 	}
 
-	if resp.GetRecordsIngested() != 5 {
-		t.Fatalf("expected 5 records ingested, got %d", resp.GetRecordsIngested())
+	if result.GetRecordsIngested() != 5 {
+		t.Fatalf("expected 5 records ingested, got %d", result.GetRecordsIngested())
 	}
 
-	t.Logf("E2E Batch %s successfully accepted by Ingestion Service (%d records)", resp.GetBatchId(), resp.GetRecordsIngested())
+	t.Logf("E2E Batch %s successfully accepted by Ingestion Service (%d records)", result.GetBatchId(), result.GetRecordsIngested())
 }
