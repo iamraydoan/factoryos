@@ -1,7 +1,7 @@
 # EPIC-002: Resource Management & Real-Time Telemetry
 
 * **Milestone:** Milestone 1
-* **Status:** Planned
+* **Status:** In Progress
 * **Domain:** `docs/03-domain/01-resource-management/`
 * **RFC:** `RFC-0001`
 
