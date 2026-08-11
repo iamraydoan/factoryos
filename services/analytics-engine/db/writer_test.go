@@ -178,31 +178,33 @@ func TestBatchWriter_FlushNilInserter(t *testing.T) {
 
 func TestBatchWriter_ChannelBufferFull(t *testing.T) {
 	mock := &mockInserter{}
-	cfg := config.IngestionConfig{BatchSize: 2, FlushInterval: 50 * time.Millisecond, ChannelCapacityMultiplier: 4}
+	cfg := config.IngestionConfig{BatchSize: 1, FlushInterval: 50 * time.Millisecond, ChannelCapacityMultiplier: 1}
 	writer := NewBatchWriter(mock, cfg, "raw_telemetry")
+
+	// Channel capacity is 1*1 = 1. Without worker consuming, 1st succeeds, 2nd drops.
+	err1 := writer.Enqueue(TelemetryRecord{Time: time.Now(), PhysicalAssetID: "asset-1", MetricName: "metric", Value: 1.0})
+	if err1 != nil {
+		t.Fatalf("expected first enqueue to succeed, got: %v", err1)
+	}
+
+	err2 := writer.Enqueue(TelemetryRecord{Time: time.Now(), PhysicalAssetID: "asset-2", MetricName: "metric", Value: 2.0})
+	if err2 != ErrBufferFull {
+		t.Fatalf("expected ErrBufferFull on saturated channel, got: %v", err2)
+	}
+
+	if writer.DroppedCount() != 1 {
+		t.Fatalf("expected DroppedCount == 1 during buffer saturation, got: %d", writer.DroppedCount())
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	writer.Start(ctx)
-
-	// Enqueue records while worker is running
-	for i := 0; i < 10; i++ {
-		writer.Enqueue(TelemetryRecord{Time: time.Now(), PhysicalAssetID: "asset-overflow", MetricName: "metric", Value: float64(i)})
-	}
-
-	// Wait until at least 5 records have been inserted (some may be dropped due to full channel).
-	waitForCondition(t, 2*time.Second, func() bool {
-		inserted, _ := writer.Stats()
-		return inserted >= 5
-	})
 	writer.Stop()
 
 	inserted, _ := writer.Stats()
-	if inserted < 5 {
-		t.Fatalf("expected at least 5 inserted records, got: %d", inserted)
-	}
-	if writer.DroppedCount() == 0 {
-		t.Fatalf("expected DroppedCount > 0 during buffer saturation, got: %d", writer.DroppedCount())
+	if inserted != 1 {
+		t.Fatalf("expected 1 inserted record, got: %d", inserted)
 	}
 }
+

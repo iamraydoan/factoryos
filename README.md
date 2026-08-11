@@ -30,6 +30,29 @@ For full product strategy, technical architecture, governance standards, and lon
 
 ---
 
+## ⚡ Quickstart & Local Development
+
+1. **Spin up local infrastructure (Docker):**
+   ```bash
+   docker compose up -d
+   # or optionally: make infra-up
+   ```
+
+2. **Run tests across modules:**
+   ```bash
+   cd services/analytics-engine && go test ./...
+   # or optionally: make test
+   ```
+
+3. **Check available shortcut commands (Optional):**
+   ```bash
+   make help
+   ```
+
+> For comprehensive setup, manual host installation, and service directories, see the [Local Environment Setup Guide](docs/10-developer-guide/Local-Environment-Setup.md).
+
+---
+
 ## 📂 Monorepo Structure
 
 ```

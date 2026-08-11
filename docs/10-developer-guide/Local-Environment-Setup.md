@@ -29,6 +29,7 @@ If you prefer coding directly on your Mac/Linux/Windows machine without Dev Cont
 * **JDK 21** (Amazon Corretto, Temurin, or Zulu)
 * **Go 1.22+**
 * **Node.js 20+**
+* **Make** (Optional - for shortcut targets)
 * **Protobuf Compiler (`protoc`)** & Go plugins:
   ```bash
   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -125,7 +126,26 @@ To test end-to-end telemetry ingestion locally:
 
 ---
 
-## 6. CI/CD & Automated Release Pipelines
+## 6. Makefile Shortcuts (Optional)
+
+For developers who prefer using `make`, a top-level `Makefile` is provided with convenient shortcuts. Running commands directly via `go` or `docker compose` is always supported.
+
+| Task | Make Shortcut | Direct Command Equivalent |
+|---|---|---|
+| **View help** | `make help` | — |
+| **Build all binaries** | `make build` | `go build ./...` |
+| **Build specific service** | `make build-analytics`<br>`make build-edge`<br>`make build-simulator` | `go build -o bin/<service> ./...` |
+| **Run all Go tests** | `make test` | `go test ./...` |
+| **Test Analytics Engine** | `make test-analytics` | `cd services/analytics-engine && go test -race -cover -v ./...` |
+| **Coverage Report** | `make test-coverage` | `go test -coverprofile=... && go tool cover -func=...` |
+| **Run Service Locally** | `make run-analytics`<br>`make run-edge`<br>`make run-simulator` | `go run main.go` |
+| **Protobuf Lint / Gen** | `make proto-lint`<br>`make proto-gen` | `cd api/contracts && buf lint`<br>`cd api/contracts && buf generate` |
+| **Docker Infra** | `make infra-up`<br>`make infra-down`<br>`make infra-logs` | `docker compose up -d`<br>`docker compose down`<br>`docker compose logs -f` |
+| **Cleanup** | `make clean` | `rm -rf bin/ *.out` |
+
+---
+
+## 7. CI/CD & Automated Release Pipelines
 
 The repository uses GitHub Actions workflows for continuous integration and automated binary releases:
 
@@ -140,7 +160,7 @@ The repository uses GitHub Actions workflows for continuous integration and auto
 
 ---
 
-## 7. Adding New Services (For Maintainers)
+## 8. Adding New Services (For Maintainers)
 
 When adding a new backing service (e.g., Temporal, OpenTelemetry) to `docker-compose.yml`:
 1. Ensure you use a **specific image version tag** (avoid `latest`).

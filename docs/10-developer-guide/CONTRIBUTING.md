@@ -25,8 +25,9 @@ Welcome to the FactoryOS engineering repository. This document outlines developm
 
 ## 3. Pull Request & RFC Requirements
 
-* All PRs must pass automated linting (`buf lint`, `buf breaking`, and `buf generate && git diff --exit-code`).
-* When modifying `.proto` files under `api/contracts/`, developers MUST run `buf generate` locally and commit the updated generated SDK code in `platform/platform-sdk/`.
+* All PRs must pass automated linting (`buf lint`, `buf breaking`, and `buf generate && git diff --exit-code`, or `make proto-lint`).
+* When modifying `.proto` files under `api/contracts/`, developers MUST run `buf generate` (or `make proto-gen`) locally and commit the updated generated SDK code in `platform/platform-sdk/`.
+* All unit tests must pass locally with code coverage >= 80% (`go test` in respective module, or `make test-all` / `make test-coverage`).
 * Major features require an approved RFC under `docs/06-rfc/` using `0000-rfc-template.md`.
 * Architectural decisions must include an ADR under `docs/05-adr/` using `0000-adr-template.md`.
 * Public API changes must demonstrate backward compatibility verification.
