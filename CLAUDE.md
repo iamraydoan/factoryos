@@ -48,9 +48,18 @@ make proto-lint        # Runs buf lint in api/contracts/
 # Generate Go stubs and SDK contracts from Protobuf
 make proto-gen         # Runs buf generate in api/contracts/
 
-# Generate Go models, client, and chi-server from OpenAPI 3.0/3.1 specs
-make openapi-gen       # Runs oapi-codegen on api/contracts/openapi/
+# [Step 1] Bundle all multi-file OpenAPI domain specs into dist/ (via Redocly)
+make openapi-bundle    # Auto-scans api/contracts/openapi/**/openapi.yaml
+                       # Output: api/contracts/openapi/<domain>/v1/dist/openapi.bundled.yaml
+
+# [Step 2] Generate Go SDK for every domain from their bundled spec
+make openapi-gen       # Runs openapi-bundle first, then oapi-codegen for each domain
+                       # Output: platform/platform-sdk/go/gen/openapi/<domain>/v1/<domain>.gen.go
+                       # Package names: telemetryv1, resourcev1, productionv1, etc.
 ```
+
+> **Note:** `dist/` and `platform-sdk/go/gen/` are both gitignored — they are
+> build artifacts regenerated automatically by `make openapi-gen` in every CI run.
 
 ### Local Infrastructure (Docker Compose)
 ```bash
