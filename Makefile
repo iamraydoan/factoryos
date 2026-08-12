@@ -6,9 +6,9 @@ SHELL := /bin/bash
 BIN_DIR := bin
 GO_ENV := DATABASE_URL="postgres://factoryos:factoryos_password@localhost:5432/factoryos?sslmode=disable"
 
-.PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator \
-        test test-all test-analytics test-ingestion test-edge test-sdk test-coverage \
-        run-analytics run-ingestion run-edge run-simulator \
+.PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator build-resource \
+        test test-all test-analytics test-ingestion test-edge test-sdk test-resource test-coverage \
+        run-analytics run-ingestion run-edge run-simulator run-resource \
         proto-lint proto-gen openapi-bundle openapi-gen \
         infra-up infra-down infra-ps infra-logs clean
 
@@ -27,7 +27,7 @@ help:
 build: build-all
 
 ## build-all: Build all services, edge runtime, and simulators
-build-all: build-analytics build-ingestion build-edge build-simulator
+build-all: build-analytics build-ingestion build-edge build-simulator build-resource
 
 ## build-analytics: Build binary for Analytics Engine into $(BIN_DIR)/analytics-engine
 build-analytics:
@@ -57,6 +57,13 @@ build-simulator:
 	@go build -o $(BIN_DIR)/mock-plc-simulator ./examples/mock-plc-simulator
 	@echo "[BUILD] Success -> $(BIN_DIR)/mock-plc-simulator"
 
+## build-resource: Build binary for Resource Service into $(BIN_DIR)/resource-service
+build-resource:
+	@mkdir -p $(BIN_DIR)
+	@echo "[BUILD] Compiling services/resource-service..."
+	@go build -o $(BIN_DIR)/resource-service ./services/resource-service
+	@echo "[BUILD] Success -> $(BIN_DIR)/resource-service"
+
 # ==============================================================================
 # Test Targets
 # ==============================================================================
@@ -64,8 +71,8 @@ build-simulator:
 ## test: Run unit tests across all Go modules
 test: test-all
 
-## test-all: Run all unit tests for Analytics Engine, Ingestion Service, Edge Runtime, and Platform SDK
-test-all: test-edge test-sdk test-ingestion test-analytics
+## test-all: Run all unit tests for Analytics Engine, Ingestion Service, Edge Runtime, Platform SDK, and Resource Service
+test-all: test-edge test-sdk test-ingestion test-analytics test-resource
 
 ## test-analytics: Run unit tests for Analytics Engine (with coverage & race detector)
 test-analytics:
@@ -86,6 +93,11 @@ test-edge:
 test-sdk:
 	@echo "[TEST] Running tests for platform-sdk..."
 	@cd platform/platform-sdk && go test -v ./...
+
+## test-resource: Run unit tests for Resource Service (with coverage & race detector)
+test-resource:
+	@echo "[TEST] Running tests for resource-service..."
+	@cd services/resource-service && go test -race -cover -v -timeout 60s ./...
 
 ## test-coverage: Run tests and generate statement coverage report for analytics-engine
 test-coverage:
@@ -115,6 +127,11 @@ run-edge: build-edge
 run-simulator:
 	@echo "[RUN] Starting Mock PLC Simulator..."
 	@cd examples/mock-plc-simulator && go run main.go
+
+## run-resource: Build and execute Resource Service locally
+run-resource: build-resource
+	@echo "[RUN] Starting $(BIN_DIR)/resource-service..."
+	@$(BIN_DIR)/resource-service
 
 # ==============================================================================
 # Protobuf / Schema Targets
@@ -187,5 +204,5 @@ infra-logs:
 ## clean: Remove build artifacts and temporary binaries
 clean:
 	@echo "[CLEAN] Removing $(BIN_DIR) and test artifacts..."
-	@rm -rf $(BIN_DIR) *.test *.out services/analytics-engine/*.out platform/edge-runtime/*.out coverage.html
+	@rm -rf $(BIN_DIR) *.test *.out services/analytics-engine/*.out platform/edge-runtime/*.out services/resource-service/*.out coverage.html
 	@echo "[CLEAN] Done."

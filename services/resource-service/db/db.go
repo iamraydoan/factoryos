@@ -81,6 +81,11 @@ func (d *DB) RunMigrations(ctx context.Context) error {
 	return nil
 }
 
+// Pool returns the underlying connection pool for use by repositories.
+func (d *DB) Pool() *pgxpool.Pool {
+	return d.pool
+}
+
 // Close gracefully closes the connection pool.
 func (d *DB) Close() {
 	if d.pool != nil {

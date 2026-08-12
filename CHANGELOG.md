@@ -10,6 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Resource Service — ISA-95 Equipment Hierarchy CRUD (`services/resource-service`):**
+  - PostgreSQL schema with ISA-95 hierarchy: `sites` → `areas` → `work_centers` → `work_units` (`0001_init_equipment.sql`).
+  - Goose auto-migrations with embedded SQL files (`//go:embed`).
+  - `EquipmentRepository` interface with full CRUD operations (`CreateWorkUnit`, `GetWorkUnit`, `ListWorkUnits`, `UpdateWorkUnitStatus`).
+  - gRPC server implementing `EquipmentService` with input validation, status state machine, and proper error codes.
+  - Type-safe configuration via `caarlos0/env/v11` with validation and `.env` support.
+  - Graceful shutdown on SIGINT/SIGTERM with `/healthz` HTTP sidecar.
+  - Makefile integration: `make build-resource`, `make test-resource`, `make run-resource`.
+
 - **Telemetry Ingestion & Analytics Engine Service (`services/analytics-engine`):**
   - High-throughput TimescaleDB `BatchWriter` utilizing `pgx/v5` binary `CopyFrom` streaming protocol.
   - TimescaleDB automated 30-day raw data retention policy and 1-year continuous aggregates (`0001_init_telemetry.sql`).

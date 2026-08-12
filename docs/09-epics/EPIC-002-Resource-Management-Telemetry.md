@@ -10,9 +10,9 @@
 ## Task Checklist
 
 ### Equipment Hierarchy (ISA-95 Resource Model)
-- [ ] Implement CRUD API for Site, Area, Work Center, Work Unit entities.
+- [x] Implement CRUD API for Site, Area, Work Center, Work Unit entities.
 - [ ] Implement Equipment Class definition and Work Unit capability assignment.
-- [ ] Implement Work Unit status state machine: Available → Allocated → In Production → Faulted.
+- [x] Implement Work Unit status state machine: Available → Allocated → In Production → Faulted.
 - [ ] Link Work Unit to Physical Asset (installation record).
 
 ### Personnel & Qualification

@@ -1,4 +1,4 @@
-go 1.26
+go 1.26.5
 
 use (
 	./examples/mock-plc-simulator
@@ -6,4 +6,5 @@ use (
 	./platform/platform-sdk
 	./services/analytics-engine
 	./services/ingestion-service
+	./services/resource-service
 )
