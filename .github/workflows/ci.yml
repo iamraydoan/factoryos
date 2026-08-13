@@ -24,25 +24,52 @@ jobs:
       - name: Verify Go Workspace Build
         run: |
           go build -o /dev/null ./platform/edge-runtime/...
+          go build -o /dev/null ./platform/platform-sdk/...
+          go build -o /dev/null ./services/analytics-engine/...
+          go build -o /dev/null ./services/ingestion-service/...
+          go build -o /dev/null ./services/resource-service/...
           go build -o /dev/null ./examples/mock-plc-simulator/...
 
       - name: Run Unit Tests & Generate Coverage Report
         run: |
-          cd platform/edge-runtime
-          go test -v -coverprofile=coverage.out ./...
-          go tool cover -func=coverage.out
+          MODULES=("platform/edge-runtime" "services/analytics-engine" "services/ingestion-service" "services/resource-service")
+          for module in "${MODULES[@]}"; do
+            echo "========================================="
+            echo "[TEST] Running tests for $module..."
+            echo "========================================="
+            cd "$module"
+            go test -race -coverprofile=coverage.out ./...
+            go tool cover -func=coverage.out
+            cd "$GITHUB_WORKSPACE"
+          done
 
       - name: Enforce Code Coverage Threshold (> 80%)
         run: |
-          cd platform/edge-runtime
-          COVERAGE=$(go tool cover -func=coverage.out | grep total: | awk '{print $3}' | sed 's/%//')
-          echo "Current Total Code Coverage: ${COVERAGE}%"
+          MODULES=("platform/edge-runtime" "services/analytics-engine" "services/ingestion-service" "services/resource-service")
+          FAILED=false
           MIN_COVERAGE=80.0
-          
-          IS_BELOW=$(awk -v cov="$COVERAGE" -v min="$MIN_COVERAGE" 'BEGIN {print (cov < min)}')
-          if [ "$IS_BELOW" -eq 1 ]; then
-            echo "❌ Error: Code coverage (${COVERAGE}%) is below required threshold of ${MIN_COVERAGE}%!"
+
+          for module in "${MODULES[@]}"; do
+            cd "$module"
+            COVERAGE=$(go tool cover -func=coverage.out | grep total: | awk '{print $3}' | sed 's/%//')
+            echo "-----------------------------------------"
+            echo "$module: ${COVERAGE}%"
+
+            IS_BELOW=$(awk -v cov="$COVERAGE" -v min="$MIN_COVERAGE" 'BEGIN {print (cov < min)}')
+            if [ "$IS_BELOW" -eq 1 ]; then
+              echo "❌ FAIL: ${COVERAGE}% is below ${MIN_COVERAGE}% threshold"
+              FAILED=true
+            else
+              echo "✅ PASS: ${COVERAGE}% meets ${MIN_COVERAGE}% threshold"
+            fi
+            cd "$GITHUB_WORKSPACE"
+          done
+
+          if [ "$FAILED" = true ]; then
+            echo ""
+            echo "❌ One or more modules failed coverage threshold!"
             exit 1
           else
-            echo "✅ Success: Code coverage (${COVERAGE}%) satisfies required threshold (>= ${MIN_COVERAGE}%)!"
+            echo ""
+            echo "✅ All modules pass coverage threshold!"
           fi
