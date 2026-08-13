@@ -50,6 +50,23 @@ message WorkUnit {
   google.protobuf.Timestamp updated_at = 7;
 }
 
+message EquipmentClass {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+message WorkUnitCapability {
+  string id = 1;
+  string work_unit_id = 2;
+  string equipment_class_id = 3;
+  string properties_json = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
 // ----------------------------------------------------------------------------
@@ -60,6 +77,16 @@ service EquipmentService {
   rpc GetWorkUnit(GetWorkUnitRequest) returns (GetWorkUnitResponse);
   rpc ListWorkUnits(ListWorkUnitsRequest) returns (ListWorkUnitsResponse);
   rpc UpdateWorkUnitStatus(UpdateWorkUnitStatusRequest) returns (UpdateWorkUnitStatusResponse);
+
+  // Equipment Class API
+  rpc CreateEquipmentClass(CreateEquipmentClassRequest) returns (CreateEquipmentClassResponse);
+  rpc GetEquipmentClass(GetEquipmentClassRequest) returns (GetEquipmentClassResponse);
+  rpc ListEquipmentClasses(ListEquipmentClassesRequest) returns (ListEquipmentClassesResponse);
+
+  // Capability Assignment API
+  rpc AssignCapability(AssignCapabilityRequest) returns (AssignCapabilityResponse);
+  rpc ListWorkUnitCapabilities(ListWorkUnitCapabilitiesRequest) returns (ListWorkUnitCapabilitiesResponse);
+  rpc RemoveCapability(RemoveCapabilityRequest) returns (RemoveCapabilityResponse);
 }
 
 message CreateWorkUnitRequest {
@@ -94,4 +121,55 @@ message UpdateWorkUnitStatusRequest {
 
 message UpdateWorkUnitStatusResponse {
   WorkUnit work_unit = 1;
+}
+
+message CreateEquipmentClassRequest {
+  string name = 1;
+  string description = 2;
+}
+
+message CreateEquipmentClassResponse {
+  EquipmentClass equipment_class = 1;
+}
+
+message GetEquipmentClassRequest {
+  string id = 1;
+}
+
+message GetEquipmentClassResponse {
+  EquipmentClass equipment_class = 1;
+}
+
+message ListEquipmentClassesRequest {}
+
+message ListEquipmentClassesResponse {
+  repeated EquipmentClass equipment_classes = 1;
+}
+
+// Capability Assignment messages
+message AssignCapabilityRequest {
+  string work_unit_id = 1;
+  string equipment_class_id = 2;
+  string properties_json = 3;
+}
+
+message AssignCapabilityResponse {
+  WorkUnitCapability capability = 1;
+}
+
+message ListWorkUnitCapabilitiesRequest {
+  string work_unit_id = 1;
+}
+
+message ListWorkUnitCapabilitiesResponse {
+  repeated WorkUnitCapability capabilities = 1;
+}
+
+message RemoveCapabilityRequest {
+  string work_unit_id = 1;
+  string equipment_class_id = 2;
+}
+
+message RemoveCapabilityResponse {
+  bool removed = 1;
 }
