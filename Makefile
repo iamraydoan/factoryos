@@ -7,7 +7,8 @@ BIN_DIR := bin
 GO_ENV := DATABASE_URL="postgres://factoryos:factoryos_password@localhost:5432/factoryos?sslmode=disable"
 
 .PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator build-resource \
-        test test-all test-analytics test-ingestion test-edge test-sdk test-resource test-coverage \
+        test test-all test-analytics test-ingestion test-edge test-sdk test-resource \
+        test-coverage test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk \
         run-analytics run-ingestion run-edge run-simulator run-resource \
         proto-lint proto-gen openapi-bundle openapi-gen \
         infra-up infra-down infra-ps infra-logs clean
@@ -99,10 +100,33 @@ test-resource:
 	@echo "[TEST] Running tests for resource-service..."
 	@cd services/resource-service && go test -race -cover -v -timeout 60s ./...
 
-## test-coverage: Run tests and generate statement coverage report for analytics-engine
-test-coverage:
-	@echo "[COVERAGE] Generating detailed code coverage report for analytics-engine..."
+## test-coverage: Run tests with coverage for all modules
+test-coverage: test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk
+
+## test-coverage-analytics: Generate coverage for analytics-engine
+test-coverage-analytics:
+	@echo "[COVERAGE] analytics-engine..."
 	@cd services/analytics-engine && $(GO_ENV) go test -race -coverprofile=coverage.out ./processor/... ./db/... ./consumer/... ./config/... && go tool cover -func=coverage.out
+
+## test-coverage-resource: Generate coverage for resource-service
+test-coverage-resource:
+	@echo "[COVERAGE] resource-service..."
+	@cd services/resource-service && go test -race -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
+
+## test-coverage-ingestion: Generate coverage for ingestion-service
+test-coverage-ingestion:
+	@echo "[COVERAGE] ingestion-service..."
+	@cd services/ingestion-service && go test -race -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
+
+## test-coverage-edge: Generate coverage for edge-runtime
+test-coverage-edge:
+	@echo "[COVERAGE] edge-runtime..."
+	@cd platform/edge-runtime && go test -race -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
+
+## test-coverage-sdk: Generate coverage for platform-sdk
+test-coverage-sdk:
+	@echo "[COVERAGE] platform-sdk..."
+	@cd platform/platform-sdk && go test -race -coverprofile=coverage.out ./... && go tool cover -func=coverage.out
 
 # ==============================================================================
 # Run Targets
@@ -204,5 +228,6 @@ infra-logs:
 ## clean: Remove build artifacts and temporary binaries
 clean:
 	@echo "[CLEAN] Removing $(BIN_DIR) and test artifacts..."
-	@rm -rf $(BIN_DIR) *.test *.out services/analytics-engine/*.out platform/edge-runtime/*.out services/resource-service/*.out coverage.html
+	@rm -rf $(BIN_DIR) *.test *.out coverage.html
+	@find . -name "coverage.out" -path "*/services/*" -o -name "coverage.out" -path "*/platform/*" | xargs rm -f
 	@echo "[CLEAN] Done."
