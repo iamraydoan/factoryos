@@ -4,7 +4,6 @@
 
 SHELL := /bin/bash
 BIN_DIR := bin
-GO_ENV := DATABASE_URL="postgres://factoryos:factoryos_password@localhost:5432/factoryos?sslmode=disable"
 
 .PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator build-resource \
         test test-all test-analytics test-ingestion test-edge test-sdk test-resource \
@@ -78,7 +77,7 @@ test-all: test-edge test-sdk test-ingestion test-analytics test-resource
 ## test-analytics: Run unit tests for Analytics Engine (with coverage & race detector)
 test-analytics:
 	@echo "[TEST] Running tests for analytics-engine..."
-	@cd services/analytics-engine && $(GO_ENV) go test -race -cover -v -timeout 60s ./processor/... ./db/... ./consumer/... ./config/...
+	@cd services/analytics-engine && go test -race -cover -v -timeout 60s ./processor/... ./db/... ./consumer/... ./config/...
 
 ## test-ingestion: Run unit tests for Ingestion Service
 test-ingestion:
@@ -106,7 +105,7 @@ test-coverage: test-coverage-analytics test-coverage-resource test-coverage-inge
 ## test-coverage-analytics: Generate coverage for analytics-engine
 test-coverage-analytics:
 	@echo "[COVERAGE] analytics-engine..."
-	@cd services/analytics-engine && $(GO_ENV) go test -race -coverprofile=coverage.out ./processor/... ./db/... ./consumer/... ./config/... && go tool cover -func=coverage.out
+	@cd services/analytics-engine && go test -race -coverprofile=coverage.out ./processor/... ./db/... ./consumer/... ./config/... && go tool cover -func=coverage.out
 
 ## test-coverage-resource: Generate coverage for resource-service
 test-coverage-resource:
@@ -135,7 +134,7 @@ test-coverage-sdk:
 ## run-analytics: Build and execute Analytics Engine locally
 run-analytics: build-analytics
 	@echo "[RUN] Starting $(BIN_DIR)/analytics-engine..."
-	@$(GO_ENV) $(BIN_DIR)/analytics-engine
+	@$(BIN_DIR)/analytics-engine
 
 ## run-ingestion: Build and execute Ingestion Service locally
 run-ingestion: build-ingestion
