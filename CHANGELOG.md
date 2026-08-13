@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [v0.2.0] - 2026-08-12
+
 ### Added
 - **Resource Service — ISA-95 Equipment Hierarchy CRUD (`services/resource-service`):**
   - PostgreSQL schema with ISA-95 hierarchy: `sites` → `areas` → `work_centers` → `work_units` (`0001_init_equipment.sql`).
@@ -33,8 +37,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ADR-0006: OEE Streaming Aggregation — Fixed Window with Hard Reset ([ADR-0006](docs/05-adr/0006-oee-streaming-aggregation-window-strategy.md)):** Recorded decision using O(1) fixed-window approach over sliding window for in-memory OEE computation.
 - **Edge Fleet Management Idea ([INBOX.md](INBOX.md)):** Added concept for Cloud-based Edge Fleet monitoring dashboard & anti-spoofing device authentication (mTLS / 1-time activation key / TPM 2.0).
 
-
 ### Changed
+- **CI Pipeline (`.github/workflows/ci.yml`):**
+  - Build step now compiles all services (analytics-engine, ingestion-service, resource-service, edge-runtime, platform-sdk, mock-plc-simulator).
+  - Test step runs unit tests for all modules with coverage reports.
+  - Coverage gate enforces >80% threshold per module individually.
+- **Makefile:**
+  - Added `test-coverage` target to run coverage for all modules.
+  - Added individual coverage targets: `test-coverage-analytics`, `test-coverage-resource`, `test-coverage-ingestion`, `test-coverage-edge`, `test-coverage-sdk`.
+  - Removed `GO_ENV` variable — services load config from their own `.env` files.
 - **RFC-0001 (Asset Telemetry Ingestion Architecture):**
   - Updated status to **Approved**.
   - Resolved payload compression decision (Kafka Producer native Snappy/Zstd compression at Edge).
