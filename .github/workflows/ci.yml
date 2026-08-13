@@ -32,25 +32,47 @@ jobs:
 
       - name: Run Unit Tests & Generate Coverage Report
         run: |
-          MODULES=("platform/edge-runtime" "services/analytics-engine" "services/ingestion-service" "services/resource-service")
-          for module in "${MODULES[@]}"; do
-            echo "========================================="
-            echo "[TEST] Running tests for $module..."
-            echo "========================================="
-            cd "$module"
-            go test -race -coverprofile=coverage.out ./...
-            go tool cover -func=coverage.out
-            cd "$GITHUB_WORKSPACE"
-          done
+          echo "========================================="
+          echo "[TEST] platform/edge-runtime"
+          echo "========================================="
+          cd platform/edge-runtime
+          go test -race -coverprofile=coverage.out ./...
+          go tool cover -func=coverage.out
+          cd "$GITHUB_WORKSPACE"
+
+          echo "========================================="
+          echo "[TEST] services/analytics-engine"
+          echo "========================================="
+          cd services/analytics-engine
+          go test -race -coverprofile=coverage.out ./processor/... ./db/... ./consumer/... ./config/...
+          go tool cover -func=coverage.out
+          cd "$GITHUB_WORKSPACE"
+
+          echo "========================================="
+          echo "[TEST] services/ingestion-service"
+          echo "========================================="
+          cd services/ingestion-service
+          go test -race -coverprofile=coverage.out ./server/...
+          go tool cover -func=coverage.out
+          cd "$GITHUB_WORKSPACE"
+
+          echo "========================================="
+          echo "[TEST] services/resource-service"
+          echo "========================================="
+          cd services/resource-service
+          go test -race -coverprofile=coverage.out ./config/... ./server/...
+          go tool cover -func=coverage.out
+          cd "$GITHUB_WORKSPACE"
 
       - name: Enforce Code Coverage Threshold (> 80%)
         run: |
-          MODULES=("platform/edge-runtime" "services/analytics-engine" "services/ingestion-service" "services/resource-service")
           FAILED=false
           MIN_COVERAGE=80.0
 
-          for module in "${MODULES[@]}"; do
-            cd "$module"
+          check_coverage() {
+            local module=$1
+            local dir=$2
+            cd "$dir"
             COVERAGE=$(go tool cover -func=coverage.out | grep total: | awk '{print $3}' | sed 's/%//')
             echo "-----------------------------------------"
             echo "$module: ${COVERAGE}%"
@@ -63,7 +85,12 @@ jobs:
               echo "✅ PASS: ${COVERAGE}% meets ${MIN_COVERAGE}% threshold"
             fi
             cd "$GITHUB_WORKSPACE"
-          done
+          }
+
+          check_coverage "platform/edge-runtime" "platform/edge-runtime"
+          check_coverage "services/analytics-engine" "services/analytics-engine"
+          check_coverage "services/ingestion-service" "services/ingestion-service"
+          check_coverage "services/resource-service" "services/resource-service"
 
           if [ "$FAILED" = true ]; then
             echo ""
