@@ -12,18 +12,31 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// ============================================================================
+// Mock Repository
+// ============================================================================
+
 // mockRepo implements db.EquipmentRepository for unit testing.
 type mockRepo struct {
-	units  map[string]*db.WorkUnit
-	nextID int
+	units        map[string]*db.WorkUnit
+	classes      map[string]*db.EquipmentClass
+	capabilities map[string]*db.WorkUnitCapability
+	nextID       int
 }
 
 func newMockRepo() *mockRepo {
-	return &mockRepo{units: make(map[string]*db.WorkUnit), nextID: 1}
+	return &mockRepo{
+		units:        make(map[string]*db.WorkUnit),
+		classes:      make(map[string]*db.EquipmentClass),
+		capabilities: make(map[string]*db.WorkUnitCapability),
+		nextID:       1,
+	}
 }
 
+// --- Work Unit mocks ---
+
 func (m *mockRepo) CreateWorkUnit(_ context.Context, workCenterID, name string) (*db.WorkUnit, error) {
-	id := fmt.Sprintf("test-uuid-%d", m.nextID)
+	id := fmt.Sprintf("wu-%d", m.nextID)
 	m.nextID++
 	unit := &db.WorkUnit{
 		ID:           id,
@@ -61,18 +74,100 @@ func (m *mockRepo) UpdateWorkUnitStatus(_ context.Context, id, expectedStatus, n
 		return nil, nil
 	}
 	if unit.Status != expectedStatus {
-		return nil, nil // Status changed concurrently
+		return nil, nil
 	}
 	unit.Status = newStatus
 	unit.UpdatedAt = time.Now()
 	return unit, nil
 }
 
-// --- Tests ---
+// --- Equipment Class mocks ---
 
-func TestCreateWorkUnit_Success(t *testing.T) {
+func (m *mockRepo) CreateEquipmentClass(_ context.Context, name string, description *string) (*db.EquipmentClass, error) {
+	id := fmt.Sprintf("ec-%d", m.nextID)
+	m.nextID++
+	ec := &db.EquipmentClass{
+		ID:          id,
+		Name:        name,
+		Description: description,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
+	}
+	m.classes[ec.ID] = ec
+	return ec, nil
+}
+
+func (m *mockRepo) GetEquipmentClass(_ context.Context, id string) (*db.EquipmentClass, error) {
+	ec, ok := m.classes[id]
+	if !ok {
+		return nil, nil
+	}
+	return ec, nil
+}
+
+func (m *mockRepo) ListEquipmentClasses(_ context.Context) ([]*db.EquipmentClass, error) {
+	var result []*db.EquipmentClass
+	for _, ec := range m.classes {
+		result = append(result, ec)
+	}
+	return result, nil
+}
+
+// --- Capability mocks ---
+
+func (m *mockRepo) AssignCapability(_ context.Context, workUnitID, equipmentClassID string, properties map[string]interface{}) (*db.WorkUnitCapability, error) {
+	key := workUnitID + ":" + equipmentClassID
+	cap := &db.WorkUnitCapability{
+		ID:               fmt.Sprintf("cap-%d", m.nextID),
+		WorkUnitID:       workUnitID,
+		EquipmentClassID: equipmentClassID,
+		Properties:       properties,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+	}
+	m.nextID++
+	m.capabilities[key] = cap
+	return cap, nil
+}
+
+func (m *mockRepo) ListWorkUnitCapabilities(_ context.Context, workUnitID string) ([]*db.WorkUnitCapability, error) {
+	var result []*db.WorkUnitCapability
+	for _, cap := range m.capabilities {
+		if cap.WorkUnitID == workUnitID {
+			result = append(result, cap)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockRepo) RemoveCapability(_ context.Context, workUnitID, equipmentClassID string) (bool, error) {
+	key := workUnitID + ":" + equipmentClassID
+	if _, ok := m.capabilities[key]; !ok {
+		return false, nil
+	}
+	delete(m.capabilities, key)
+	return true, nil
+}
+
+// ============================================================================
+// Helper
+// ============================================================================
+
+func strPtr(s string) *string { return &s }
+
+// setupTest creates a mock repo and server, and optionally pre-creates a work unit and equipment class.
+func setupTest() (*EquipmentServer, *mockRepo) {
 	repo := newMockRepo()
 	srv := NewEquipmentServer(repo)
+	return srv, repo
+}
+
+// ============================================================================
+// Work Unit Tests
+// ============================================================================
+
+func TestCreateWorkUnit_Success(t *testing.T) {
+	srv, _ := setupTest()
 
 	req := &resourcev1.CreateWorkUnitRequest{
 		WorkCenterId: "wc-123",
@@ -92,44 +187,30 @@ func TestCreateWorkUnit_Success(t *testing.T) {
 }
 
 func TestCreateWorkUnit_MissingWorkCenterID(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	req := &resourcev1.CreateWorkUnitRequest{
-		Name: "Test Unit",
-	}
+	req := &resourcev1.CreateWorkUnitRequest{Name: "Test Unit"}
 
 	_, err := srv.CreateWorkUnit(context.Background(), req)
-	if err == nil {
-		t.Fatal("CreateWorkUnit() = nil, want error")
-	}
 	if status.Code(err) != codes.InvalidArgument {
 		t.Errorf("CreateWorkUnit() = %v, want InvalidArgument", err)
 	}
 }
 
 func TestCreateWorkUnit_MissingName(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	req := &resourcev1.CreateWorkUnitRequest{
-		WorkCenterId: "wc-123",
-	}
+	req := &resourcev1.CreateWorkUnitRequest{WorkCenterId: "wc-123"}
 
 	_, err := srv.CreateWorkUnit(context.Background(), req)
-	if err == nil {
-		t.Fatal("CreateWorkUnit() = nil, want error")
-	}
 	if status.Code(err) != codes.InvalidArgument {
 		t.Errorf("CreateWorkUnit() = %v, want InvalidArgument", err)
 	}
 }
 
 func TestCreateWorkUnit_NameTooLong(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	// Create a name longer than 255 characters
 	longName := ""
 	for i := 0; i < 256; i++ {
 		longName += "a"
@@ -141,34 +222,21 @@ func TestCreateWorkUnit_NameTooLong(t *testing.T) {
 	}
 
 	_, err := srv.CreateWorkUnit(context.Background(), req)
-	if err == nil {
-		t.Fatal("CreateWorkUnit() = nil, want error")
-	}
 	if status.Code(err) != codes.InvalidArgument {
 		t.Errorf("CreateWorkUnit() = %v, want InvalidArgument", err)
 	}
 }
 
 func TestGetWorkUnit_Success(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	// Create a unit first
-	createReq := &resourcev1.CreateWorkUnitRequest{
-		WorkCenterId: "wc-123",
-		Name:         "Test Unit",
-	}
-	createResp, err := srv.CreateWorkUnit(context.Background(), createReq)
-	if err != nil {
-		t.Fatalf("CreateWorkUnit() = %v", err)
-	}
+	createResp, _ := srv.CreateWorkUnit(context.Background(), &resourcev1.CreateWorkUnitRequest{
+		WorkCenterId: "wc-123", Name: "Test Unit",
+	})
 
-	// Get the unit
-	getReq := &resourcev1.GetWorkUnitRequest{
+	getResp, err := srv.GetWorkUnit(context.Background(), &resourcev1.GetWorkUnitRequest{
 		Id: createResp.GetWorkUnit().GetId(),
-	}
-
-	getResp, err := srv.GetWorkUnit(context.Background(), getReq)
+	})
 	if err != nil {
 		t.Fatalf("GetWorkUnit() = %v, want nil", err)
 	}
@@ -178,59 +246,33 @@ func TestGetWorkUnit_Success(t *testing.T) {
 }
 
 func TestGetWorkUnit_MissingID(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	req := &resourcev1.GetWorkUnitRequest{}
-
-	_, err := srv.GetWorkUnit(context.Background(), req)
-	if err == nil {
-		t.Fatal("GetWorkUnit() = nil, want error")
-	}
+	_, err := srv.GetWorkUnit(context.Background(), &resourcev1.GetWorkUnitRequest{})
 	if status.Code(err) != codes.InvalidArgument {
 		t.Errorf("GetWorkUnit() = %v, want InvalidArgument", err)
 	}
 }
 
 func TestGetWorkUnit_NotFound(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	req := &resourcev1.GetWorkUnitRequest{
-		Id: "non-existent-id",
-	}
-
-	_, err := srv.GetWorkUnit(context.Background(), req)
-	if err == nil {
-		t.Fatal("GetWorkUnit() = nil, want error")
-	}
+	_, err := srv.GetWorkUnit(context.Background(), &resourcev1.GetWorkUnitRequest{Id: "non-existent"})
 	if status.Code(err) != codes.NotFound {
 		t.Errorf("GetWorkUnit() = %v, want NotFound", err)
 	}
 }
 
 func TestListWorkUnits_Success(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	// Create 2 units in same work center
 	for i := 1; i <= 2; i++ {
-		req := &resourcev1.CreateWorkUnitRequest{
-			WorkCenterId: "wc-123",
-			Name:         "Unit " + string(rune('A'+i-1)),
-		}
-		_, err := srv.CreateWorkUnit(context.Background(), req)
-		if err != nil {
-			t.Fatalf("CreateWorkUnit(%d) = %v", i, err)
-		}
+		_, _ = srv.CreateWorkUnit(context.Background(), &resourcev1.CreateWorkUnitRequest{
+			WorkCenterId: "wc-123", Name: fmt.Sprintf("Unit %d", i),
+		})
 	}
 
-	// List
-	listReq := &resourcev1.ListWorkUnitsRequest{
-		WorkCenterId: "wc-123",
-	}
-
-	resp, err := srv.ListWorkUnits(context.Background(), listReq)
+	resp, err := srv.ListWorkUnits(context.Background(), &resourcev1.ListWorkUnitsRequest{WorkCenterId: "wc-123"})
 	if err != nil {
 		t.Fatalf("ListWorkUnits() = %v, want nil", err)
 	}
@@ -240,41 +282,26 @@ func TestListWorkUnits_Success(t *testing.T) {
 }
 
 func TestListWorkUnits_MissingWorkCenterID(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	req := &resourcev1.ListWorkUnitsRequest{}
-
-	_, err := srv.ListWorkUnits(context.Background(), req)
-	if err == nil {
-		t.Fatal("ListWorkUnits() = nil, want error")
-	}
+	_, err := srv.ListWorkUnits(context.Background(), &resourcev1.ListWorkUnitsRequest{})
 	if status.Code(err) != codes.InvalidArgument {
 		t.Errorf("ListWorkUnits() = %v, want InvalidArgument", err)
 	}
 }
 
 func TestUpdateWorkUnitStatus_Success(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	// Create a unit
-	createReq := &resourcev1.CreateWorkUnitRequest{
-		WorkCenterId: "wc-123",
-		Name:         "Test Unit",
-	}
-	createResp, err := srv.CreateWorkUnit(context.Background(), createReq)
-	if err != nil {
-		t.Fatalf("CreateWorkUnit() = %v", err)
-	}
+	createResp, _ := srv.CreateWorkUnit(context.Background(), &resourcev1.CreateWorkUnitRequest{
+		WorkCenterId: "wc-123", Name: "Test Unit",
+	})
 
-	// Update status: available → allocated
-	updateReq := &resourcev1.UpdateWorkUnitStatusRequest{
+	// available → allocated
+	updateResp, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
 		Id:     createResp.GetWorkUnit().GetId(),
 		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED,
-	}
-
-	updateResp, err := srv.UpdateWorkUnitStatus(context.Background(), updateReq)
+	})
 	if err != nil {
 		t.Fatalf("UpdateWorkUnitStatus() = %v, want nil", err)
 	}
@@ -282,13 +309,11 @@ func TestUpdateWorkUnitStatus_Success(t *testing.T) {
 		t.Errorf("Status = %v, want ALLOCATED", updateResp.GetWorkUnit().GetStatus())
 	}
 
-	// Update status: allocated → in_production
-	updateReq2 := &resourcev1.UpdateWorkUnitStatusRequest{
+	// allocated → in_production
+	updateResp2, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
 		Id:     createResp.GetWorkUnit().GetId(),
 		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_IN_PRODUCTION,
-	}
-
-	updateResp2, err := srv.UpdateWorkUnitStatus(context.Background(), updateReq2)
+	})
 	if err != nil {
 		t.Fatalf("UpdateWorkUnitStatus() = %v, want nil", err)
 	}
@@ -298,39 +323,325 @@ func TestUpdateWorkUnitStatus_Success(t *testing.T) {
 }
 
 func TestUpdateWorkUnitStatus_MissingID(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	req := &resourcev1.UpdateWorkUnitStatusRequest{
+	_, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
 		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED,
-	}
-
-	_, err := srv.UpdateWorkUnitStatus(context.Background(), req)
-	if err == nil {
-		t.Fatal("UpdateWorkUnitStatus() = nil, want error")
-	}
+	})
 	if status.Code(err) != codes.InvalidArgument {
 		t.Errorf("UpdateWorkUnitStatus() = %v, want InvalidArgument", err)
 	}
 }
 
 func TestUpdateWorkUnitStatus_NotFound(t *testing.T) {
-	repo := newMockRepo()
-	srv := NewEquipmentServer(repo)
+	srv, _ := setupTest()
 
-	req := &resourcev1.UpdateWorkUnitStatusRequest{
-		Id:     "non-existent-id",
+	_, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
+		Id:     "non-existent",
 		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED,
-	}
-
-	_, err := srv.UpdateWorkUnitStatus(context.Background(), req)
-	if err == nil {
-		t.Fatal("UpdateWorkUnitStatus() = nil, want error")
-	}
+	})
 	if status.Code(err) != codes.NotFound {
 		t.Errorf("UpdateWorkUnitStatus() = %v, want NotFound", err)
 	}
 }
+
+// ============================================================================
+// Equipment Class Tests
+// ============================================================================
+
+func TestCreateEquipmentClass_Success(t *testing.T) {
+	srv, _ := setupTest()
+
+	resp, err := srv.CreateEquipmentClass(context.Background(), &resourcev1.CreateEquipmentClassRequest{
+		Name:        "CNC Lathe ≥ 5-axis",
+		Description: "Multi-axis CNC lathe",
+	})
+	if err != nil {
+		t.Fatalf("CreateEquipmentClass() = %v, want nil", err)
+	}
+	if resp.GetEquipmentClass().GetName() != "CNC Lathe ≥ 5-axis" {
+		t.Errorf("Name = %q, want 'CNC Lathe ≥ 5-axis'", resp.GetEquipmentClass().GetName())
+	}
+	if resp.GetEquipmentClass().GetDescription() != "Multi-axis CNC lathe" {
+		t.Errorf("Description = %q, want 'Multi-axis CNC lathe'", resp.GetEquipmentClass().GetDescription())
+	}
+}
+
+func TestCreateEquipmentClass_MissingName(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.CreateEquipmentClass(context.Background(), &resourcev1.CreateEquipmentClassRequest{})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("CreateEquipmentClass() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestGetEquipmentClass_Success(t *testing.T) {
+	srv, _ := setupTest()
+
+	createResp, _ := srv.CreateEquipmentClass(context.Background(), &resourcev1.CreateEquipmentClassRequest{
+		Name: "CNC Lathe",
+	})
+
+	getResp, err := srv.GetEquipmentClass(context.Background(), &resourcev1.GetEquipmentClassRequest{
+		Id: createResp.GetEquipmentClass().GetId(),
+	})
+	if err != nil {
+		t.Fatalf("GetEquipmentClass() = %v, want nil", err)
+	}
+	if getResp.GetEquipmentClass().GetId() != createResp.GetEquipmentClass().GetId() {
+		t.Errorf("ID = %s, want %s", getResp.GetEquipmentClass().GetId(), createResp.GetEquipmentClass().GetId())
+	}
+}
+
+func TestGetEquipmentClass_MissingID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.GetEquipmentClass(context.Background(), &resourcev1.GetEquipmentClassRequest{})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("GetEquipmentClass() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestGetEquipmentClass_NotFound(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.GetEquipmentClass(context.Background(), &resourcev1.GetEquipmentClassRequest{Id: "non-existent"})
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("GetEquipmentClass() = %v, want NotFound", err)
+	}
+}
+
+func TestListEquipmentClasses_Success(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, _ = srv.CreateEquipmentClass(context.Background(), &resourcev1.CreateEquipmentClassRequest{Name: "CNC Lathe"})
+	_, _ = srv.CreateEquipmentClass(context.Background(), &resourcev1.CreateEquipmentClassRequest{Name: "Milling Machine"})
+
+	resp, err := srv.ListEquipmentClasses(context.Background(), &resourcev1.ListEquipmentClassesRequest{})
+	if err != nil {
+		t.Fatalf("ListEquipmentClasses() = %v, want nil", err)
+	}
+	if len(resp.GetEquipmentClasses()) != 2 {
+		t.Errorf("ListEquipmentClasses() returned %d, want 2", len(resp.GetEquipmentClasses()))
+	}
+}
+
+func TestListEquipmentClasses_Empty(t *testing.T) {
+	srv, _ := setupTest()
+
+	resp, err := srv.ListEquipmentClasses(context.Background(), &resourcev1.ListEquipmentClassesRequest{})
+	if err != nil {
+		t.Fatalf("ListEquipmentClasses() = %v, want nil", err)
+	}
+	if len(resp.GetEquipmentClasses()) != 0 {
+		t.Errorf("ListEquipmentClasses() returned %d, want 0", len(resp.GetEquipmentClasses()))
+	}
+}
+
+// ============================================================================
+// Capability Assignment Tests
+// ============================================================================
+
+func TestAssignCapability_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	// Create work unit and equipment class directly in mock
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	ec, _ := repo.CreateEquipmentClass(context.Background(), "CNC Lathe", nil)
+
+	resp, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId:       wu.ID,
+		EquipmentClassId: ec.ID,
+		PropertiesJson:   `{"max_speed_rpm": 5000}`,
+	})
+	if err != nil {
+		t.Fatalf("AssignCapability() = %v, want nil", err)
+	}
+	if resp.GetCapability().GetWorkUnitId() != wu.ID {
+		t.Errorf("WorkUnitId = %s, want %s", resp.GetCapability().GetWorkUnitId(), wu.ID)
+	}
+	if resp.GetCapability().GetEquipmentClassId() != ec.ID {
+		t.Errorf("EquipmentClassId = %s, want %s", resp.GetCapability().GetEquipmentClassId(), ec.ID)
+	}
+}
+
+func TestAssignCapability_MissingWorkUnitID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		EquipmentClassId: "ec-1",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("AssignCapability() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestAssignCapability_MissingEquipmentClassID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId: "wu-1",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("AssignCapability() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestAssignCapability_WorkUnitNotFound(t *testing.T) {
+	srv, repo := setupTest()
+
+	ec, _ := repo.CreateEquipmentClass(context.Background(), "CNC Lathe", nil)
+
+	_, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId:       "non-existent",
+		EquipmentClassId: ec.ID,
+	})
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("AssignCapability() = %v, want NotFound", err)
+	}
+}
+
+func TestAssignCapability_EquipmentClassNotFound(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+
+	_, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId:       wu.ID,
+		EquipmentClassId: "non-existent",
+	})
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("AssignCapability() = %v, want NotFound", err)
+	}
+}
+
+func TestAssignCapability_InvalidPropertiesJSON(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	ec, _ := repo.CreateEquipmentClass(context.Background(), "CNC Lathe", nil)
+
+	_, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId:       wu.ID,
+		EquipmentClassId: ec.ID,
+		PropertiesJson:   "not-json",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("AssignCapability() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestListWorkUnitCapabilities_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	ec1, _ := repo.CreateEquipmentClass(context.Background(), "CNC Lathe", nil)
+	ec2, _ := repo.CreateEquipmentClass(context.Background(), "Milling", nil)
+
+	_, _ = srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId: wu.ID, EquipmentClassId: ec1.ID,
+	})
+	_, _ = srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId: wu.ID, EquipmentClassId: ec2.ID,
+	})
+
+	resp, err := srv.ListWorkUnitCapabilities(context.Background(), &resourcev1.ListWorkUnitCapabilitiesRequest{
+		WorkUnitId: wu.ID,
+	})
+	if err != nil {
+		t.Fatalf("ListWorkUnitCapabilities() = %v, want nil", err)
+	}
+	if len(resp.GetCapabilities()) != 2 {
+		t.Errorf("ListWorkUnitCapabilities() returned %d, want 2", len(resp.GetCapabilities()))
+	}
+}
+
+func TestListWorkUnitCapabilities_MissingWorkUnitID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.ListWorkUnitCapabilities(context.Background(), &resourcev1.ListWorkUnitCapabilitiesRequest{})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("ListWorkUnitCapabilities() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestListWorkUnitCapabilities_Empty(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+
+	resp, err := srv.ListWorkUnitCapabilities(context.Background(), &resourcev1.ListWorkUnitCapabilitiesRequest{
+		WorkUnitId: wu.ID,
+	})
+	if err != nil {
+		t.Fatalf("ListWorkUnitCapabilities() = %v, want nil", err)
+	}
+	if len(resp.GetCapabilities()) != 0 {
+		t.Errorf("ListWorkUnitCapabilities() returned %d, want 0", len(resp.GetCapabilities()))
+	}
+}
+
+func TestRemoveCapability_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	ec, _ := repo.CreateEquipmentClass(context.Background(), "CNC Lathe", nil)
+
+	_, _ = srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId: wu.ID, EquipmentClassId: ec.ID,
+	})
+
+	resp, err := srv.RemoveCapability(context.Background(), &resourcev1.RemoveCapabilityRequest{
+		WorkUnitId: wu.ID, EquipmentClassId: ec.ID,
+	})
+	if err != nil {
+		t.Fatalf("RemoveCapability() = %v, want nil", err)
+	}
+	if !resp.GetRemoved() {
+		t.Error("RemoveCapability() = false, want true")
+	}
+}
+
+func TestRemoveCapability_MissingWorkUnitID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.RemoveCapability(context.Background(), &resourcev1.RemoveCapabilityRequest{
+		EquipmentClassId: "ec-1",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("RemoveCapability() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestRemoveCapability_MissingEquipmentClassID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.RemoveCapability(context.Background(), &resourcev1.RemoveCapabilityRequest{
+		WorkUnitId: "wu-1",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("RemoveCapability() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestRemoveCapability_NotFound(t *testing.T) {
+	srv, _ := setupTest()
+
+	resp, err := srv.RemoveCapability(context.Background(), &resourcev1.RemoveCapabilityRequest{
+		WorkUnitId: "wu-1", EquipmentClassId: "ec-1",
+	})
+	if err != nil {
+		t.Fatalf("RemoveCapability() = %v, want nil", err)
+	}
+	if resp.GetRemoved() {
+		t.Error("RemoveCapability() = true, want false")
+	}
+}
+
+// ============================================================================
+// Helper Function Tests
+// ============================================================================
 
 func TestDerefString(t *testing.T) {
 	tests := []struct {
@@ -397,7 +708,23 @@ func TestFromProtoStatus(t *testing.T) {
 	}
 }
 
-// strPtr is a helper to create a *string from a string value.
-func strPtr(s string) *string {
-	return &s
+func TestToProtoEquipmentClass_Nil(t *testing.T) {
+	got := toProtoEquipmentClass(nil)
+	if got != nil {
+		t.Errorf("toProtoEquipmentClass(nil) = %v, want nil", got)
+	}
+}
+
+func TestToProtoCapability_Nil(t *testing.T) {
+	got := toProtoCapability(nil)
+	if got != nil {
+		t.Errorf("toProtoCapability(nil) = %v, want nil", got)
+	}
+}
+
+func TestToProtoWorkUnit_Nil(t *testing.T) {
+	got := toProtoWorkUnit(nil)
+	if got != nil {
+		t.Errorf("toProtoWorkUnit(nil) = %v, want nil", got)
+	}
 }

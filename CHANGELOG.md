@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Equipment Class & Work Unit Capability (`services/resource-service`):**
+  - `equipment_classes` table for capability type definitions with `name` and `description`.
+  - `work_unit_capabilities` many-to-many link table with JSONB `properties` and `UNIQUE(work_unit_id, equipment_class_id)` constraint.
+  - gRPC CRUD for Equipment Classes: `CreateEquipmentClass`, `GetEquipmentClass`, `ListEquipmentClasses`.
+  - gRPC Capability Assignment: `AssignCapability`, `ListWorkUnitCapabilities`, `RemoveCapability`.
+  - Unit tests with mock repository (40 tests, 88.3% coverage).
+
 ---
 
 ## [v0.2.0] - 2026-08-12
