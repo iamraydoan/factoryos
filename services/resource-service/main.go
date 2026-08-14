@@ -49,7 +49,7 @@ func main() {
 	// 4. Create repository and register gRPC server.
 	repo := db.NewPostgresEquipmentRepository(database.Pool())
 	grpcServer := grpc.NewServer()
-	resourcev1.RegisterEquipmentServiceServer(grpcServer, server.NewEquipmentServer(repo))
+	resourcev1.RegisterEquipmentServiceServer(grpcServer, server.NewEquipmentService(repo))
 
 	// 5. Start HTTP sidecar for health checks.
 	httpServer := startHTTPServer(cfg.Server.MetricsPort)
