@@ -13,7 +13,7 @@
 - [x] Implement CRUD API for Site, Area, Work Center, Work Unit entities.
 - [x] Implement Equipment Class definition and Work Unit capability assignment.
 - [x] Implement Work Unit status state machine: Available → Allocated → In Production → Faulted.
-- [ ] Link Work Unit to Physical Asset (installation record).
+- [x] Link Work Unit to Physical Asset (installation record).
 
 ### Personnel & Qualification
 - [ ] Implement Person and PersonClass (role) management.

@@ -67,6 +67,39 @@ message WorkUnitCapability {
   google.protobuf.Timestamp updated_at = 6;
 }
 
+// Physical Asset: a real machine with a serial number.
+message PhysicalAsset {
+  string id = 1;                    // UUIDv7
+  string name = 2;                  // Human-readable name (e.g., "Haas VF-2")
+  string serial_number = 3;         // Manufacturer serial number
+  string manufacturer = 4;          // e.g., "Haas Automation"
+  string model = 5;                 // e.g., "VF-2"
+  string asset_type = 6;            // e.g., "CNC Mill", "Press", "Robot"
+  PhysicalAssetStatus status = 7;   // Current operational status
+  google.protobuf.Timestamp installed_at = 8;  // When current install began (nullable)
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+enum PhysicalAssetStatus {
+  PHYSICAL_ASSET_STATUS_UNSPECIFIED = 0;
+  PHYSICAL_ASSET_STATUS_ACTIVE = 1;
+  PHYSICAL_ASSET_STATUS_FAULTED = 2;
+  PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE = 3;
+  PHYSICAL_ASSET_STATUS_DECOMMISSIONED = 4;
+}
+
+// Physical Asset Installation: time-bounded link between asset and work unit.
+message PhysicalAssetInstallation {
+  string id = 1;
+  string physical_asset_id = 2;
+  string work_unit_id = 3;
+  google.protobuf.Timestamp installed_at = 4;
+  google.protobuf.Timestamp removed_at = 5;   // NULL = currently installed
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
 // ----------------------------------------------------------------------------
@@ -87,6 +120,17 @@ service EquipmentService {
   rpc AssignCapability(AssignCapabilityRequest) returns (AssignCapabilityResponse);
   rpc ListWorkUnitCapabilities(ListWorkUnitCapabilitiesRequest) returns (ListWorkUnitCapabilitiesResponse);
   rpc RemoveCapability(RemoveCapabilityRequest) returns (RemoveCapabilityResponse);
+
+  // Physical Asset API
+  rpc CreatePhysicalAsset(CreatePhysicalAssetRequest) returns (CreatePhysicalAssetResponse);
+  rpc GetPhysicalAsset(GetPhysicalAssetRequest) returns (GetPhysicalAssetResponse);
+  rpc ListPhysicalAssets(ListPhysicalAssetsRequest) returns (ListPhysicalAssetsResponse);
+
+  // Installation API
+  rpc InstallAsset(InstallAssetRequest) returns (InstallAssetResponse);
+  rpc UninstallAsset(UninstallAssetRequest) returns (UninstallAssetResponse);
+  rpc GetCurrentInstallation(GetCurrentInstallationRequest) returns (GetCurrentInstallationResponse);
+  rpc ListInstallations(ListInstallationsRequest) returns (ListInstallationsResponse);
 }
 
 message CreateWorkUnitRequest {
@@ -172,4 +216,65 @@ message RemoveCapabilityRequest {
 
 message RemoveCapabilityResponse {
   bool removed = 1;
+}
+
+// Physical Asset messages
+message CreatePhysicalAssetRequest {
+  string name = 1;
+  string serial_number = 2;
+  string manufacturer = 3;
+  string model = 4;
+  string asset_type = 5;
+}
+
+message CreatePhysicalAssetResponse {
+  PhysicalAsset physical_asset = 1;
+}
+
+message GetPhysicalAssetRequest {
+  string id = 1;
+}
+
+message GetPhysicalAssetResponse {
+  PhysicalAsset physical_asset = 1;
+}
+
+message ListPhysicalAssetsRequest {}
+
+message ListPhysicalAssetsResponse {
+  repeated PhysicalAsset physical_assets = 1;
+}
+
+// Installation messages
+message InstallAssetRequest {
+  string physical_asset_id = 1;
+  string work_unit_id = 2;
+}
+
+message InstallAssetResponse {
+  PhysicalAssetInstallation installation = 1;
+}
+
+message UninstallAssetRequest {
+  string work_unit_id = 1;
+}
+
+message UninstallAssetResponse {
+  PhysicalAssetInstallation installation = 1;
+}
+
+message GetCurrentInstallationRequest {
+  string work_unit_id = 1;
+}
+
+message GetCurrentInstallationResponse {
+  PhysicalAssetInstallation installation = 1;
+}
+
+message ListInstallationsRequest {
+  string work_unit_id = 1;
+}
+
+message ListInstallationsResponse {
+  repeated PhysicalAssetInstallation installations = 1;
 }

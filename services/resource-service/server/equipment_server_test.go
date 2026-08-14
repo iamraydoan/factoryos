@@ -18,18 +18,22 @@ import (
 
 // mockRepo implements db.EquipmentRepository for unit testing.
 type mockRepo struct {
-	units        map[string]*db.WorkUnit
-	classes      map[string]*db.EquipmentClass
-	capabilities map[string]*db.WorkUnitCapability
-	nextID       int
+	units          map[string]*db.WorkUnit
+	classes        map[string]*db.EquipmentClass
+	capabilities   map[string]*db.WorkUnitCapability
+	physicalAssets map[string]*db.PhysicalAsset
+	installations  map[string]*db.PhysicalAssetInstallation // keyed by work_unit_id
+	nextID         int
 }
 
 func newMockRepo() *mockRepo {
 	return &mockRepo{
-		units:        make(map[string]*db.WorkUnit),
-		classes:      make(map[string]*db.EquipmentClass),
-		capabilities: make(map[string]*db.WorkUnitCapability),
-		nextID:       1,
+		units:          make(map[string]*db.WorkUnit),
+		classes:        make(map[string]*db.EquipmentClass),
+		capabilities:   make(map[string]*db.WorkUnitCapability),
+		physicalAssets: make(map[string]*db.PhysicalAsset),
+		installations:  make(map[string]*db.PhysicalAssetInstallation),
+		nextID:         1,
 	}
 }
 
@@ -147,6 +151,97 @@ func (m *mockRepo) RemoveCapability(_ context.Context, workUnitID, equipmentClas
 	}
 	delete(m.capabilities, key)
 	return true, nil
+}
+
+// --- Physical Asset mocks ---
+
+func (m *mockRepo) CreatePhysicalAsset(_ context.Context, asset *db.PhysicalAsset) (*db.PhysicalAsset, error) {
+	id := fmt.Sprintf("pa-%d", m.nextID)
+	m.nextID++
+	pa := &db.PhysicalAsset{
+		ID:           id,
+		Name:         asset.Name,
+		SerialNumber: asset.SerialNumber,
+		Manufacturer: asset.Manufacturer,
+		Model:        asset.Model,
+		AssetType:    asset.AssetType,
+		Status:       "active",
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+	m.physicalAssets[pa.ID] = pa
+	return pa, nil
+}
+
+func (m *mockRepo) GetPhysicalAsset(_ context.Context, id string) (*db.PhysicalAsset, error) {
+	pa, ok := m.physicalAssets[id]
+	if !ok {
+		return nil, nil
+	}
+	return pa, nil
+}
+
+func (m *mockRepo) ListPhysicalAssets(_ context.Context) ([]*db.PhysicalAsset, error) {
+	assets := make([]*db.PhysicalAsset, 0, len(m.physicalAssets))
+	for _, pa := range m.physicalAssets {
+		assets = append(assets, pa)
+	}
+	return assets, nil
+}
+
+// --- Installation mocks ---
+
+func (m *mockRepo) InstallAsset(_ context.Context, physicalAssetID, workUnitID string) (*db.PhysicalAssetInstallation, error) {
+	// Check: work unit not already occupied
+	if _, exists := m.installations[workUnitID]; exists {
+		return nil, fmt.Errorf("work unit already has an asset installed")
+	}
+	// Check: asset not already installed elsewhere
+	for _, inst := range m.installations {
+		if inst.PhysicalAssetID == physicalAssetID {
+			return nil, fmt.Errorf("asset is already installed at work unit %s", inst.WorkUnitID)
+		}
+	}
+	now := time.Now()
+	inst := &db.PhysicalAssetInstallation{
+		ID:              fmt.Sprintf("inst-%d", m.nextID),
+		PhysicalAssetID: physicalAssetID,
+		WorkUnitID:      workUnitID,
+		InstalledAt:     now,
+		CreatedAt:       now,
+		UpdatedAt:       now,
+	}
+	m.nextID++
+	m.installations[workUnitID] = inst
+	return inst, nil
+}
+
+func (m *mockRepo) UninstallAsset(_ context.Context, workUnitID string) (*db.PhysicalAssetInstallation, error) {
+	inst, ok := m.installations[workUnitID]
+	if !ok {
+		return nil, nil
+	}
+	now := time.Now()
+	inst.RemovedAt = &now
+	inst.UpdatedAt = now
+	delete(m.installations, workUnitID)
+	return inst, nil
+}
+
+func (m *mockRepo) GetCurrentInstallation(_ context.Context, workUnitID string) (*db.PhysicalAssetInstallation, error) {
+	inst, ok := m.installations[workUnitID]
+	if !ok {
+		return nil, nil
+	}
+	return inst, nil
+}
+
+func (m *mockRepo) ListInstallations(_ context.Context, workUnitID string) ([]*db.PhysicalAssetInstallation, error) {
+	inst, ok := m.installations[workUnitID]
+	if !ok {
+		return nil, nil
+	}
+	return []*db.PhysicalAssetInstallation{inst}, nil
 }
 
 // ============================================================================
@@ -726,5 +821,439 @@ func TestToProtoWorkUnit_Nil(t *testing.T) {
 	got := toProtoWorkUnit(nil)
 	if got != nil {
 		t.Errorf("toProtoWorkUnit(nil) = %v, want nil", got)
+	}
+}
+
+func TestToProtoPhysicalAsset_Nil(t *testing.T) {
+	got := toProtoPhysicalAsset(nil)
+	if got != nil {
+		t.Errorf("toProtoPhysicalAsset(nil) = %v, want nil", got)
+	}
+}
+
+func TestToProtoInstallation_Nil(t *testing.T) {
+	got := toProtoInstallation(nil)
+	if got != nil {
+		t.Errorf("toProtoInstallation(nil) = %v, want nil", got)
+	}
+}
+
+// ============================================================================
+// Physical Asset Tests
+// ============================================================================
+
+func TestCreatePhysicalAsset_Success(t *testing.T) {
+	srv, _ := setupTest()
+
+	resp, err := srv.CreatePhysicalAsset(context.Background(), &resourcev1.CreatePhysicalAssetRequest{
+		Name:         "Haas VF-2",
+		SerialNumber: "SN-48291",
+		Manufacturer: "Haas Automation",
+		Model:        "VF-2",
+		AssetType:    "CNC Mill",
+	})
+	if err != nil {
+		t.Fatalf("CreatePhysicalAsset() = %v, want nil", err)
+	}
+	pa := resp.GetPhysicalAsset()
+	if pa == nil {
+		t.Fatal("CreatePhysicalAsset() returned nil PhysicalAsset")
+	}
+	if pa.GetName() != "Haas VF-2" {
+		t.Errorf("Name = %q, want %q", pa.GetName(), "Haas VF-2")
+	}
+	if pa.GetSerialNumber() != "SN-48291" {
+		t.Errorf("SerialNumber = %q, want %q", pa.GetSerialNumber(), "SN-48291")
+	}
+	if pa.GetManufacturer() != "Haas Automation" {
+		t.Errorf("Manufacturer = %q, want %q", pa.GetManufacturer(), "Haas Automation")
+	}
+	if pa.GetStatus() != resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE {
+		t.Errorf("Status = %v, want ACTIVE", pa.GetStatus())
+	}
+}
+
+func TestCreatePhysicalAsset_MissingName(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.CreatePhysicalAsset(context.Background(), &resourcev1.CreatePhysicalAssetRequest{
+		SerialNumber: "SN-48291",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("CreatePhysicalAsset() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestCreatePhysicalAsset_MissingSerialNumber(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.CreatePhysicalAsset(context.Background(), &resourcev1.CreatePhysicalAssetRequest{
+		Name: "Haas VF-2",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("CreatePhysicalAsset() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestGetPhysicalAsset_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	pa, _ := repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+
+	resp, err := srv.GetPhysicalAsset(context.Background(), &resourcev1.GetPhysicalAssetRequest{Id: pa.ID})
+	if err != nil {
+		t.Fatalf("GetPhysicalAsset() = %v, want nil", err)
+	}
+	if resp.GetPhysicalAsset().GetId() != pa.ID {
+		t.Errorf("ID = %s, want %s", resp.GetPhysicalAsset().GetId(), pa.ID)
+	}
+}
+
+func TestGetPhysicalAsset_MissingID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.GetPhysicalAsset(context.Background(), &resourcev1.GetPhysicalAssetRequest{})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("GetPhysicalAsset() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestGetPhysicalAsset_NotFound(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.GetPhysicalAsset(context.Background(), &resourcev1.GetPhysicalAssetRequest{Id: "non-existent"})
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("GetPhysicalAsset() = %v, want NotFound", err)
+	}
+}
+
+func TestListPhysicalAssets_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-001",
+	})
+	repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Fanuc Robot", SerialNumber: "SN-002",
+	})
+
+	resp, err := srv.ListPhysicalAssets(context.Background(), &resourcev1.ListPhysicalAssetsRequest{})
+	if err != nil {
+		t.Fatalf("ListPhysicalAssets() = %v, want nil", err)
+	}
+	if len(resp.GetPhysicalAssets()) != 2 {
+		t.Errorf("ListPhysicalAssets() returned %d, want 2", len(resp.GetPhysicalAssets()))
+	}
+}
+
+func TestListPhysicalAssets_Empty(t *testing.T) {
+	srv, _ := setupTest()
+
+	resp, err := srv.ListPhysicalAssets(context.Background(), &resourcev1.ListPhysicalAssetsRequest{})
+	if err != nil {
+		t.Fatalf("ListPhysicalAssets() = %v, want nil", err)
+	}
+	if len(resp.GetPhysicalAssets()) != 0 {
+		t.Errorf("ListPhysicalAssets() returned %d, want 0", len(resp.GetPhysicalAssets()))
+	}
+}
+
+// ============================================================================
+// Installation Tests
+// ============================================================================
+
+func TestInstallAsset_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	pa, _ := repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+
+	resp, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID,
+		WorkUnitId:      wu.ID,
+	})
+	if err != nil {
+		t.Fatalf("InstallAsset() = %v, want nil", err)
+	}
+	inst := resp.GetInstallation()
+	if inst.GetPhysicalAssetId() != pa.ID {
+		t.Errorf("PhysicalAssetId = %s, want %s", inst.GetPhysicalAssetId(), pa.ID)
+	}
+	if inst.GetWorkUnitId() != wu.ID {
+		t.Errorf("WorkUnitId = %s, want %s", inst.GetWorkUnitId(), wu.ID)
+	}
+	if inst.GetInstalledAt() == nil {
+		t.Error("InstalledAt = nil, want non-nil")
+	}
+}
+
+func TestInstallAsset_MissingPhysicalAssetID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		WorkUnitId: "wu-1",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("InstallAsset() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestInstallAsset_MissingWorkUnitID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: "pa-1",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("InstallAsset() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestInstallAsset_PhysicalAssetNotFound(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+
+	_, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: "non-existent",
+		WorkUnitId:      wu.ID,
+	})
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("InstallAsset() = %v, want NotFound", err)
+	}
+}
+
+func TestInstallAsset_WorkUnitNotFound(t *testing.T) {
+	srv, repo := setupTest()
+
+	pa, _ := repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+
+	_, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID,
+		WorkUnitId:      "non-existent",
+	})
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("InstallAsset() = %v, want NotFound", err)
+	}
+}
+
+func TestInstallAsset_AlreadyInstalled(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu1, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	wu2, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station B")
+	pa, _ := repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+
+	// Install at Station A
+	_, _ = srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID,
+		WorkUnitId:      wu1.ID,
+	})
+
+	// Try to install same asset at Station B
+	_, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID,
+		WorkUnitId:      wu2.ID,
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("InstallAsset() = %v, want Internal (already installed)", err)
+	}
+}
+
+func TestUninstallAsset_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	pa, _ := repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+	_, _ = srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID,
+		WorkUnitId:      wu.ID,
+	})
+
+	resp, err := srv.UninstallAsset(context.Background(), &resourcev1.UninstallAssetRequest{
+		WorkUnitId: wu.ID,
+	})
+	if err != nil {
+		t.Fatalf("UninstallAsset() = %v, want nil", err)
+	}
+	inst := resp.GetInstallation()
+	if inst.GetRemovedAt() == nil {
+		t.Error("RemovedAt = nil, want non-nil")
+	}
+	if inst.GetPhysicalAssetId() != pa.ID {
+		t.Errorf("PhysicalAssetId = %s, want %s", inst.GetPhysicalAssetId(), pa.ID)
+	}
+}
+
+func TestUninstallAsset_MissingWorkUnitID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.UninstallAsset(context.Background(), &resourcev1.UninstallAssetRequest{})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("UninstallAsset() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestUninstallAsset_NotFound(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+
+	_, err := srv.UninstallAsset(context.Background(), &resourcev1.UninstallAssetRequest{
+		WorkUnitId: wu.ID,
+	})
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("UninstallAsset() = %v, want NotFound", err)
+	}
+}
+
+func TestGetCurrentInstallation_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	pa, _ := repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+	_, _ = srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID,
+		WorkUnitId:      wu.ID,
+	})
+
+	resp, err := srv.GetCurrentInstallation(context.Background(), &resourcev1.GetCurrentInstallationRequest{
+		WorkUnitId: wu.ID,
+	})
+	if err != nil {
+		t.Fatalf("GetCurrentInstallation() = %v, want nil", err)
+	}
+	if resp.GetInstallation().GetPhysicalAssetId() != pa.ID {
+		t.Errorf("PhysicalAssetId = %s, want %s", resp.GetInstallation().GetPhysicalAssetId(), pa.ID)
+	}
+}
+
+func TestGetCurrentInstallation_MissingWorkUnitID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.GetCurrentInstallation(context.Background(), &resourcev1.GetCurrentInstallationRequest{})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("GetCurrentInstallation() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestGetCurrentInstallation_NotFound(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+
+	_, err := srv.GetCurrentInstallation(context.Background(), &resourcev1.GetCurrentInstallationRequest{
+		WorkUnitId: wu.ID,
+	})
+	if status.Code(err) != codes.NotFound {
+		t.Errorf("GetCurrentInstallation() = %v, want NotFound", err)
+	}
+}
+
+func TestListInstallations_Success(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	pa, _ := repo.CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+	_, _ = srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID,
+		WorkUnitId:      wu.ID,
+	})
+
+	resp, err := srv.ListInstallations(context.Background(), &resourcev1.ListInstallationsRequest{
+		WorkUnitId: wu.ID,
+	})
+	if err != nil {
+		t.Fatalf("ListInstallations() = %v, want nil", err)
+	}
+	if len(resp.GetInstallations()) != 1 {
+		t.Errorf("ListInstallations() returned %d, want 1", len(resp.GetInstallations()))
+	}
+}
+
+func TestListInstallations_MissingWorkUnitID(t *testing.T) {
+	srv, _ := setupTest()
+
+	_, err := srv.ListInstallations(context.Background(), &resourcev1.ListInstallationsRequest{})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("ListInstallations() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestListInstallations_Empty(t *testing.T) {
+	srv, repo := setupTest()
+
+	wu, _ := repo.CreateWorkUnit(context.Background(), "wc-1", "Station A")
+
+	resp, err := srv.ListInstallations(context.Background(), &resourcev1.ListInstallationsRequest{
+		WorkUnitId: wu.ID,
+	})
+	if err != nil {
+		t.Fatalf("ListInstallations() = %v, want nil", err)
+	}
+	if len(resp.GetInstallations()) != 0 {
+		t.Errorf("ListInstallations() returned %d, want 0", len(resp.GetInstallations()))
+	}
+}
+
+// ============================================================================
+// Asset Status Conversion Tests
+// ============================================================================
+
+func TestToProtoAssetStatus(t *testing.T) {
+	tests := []struct {
+		input string
+		want  resourcev1.PhysicalAssetStatus
+	}{
+		{"active", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE},
+		{"faulted", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED},
+		{"under_maintenance", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE},
+		{"decommissioned", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED},
+		{"unknown", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNSPECIFIED},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := toProtoAssetStatus(tt.input)
+			if got != tt.want {
+				t.Errorf("toProtoAssetStatus(%q) = %v, want %v", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFromProtoAssetStatus(t *testing.T) {
+	tests := []struct {
+		input resourcev1.PhysicalAssetStatus
+		want  string
+	}{
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE, "active"},
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED, "faulted"},
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE, "under_maintenance"},
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED, "decommissioned"},
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNSPECIFIED, "unknown"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.want, func(t *testing.T) {
+			got := fromProtoAssetStatus(tt.input)
+			if got != tt.want {
+				t.Errorf("fromProtoAssetStatus(%v) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
 	}
 }

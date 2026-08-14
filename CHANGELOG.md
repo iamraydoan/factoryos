@@ -17,6 +17,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - gRPC Capability Assignment: `AssignCapability`, `ListWorkUnitCapabilities`, `RemoveCapability`.
   - Unit tests with mock repository (40 tests, 88.3% coverage).
 
+- **Physical Asset & Installation Records (`services/resource-service`):**
+  - `physical_assets` table for machine registry with serial number, manufacturer, model, and asset state machine (active → faulted → under_maintenance → decommissioned).
+  - `physical_asset_installations` time-bounded link table with full installation history audit trail.
+  - Transactional `InstallAsset` / `UninstallAsset` with denormalized pointer sync on `work_units` and `physical_assets`.
+  - gRPC CRUD for Physical Assets: `CreatePhysicalAsset`, `GetPhysicalAsset`, `ListPhysicalAssets`.
+  - gRPC Installation management: `InstallAsset`, `UninstallAsset`, `GetCurrentInstallation`, `ListInstallations`.
+  - Unit tests with mock repository (47 tests total).
+
 ---
 
 ## [v0.2.0] - 2026-08-12

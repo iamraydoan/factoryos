@@ -283,6 +283,174 @@ func (s *EquipmentServer) RemoveCapability(ctx context.Context, req *resourcev1.
 }
 
 // ============================================================================
+// Physical Asset RPCs
+// ============================================================================
+
+// CreatePhysicalAsset creates a new Physical Asset.
+func (s *EquipmentServer) CreatePhysicalAsset(ctx context.Context, req *resourcev1.CreatePhysicalAssetRequest) (*resourcev1.CreatePhysicalAssetResponse, error) {
+	if req.GetName() == "" {
+		return nil, status.Error(codes.InvalidArgument, "name is required")
+	}
+	if req.GetSerialNumber() == "" {
+		return nil, status.Error(codes.InvalidArgument, "serial_number is required")
+	}
+
+	asset := &db.PhysicalAsset{
+		Name:         req.GetName(),
+		SerialNumber: req.GetSerialNumber(),
+		Manufacturer: req.GetManufacturer(),
+		Model:        req.GetModel(),
+		AssetType:    req.GetAssetType(),
+		Status:       "active",
+	}
+
+	pa, err := s.repo.CreatePhysicalAsset(ctx, asset)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create physical asset: %v", err)
+	}
+
+	return &resourcev1.CreatePhysicalAssetResponse{
+		PhysicalAsset: toProtoPhysicalAsset(pa),
+	}, nil
+}
+
+// GetPhysicalAsset retrieves a Physical Asset by ID.
+func (s *EquipmentServer) GetPhysicalAsset(ctx context.Context, req *resourcev1.GetPhysicalAssetRequest) (*resourcev1.GetPhysicalAssetResponse, error) {
+	if req.GetId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+
+	pa, err := s.repo.GetPhysicalAsset(ctx, req.GetId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get physical asset: %v", err)
+	}
+	if pa == nil {
+		return nil, status.Error(codes.NotFound, "physical asset not found")
+	}
+
+	return &resourcev1.GetPhysicalAssetResponse{
+		PhysicalAsset: toProtoPhysicalAsset(pa),
+	}, nil
+}
+
+// ListPhysicalAssets returns all Physical Assets.
+func (s *EquipmentServer) ListPhysicalAssets(ctx context.Context, req *resourcev1.ListPhysicalAssetsRequest) (*resourcev1.ListPhysicalAssetsResponse, error) {
+	assets, err := s.repo.ListPhysicalAssets(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list physical assets: %v", err)
+	}
+
+	protoAssets := make([]*resourcev1.PhysicalAsset, len(assets))
+	for i, pa := range assets {
+		protoAssets[i] = toProtoPhysicalAsset(pa)
+	}
+
+	return &resourcev1.ListPhysicalAssetsResponse{
+		PhysicalAssets: protoAssets,
+	}, nil
+}
+
+// ============================================================================
+// Installation RPCs
+// ============================================================================
+
+// InstallAsset installs a Physical Asset at a Work Unit.
+func (s *EquipmentServer) InstallAsset(ctx context.Context, req *resourcev1.InstallAssetRequest) (*resourcev1.InstallAssetResponse, error) {
+	if req.GetPhysicalAssetId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "physical_asset_id is required")
+	}
+	if req.GetWorkUnitId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "work_unit_id is required")
+	}
+
+	// Verify Physical Asset exists
+	pa, err := s.repo.GetPhysicalAsset(ctx, req.GetPhysicalAssetId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to verify physical asset: %v", err)
+	}
+	if pa == nil {
+		return nil, status.Error(codes.NotFound, "physical asset not found")
+	}
+
+	// Verify Work Unit exists
+	wu, err := s.repo.GetWorkUnit(ctx, req.GetWorkUnitId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to verify work unit: %v", err)
+	}
+	if wu == nil {
+		return nil, status.Error(codes.NotFound, "work unit not found")
+	}
+
+	inst, err := s.repo.InstallAsset(ctx, req.GetPhysicalAssetId(), req.GetWorkUnitId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to install asset: %v", err)
+	}
+
+	return &resourcev1.InstallAssetResponse{
+		Installation: toProtoInstallation(inst),
+	}, nil
+}
+
+// UninstallAsset removes the currently installed Physical Asset from a Work Unit.
+func (s *EquipmentServer) UninstallAsset(ctx context.Context, req *resourcev1.UninstallAssetRequest) (*resourcev1.UninstallAssetResponse, error) {
+	if req.GetWorkUnitId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "work_unit_id is required")
+	}
+
+	inst, err := s.repo.UninstallAsset(ctx, req.GetWorkUnitId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to uninstall asset: %v", err)
+	}
+	if inst == nil {
+		return nil, status.Error(codes.NotFound, "no active installation found")
+	}
+
+	return &resourcev1.UninstallAssetResponse{
+		Installation: toProtoInstallation(inst),
+	}, nil
+}
+
+// GetCurrentInstallation returns the active installation for a Work Unit.
+func (s *EquipmentServer) GetCurrentInstallation(ctx context.Context, req *resourcev1.GetCurrentInstallationRequest) (*resourcev1.GetCurrentInstallationResponse, error) {
+	if req.GetWorkUnitId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "work_unit_id is required")
+	}
+
+	inst, err := s.repo.GetCurrentInstallation(ctx, req.GetWorkUnitId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to get current installation: %v", err)
+	}
+	if inst == nil {
+		return nil, status.Error(codes.NotFound, "no active installation found")
+	}
+
+	return &resourcev1.GetCurrentInstallationResponse{
+		Installation: toProtoInstallation(inst),
+	}, nil
+}
+
+// ListInstallations returns the full installation history for a Work Unit.
+func (s *EquipmentServer) ListInstallations(ctx context.Context, req *resourcev1.ListInstallationsRequest) (*resourcev1.ListInstallationsResponse, error) {
+	if req.GetWorkUnitId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "work_unit_id is required")
+	}
+
+	installations, err := s.repo.ListInstallations(ctx, req.GetWorkUnitId())
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to list installations: %v", err)
+	}
+
+	protoInstalls := make([]*resourcev1.PhysicalAssetInstallation, len(installations))
+	for i, inst := range installations {
+		protoInstalls[i] = toProtoInstallation(inst)
+	}
+
+	return &resourcev1.ListInstallationsResponse{
+		Installations: protoInstalls,
+	}, nil
+}
+
+// ============================================================================
 // Proto Conversion Helpers
 // ============================================================================
 
@@ -341,6 +509,49 @@ func toProtoCapability(cap *db.WorkUnitCapability) *resourcev1.WorkUnitCapabilit
 	}
 }
 
+// toProtoPhysicalAsset converts a domain PhysicalAsset to a proto PhysicalAsset.
+func toProtoPhysicalAsset(pa *db.PhysicalAsset) *resourcev1.PhysicalAsset {
+	if pa == nil {
+		return nil
+	}
+
+	proto := &resourcev1.PhysicalAsset{
+		Id:           pa.ID,
+		Name:         pa.Name,
+		SerialNumber: pa.SerialNumber,
+		Manufacturer: pa.Manufacturer,
+		Model:        pa.Model,
+		AssetType:    pa.AssetType,
+		Status:       toProtoAssetStatus(pa.Status),
+		CreatedAt:    timestamppb.New(pa.CreatedAt),
+		UpdatedAt:    timestamppb.New(pa.UpdatedAt),
+	}
+	if pa.InstalledAt != nil {
+		proto.InstalledAt = timestamppb.New(*pa.InstalledAt)
+	}
+	return proto
+}
+
+// toProtoInstallation converts a domain PhysicalAssetInstallation to a proto PhysicalAssetInstallation.
+func toProtoInstallation(inst *db.PhysicalAssetInstallation) *resourcev1.PhysicalAssetInstallation {
+	if inst == nil {
+		return nil
+	}
+
+	proto := &resourcev1.PhysicalAssetInstallation{
+		Id:              inst.ID,
+		PhysicalAssetId: inst.PhysicalAssetID,
+		WorkUnitId:      inst.WorkUnitID,
+		InstalledAt:     timestamppb.New(inst.InstalledAt),
+		CreatedAt:       timestamppb.New(inst.CreatedAt),
+		UpdatedAt:       timestamppb.New(inst.UpdatedAt),
+	}
+	if inst.RemovedAt != nil {
+		proto.RemovedAt = timestamppb.New(*inst.RemovedAt)
+	}
+	return proto
+}
+
 // ============================================================================
 // Status Conversion Helpers
 // ============================================================================
@@ -372,6 +583,38 @@ func fromProtoStatus(status resourcev1.WorkUnitStatus) string {
 		return "in_production"
 	case resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_FAULTED:
 		return "faulted"
+	default:
+		return statusUnknown
+	}
+}
+
+// toProtoAssetStatus converts a DB status string to a proto PhysicalAssetStatus enum.
+func toProtoAssetStatus(status string) resourcev1.PhysicalAssetStatus {
+	switch status {
+	case "active":
+		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE
+	case "faulted":
+		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED
+	case "under_maintenance":
+		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE
+	case "decommissioned":
+		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED
+	default:
+		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNSPECIFIED
+	}
+}
+
+// fromProtoAssetStatus converts a proto PhysicalAssetStatus enum to a DB status string.
+func fromProtoAssetStatus(status resourcev1.PhysicalAssetStatus) string {
+	switch status {
+	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE:
+		return "active"
+	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED:
+		return "faulted"
+	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE:
+		return "under_maintenance"
+	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED:
+		return "decommissioned"
 	default:
 		return statusUnknown
 	}
