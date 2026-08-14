@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -164,9 +165,6 @@ func main() {
 }
 
 func mathRound(val float64, precision int) float64 {
-	ratio := 1.0
-	for i := 0; i < precision; i++ {
-		ratio *= 10.0
-	}
-	return float64(int(val*ratio+0.5)) / ratio
+	ratio := math.Pow(10, float64(precision))
+	return math.Round(val*ratio) / ratio
 }

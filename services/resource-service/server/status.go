@@ -6,10 +6,10 @@ import "fmt"
 //
 //	available → allocated → in_production → faulted → available
 var validTransitions = map[string][]string{
-	"available":     {"allocated"},
-	"allocated":     {"in_production", "available"},
-	"in_production": {"faulted", "available"},
-	"faulted":       {"available"},
+	StatusAvailable:    {StatusAllocated},
+	StatusAllocated:    {StatusInProduction, StatusAvailable},
+	StatusInProduction: {StatusFaulted, StatusAvailable},
+	StatusFaulted:      {StatusAvailable},
 }
 
 // ValidateTransition checks if a status transition is allowed.

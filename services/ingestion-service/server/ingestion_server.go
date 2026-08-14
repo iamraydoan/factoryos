@@ -2,11 +2,10 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log"
-	"sync"
 	"sync/atomic"
+	"time"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,6 +15,9 @@ import (
 	"github.com/iamraydoan/factoryos/services/ingestion-service/kafka"
 )
 
+// kafkaWriteTimeout is the maximum time to wait for a Kafka write to complete.
+const kafkaWriteTimeout = 5 * time.Second
+
 // IngestionServer implements the gRPC TelemetryIngestionServiceServer interface.
 type IngestionServer struct {
 	telemetryv1.UnimplementedTelemetryIngestionServiceServer
@@ -24,7 +26,6 @@ type IngestionServer struct {
 	batchesReceived int64
 	recordsReceived int64
 	errorsCount     int64
-	mu              sync.Mutex
 }
 
 // NewIngestionServer creates a new IngestionServer instance with the provided Kafka producer.
@@ -54,7 +55,9 @@ func (s *IngestionServer) IngestBatch(ctx context.Context, req *telemetryv1.Inge
 		totalReadings += int64(len(p.GetReadings()))
 	}
 
-	if err := s.producer.WriteBatch(ctx, batch); err != nil {
+	writeCtx, cancel := context.WithTimeout(ctx, kafkaWriteTimeout)
+	defer cancel()
+	if err := s.producer.WriteBatch(writeCtx, batch); err != nil {
 		atomic.AddInt64(&s.errorsCount, 1)
 		log.Printf("[IngestionServer][ERROR] Failed to produce batch %s to Kafka: %v", batch.GetBatchId(), err)
 		return &telemetryv1.IngestBatchResponse{
@@ -62,10 +65,10 @@ func (s *IngestionServer) IngestBatch(ctx context.Context, req *telemetryv1.Inge
 				Status:          telemetryv1.IngestionStatus_INGESTION_STATUS_REJECTED,
 				BatchId:         batch.GetBatchId(),
 				RecordsIngested: 0,
-				Message:         fmt.Sprintf("internal error producing to event bus: %v", err),
+				Message:         "internal error producing to event bus",
 				AcknowledgedAt:  timestamppb.Now(),
 			},
-		}, status.Errorf(codes.Internal, "failed to persist batch: %v", err)
+		}, status.Errorf(codes.Internal, "failed to persist batch")
 	}
 
 	atomic.AddInt64(&s.batchesReceived, 1)
@@ -117,11 +120,14 @@ func (s *IngestionServer) StreamTelemetry(stream telemetryv1.TelemetryIngestionS
 			batchReadings += int64(len(p.GetReadings()))
 		}
 
-		if err := s.producer.WriteBatch(stream.Context(), batch); err != nil {
+		writeCtx, cancel := context.WithTimeout(stream.Context(), kafkaWriteTimeout)
+		if err := s.producer.WriteBatch(writeCtx, batch); err != nil {
+			cancel()
 			atomic.AddInt64(&s.errorsCount, 1)
 			log.Printf("[IngestionServer][ERROR] Failed streaming batch %s to Kafka: %v", lastBatchID, err)
-			return status.Errorf(codes.Internal, "failed to write stream batch to Kafka: %v", err)
+			return status.Errorf(codes.Internal, "failed to write stream batch to event bus")
 		}
+		cancel()
 
 		atomic.AddInt64(&s.batchesReceived, 1)
 		atomic.AddInt64(&s.recordsReceived, batchReadings)

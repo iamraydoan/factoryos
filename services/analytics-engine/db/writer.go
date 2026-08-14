@@ -195,13 +195,11 @@ func (w *BatchWriter) drainAndFlush(ctx context.Context) {
 			w.buffer = append(w.buffer, record)
 			w.mu.Unlock()
 		default:
-			goto flushRemaining
+			if err := w.Flush(ctx); err != nil {
+				log.Printf("[BatchWriter][ERROR] Final drain flush failed: %v", err)
+			}
+			return
 		}
-	}
-
-flushRemaining:
-	if err := w.Flush(ctx); err != nil {
-		log.Printf("[BatchWriter][ERROR] Final drain flush failed: %v", err)
 	}
 }
 

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,7 +36,8 @@ func (s *EquipmentClassServer) CreateEquipmentClass(ctx context.Context, req *re
 
 	ec, err := s.repo.CreateEquipmentClass(ctx, req.GetName(), desc)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to create equipment class: %v", err)
+		log.Printf("[EquipmentClassServer][ERROR] CreateEquipmentClass: %v", err)
+		return nil, status.Error(codes.Internal, "failed to create equipment class")
 	}
 
 	return &resourcev1.CreateEquipmentClassResponse{
@@ -51,7 +53,8 @@ func (s *EquipmentClassServer) GetEquipmentClass(ctx context.Context, req *resou
 
 	ec, err := s.repo.GetEquipmentClass(ctx, req.GetId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get equipment class: %v", err)
+		log.Printf("[EquipmentClassServer][ERROR] GetEquipmentClass(%s): %v", req.GetId(), err)
+		return nil, status.Error(codes.Internal, "failed to get equipment class")
 	}
 	if ec == nil {
 		return nil, status.Error(codes.NotFound, "equipment class not found")
@@ -66,7 +69,8 @@ func (s *EquipmentClassServer) GetEquipmentClass(ctx context.Context, req *resou
 func (s *EquipmentClassServer) ListEquipmentClasses(ctx context.Context, req *resourcev1.ListEquipmentClassesRequest) (*resourcev1.ListEquipmentClassesResponse, error) {
 	classes, err := s.repo.ListEquipmentClasses(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list equipment classes: %v", err)
+		log.Printf("[EquipmentClassServer][ERROR] ListEquipmentClasses: %v", err)
+		return nil, status.Error(codes.Internal, "failed to list equipment classes")
 	}
 
 	protoClasses := make([]*resourcev1.EquipmentClass, len(classes))

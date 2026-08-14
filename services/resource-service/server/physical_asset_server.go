@@ -37,7 +37,7 @@ func (s *PhysicalAssetServer) CreatePhysicalAsset(ctx context.Context, req *reso
 		Manufacturer: req.GetManufacturer(),
 		Model:        req.GetModel(),
 		AssetType:    req.GetAssetType(),
-		Status:       "active",
+		Status:       AssetStatusActive,
 	}
 
 	pa, err := s.repo.CreatePhysicalAsset(ctx, asset)
@@ -59,7 +59,8 @@ func (s *PhysicalAssetServer) GetPhysicalAsset(ctx context.Context, req *resourc
 
 	pa, err := s.repo.GetPhysicalAsset(ctx, req.GetId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get physical asset: %v", err)
+		log.Printf("[PhysicalAssetServer][ERROR] GetPhysicalAsset(%s): %v", req.GetId(), err)
+		return nil, status.Error(codes.Internal, "failed to get physical asset")
 	}
 	if pa == nil {
 		return nil, status.Error(codes.NotFound, "physical asset not found")
@@ -74,7 +75,8 @@ func (s *PhysicalAssetServer) GetPhysicalAsset(ctx context.Context, req *resourc
 func (s *PhysicalAssetServer) ListPhysicalAssets(ctx context.Context, req *resourcev1.ListPhysicalAssetsRequest) (*resourcev1.ListPhysicalAssetsResponse, error) {
 	assets, err := s.repo.ListPhysicalAssets(ctx)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list physical assets: %v", err)
+		log.Printf("[PhysicalAssetServer][ERROR] ListPhysicalAssets: %v", err)
+		return nil, status.Error(codes.Internal, "failed to list physical assets")
 	}
 
 	protoAssets := make([]*resourcev1.PhysicalAsset, len(assets))

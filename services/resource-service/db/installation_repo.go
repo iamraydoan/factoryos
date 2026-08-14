@@ -2,10 +2,12 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // PhysicalAssetInstallation records a time-bounded link between a Physical Asset and a Work Unit.
@@ -29,6 +31,8 @@ type InstallationRepository interface {
 
 // InstallAsset installs a Physical Asset at a Work Unit within a transaction.
 // Enforces: one asset per work unit, one work unit per asset (at a time).
+// Uses SELECT ... FOR UPDATE for defense-in-depth; the database-level partial
+// unique indexes (migration 0004) are the authoritative guard against races.
 func (r *PostgresEquipmentRepository) InstallAsset(ctx context.Context, physicalAssetID, workUnitID string) (*PhysicalAssetInstallation, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
@@ -36,11 +40,12 @@ func (r *PostgresEquipmentRepository) InstallAsset(ctx context.Context, physical
 	}
 	defer tx.Rollback(ctx) // No-op after successful commit
 
-	// Guard: asset must not be installed elsewhere
+	// Guard: asset must not be installed elsewhere (FOR UPDATE prevents concurrent races)
 	var occupiedWU *string
 	err = tx.QueryRow(ctx,
 		`SELECT work_unit_id FROM physical_asset_installations
-		 WHERE physical_asset_id = $1 AND removed_at IS NULL`,
+		 WHERE physical_asset_id = $1 AND removed_at IS NULL
+		 FOR UPDATE`,
 		physicalAssetID,
 	).Scan(&occupiedWU)
 	if err != nil && err != pgx.ErrNoRows {
@@ -50,11 +55,12 @@ func (r *PostgresEquipmentRepository) InstallAsset(ctx context.Context, physical
 		return nil, fmt.Errorf("asset is already installed at work unit %s", *occupiedWU)
 	}
 
-	// Guard: work unit must not already have an active installation
+	// Guard: work unit must not already have an active installation (FOR UPDATE prevents concurrent races)
 	var occupiedAsset *string
 	err = tx.QueryRow(ctx,
 		`SELECT physical_asset_id FROM physical_asset_installations
-		 WHERE work_unit_id = $1 AND removed_at IS NULL`,
+		 WHERE work_unit_id = $1 AND removed_at IS NULL
+		 FOR UPDATE`,
 		workUnitID,
 	).Scan(&occupiedAsset)
 	if err != nil && err != pgx.ErrNoRows {
@@ -74,6 +80,10 @@ func (r *PostgresEquipmentRepository) InstallAsset(ctx context.Context, physical
 	).Scan(&inst.ID, &inst.PhysicalAssetID, &inst.WorkUnitID,
 		&inst.InstalledAt, &inst.RemovedAt, &inst.CreatedAt, &inst.UpdatedAt)
 	if err != nil {
+		// Handle unique constraint violation from migration 0004 as a business error
+		if isUniqueViolation(err) {
+			return nil, fmt.Errorf("concurrent installation detected for asset %s or work unit %s", physicalAssetID, workUnitID)
+		}
 		return nil, fmt.Errorf("failed to create installation record: %w", err)
 	}
 
@@ -100,6 +110,15 @@ func (r *PostgresEquipmentRepository) InstallAsset(ctx context.Context, physical
 	}
 
 	return &inst, nil
+}
+
+// isUniqueViolation checks if the error is a PostgreSQL unique constraint violation (SQLSTATE 23505).
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code == "23505"
+	}
+	return false
 }
 
 // UninstallAsset removes the currently installed Physical Asset from a Work Unit.

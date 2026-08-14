@@ -27,7 +27,7 @@ func (m *mockWorkUnitRepo) CreateWorkUnit(_ context.Context, workCenterID, name 
 	m.nextID++
 	wu := &db.WorkUnit{
 		ID: id, WorkCenterID: workCenterID, Name: name,
-		Status: "available", CreatedAt: time.Now(), UpdatedAt: time.Now(),
+		Status: StatusAvailable, CreatedAt: time.Now(), UpdatedAt: time.Now(),
 	}
 	m.units[wu.ID] = wu
 	return wu, nil

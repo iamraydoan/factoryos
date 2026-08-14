@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -27,11 +28,13 @@ func (p *ConsoleCloudPublisher) PublishBatch(ctx context.Context, payloads []*te
 }
 
 // run initializes and starts the Edge Runtime service components.
-func run(ctx context.Context, dbPath string) error {
+// The returned WaitGroup tracks all background goroutines; the caller must
+// wait on it after cancelling the context to ensure clean shutdown.
+func run(ctx context.Context, dbPath string) (*sync.WaitGroup, error) {
 	log.Printf("Initializing local SQLite store-and-forward buffer at %s...", dbPath)
 	buf, err := buffer.NewSQLiteBuffer(dbPath)
 	if err != nil {
-		return fmt.Errorf("failed to initialize SQLite buffer: %w", err)
+		return nil, fmt.Errorf("failed to initialize SQLite buffer: %w", err)
 	}
 
 	var publisher collector.CloudPublisher
@@ -59,8 +62,14 @@ func run(ctx context.Context, dbPath string) error {
 
 	telCollector := collector.NewTelemetryCollector(buf, publisher)
 
+	var wg sync.WaitGroup
+
 	// Start background cloud sync worker (every 2s, batch size up to 50)
-	go telCollector.StartSyncWorker(ctx, 2*time.Second, 50)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		telCollector.StartSyncWorker(ctx, 2*time.Second, 50)
+	}()
 
 	// Initialize MQTT Subscriber
 	brokerURL := os.Getenv("MQTT_BROKER_URL")
@@ -73,14 +82,16 @@ func run(ctx context.Context, dbPath string) error {
 		log.Printf("Warning: Could not initialize MQTT subscriber: %v", err)
 	} else {
 		// Run MQTT connect in background so offline broker doesn't block startup or unit tests
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			if err := mqttSub.Connect(); err != nil {
 				log.Printf("Warning: MQTT Broker at %s unreachable (%v). Subscriber retrying in background...", brokerURL, err)
 			}
 		}()
 	}
 
-	return nil
+	return &wg, nil
 }
 
 func main() {
@@ -94,7 +105,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := run(ctx, dbPath); err != nil {
+	wg, err := run(ctx, dbPath)
+	if err != nil {
 		log.Fatalf("Runtime startup error: %v", err)
 	}
 
@@ -105,4 +117,7 @@ func main() {
 	<-sigChan
 
 	log.Println("Shutting down FactoryOS Edge Runtime gracefully...")
+	cancel()
+	wg.Wait()
+	log.Println("FactoryOS Edge Runtime stopped.")
 }

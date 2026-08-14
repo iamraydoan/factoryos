@@ -9,12 +9,12 @@ func TestValidateTransition_Valid(t *testing.T) {
 		from string
 		to   string
 	}{
-		{"available to allocated", "available", "allocated"},
-		{"allocated to in_production", "allocated", "in_production"},
-		{"allocated to available", "allocated", "available"},
-		{"in_production to faulted", "in_production", "faulted"},
-		{"in_production to available", "in_production", "available"},
-		{"faulted to available", "faulted", "available"},
+		{"available to allocated", StatusAvailable, StatusAllocated},
+		{"allocated to in_production", StatusAllocated, StatusInProduction},
+		{"allocated to available", StatusAllocated, StatusAvailable},
+		{"in_production to faulted", StatusInProduction, StatusFaulted},
+		{"in_production to available", StatusInProduction, StatusAvailable},
+		{"faulted to available", StatusFaulted, StatusAvailable},
 	}
 
 	for _, tt := range tests {
@@ -33,11 +33,11 @@ func TestValidateTransition_Invalid(t *testing.T) {
 		from string
 		to   string
 	}{
-		{"available to in_production", "available", "in_production"},
-		{"available to faulted", "available", "faulted"},
-		{"faulted to allocated", "faulted", "allocated"},
-		{"faulted to in_production", "faulted", "in_production"},
-		{"in_production to allocated", "in_production", "allocated"},
+		{"available to in_production", StatusAvailable, StatusInProduction},
+		{"available to faulted", StatusAvailable, StatusFaulted},
+		{"faulted to allocated", StatusFaulted, StatusAllocated},
+		{"faulted to in_production", StatusFaulted, StatusInProduction},
+		{"in_production to allocated", StatusInProduction, StatusAllocated},
 	}
 
 	for _, tt := range tests {

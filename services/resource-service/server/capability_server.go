@@ -37,7 +37,8 @@ func (s *CapabilityServer) AssignCapability(ctx context.Context, req *resourcev1
 	// Verify Work Unit exists
 	wu, err := s.workUnits.GetWorkUnit(ctx, req.GetWorkUnitId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to verify work unit: %v", err)
+		log.Printf("[CapabilityServer][ERROR] GetWorkUnit(%s): %v", req.GetWorkUnitId(), err)
+		return nil, status.Error(codes.Internal, "failed to verify work unit")
 	}
 	if wu == nil {
 		return nil, status.Error(codes.NotFound, "work unit not found")
@@ -46,7 +47,8 @@ func (s *CapabilityServer) AssignCapability(ctx context.Context, req *resourcev1
 	// Verify Equipment Class exists
 	ec, err := s.classes.GetEquipmentClass(ctx, req.GetEquipmentClassId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to verify equipment class: %v", err)
+		log.Printf("[CapabilityServer][ERROR] GetEquipmentClass(%s): %v", req.GetEquipmentClassId(), err)
+		return nil, status.Error(codes.Internal, "failed to verify equipment class")
 	}
 	if ec == nil {
 		return nil, status.Error(codes.NotFound, "equipment class not found")
@@ -79,7 +81,8 @@ func (s *CapabilityServer) ListWorkUnitCapabilities(ctx context.Context, req *re
 
 	caps, err := s.caps.ListWorkUnitCapabilities(ctx, req.GetWorkUnitId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list capabilities: %v", err)
+		log.Printf("[CapabilityServer][ERROR] ListWorkUnitCapabilities(%s): %v", req.GetWorkUnitId(), err)
+		return nil, status.Error(codes.Internal, "failed to list capabilities")
 	}
 
 	protoCaps := make([]*resourcev1.WorkUnitCapability, len(caps))
@@ -103,7 +106,8 @@ func (s *CapabilityServer) RemoveCapability(ctx context.Context, req *resourcev1
 
 	removed, err := s.caps.RemoveCapability(ctx, req.GetWorkUnitId(), req.GetEquipmentClassId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to remove capability: %v", err)
+		log.Printf("[CapabilityServer][ERROR] RemoveCapability(%s, %s): %v", req.GetWorkUnitId(), req.GetEquipmentClassId(), err)
+		return nil, status.Error(codes.Internal, "failed to remove capability")
 	}
 
 	return &resourcev1.RemoveCapabilityResponse{

@@ -31,7 +31,7 @@ func TestRun_Success(t *testing.T) {
 	defer cancel()
 
 	dbPath := "file:main_test_db?mode=memory&cache=shared"
-	if err := run(ctx, dbPath); err != nil {
+	if _, err := run(ctx, dbPath); err != nil {
 		t.Fatalf("run failed: %v", err)
 	}
 
@@ -42,7 +42,7 @@ func TestRun_InvalidDBPath(t *testing.T) {
 	ctx := context.Background()
 	invalidDbPath := "/invalid_dir/cannot_create.db"
 
-	if err := run(ctx, invalidDbPath); err == nil {
+	if _, err := run(ctx, invalidDbPath); err == nil {
 		t.Error("expected error when running with invalid DB path, got nil")
 	}
 }

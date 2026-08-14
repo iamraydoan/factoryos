@@ -383,15 +383,23 @@ func (a *OEEAggregator) GetSnapshots() []OEESnapshot {
 // computeOEE performs the OEE calculation for a single asset.
 // OEE = Availability × Performance × Quality
 //
-// Lock ordering: state.mu is acquired first, then a.mu (read-only).
-// This is safe because getOrCreateState releases a.mu before acquiring state.mu,
-// so no goroutine holds a.mu while waiting for state.mu.
+// Lock ordering: a.mu (read-only) is acquired FIRST, then state.mu.
+// This matches ProcessReading which acquires a.mu (via getOrCreateState) then state.mu.
+// Both paths acquire a.mu before state.mu, preventing deadlock.
 func (a *OEEAggregator) computeOEE(assetID string, state *assetOEEState) *OEESnapshot {
+	// Read ideal cycle time BEFORE acquiring state.mu to maintain consistent lock order.
+	a.mu.RLock()
+	idealCycle, hasIdeal := a.idealCycleTime[assetID]
+	if !hasIdeal {
+		idealCycle = a.config.DefaultIdealCycleTime
+	}
+	windowDuration := a.config.WindowDuration
+	a.mu.RUnlock()
+
 	state.mu.Lock()
 	defer state.mu.Unlock()
 
 	now := time.Now()
-	windowDuration := a.config.WindowDuration
 
 	snapshot := &OEESnapshot{
 		PhysicalAssetID: assetID,
@@ -416,12 +424,6 @@ func (a *OEEAggregator) computeOEE(assetID string, state *assetOEEState) *OEESna
 
 	// --- Performance ---
 	// Performance = (ActualOutput × IdealCycleTime) / RunTime
-	a.mu.RLock()
-	idealCycle, hasIdeal := a.idealCycleTime[assetID]
-	if !hasIdeal {
-		idealCycle = a.config.DefaultIdealCycleTime
-	}
-	a.mu.RUnlock()
 
 	if snapshot.RunTime > 0 && state.actualOutput > 0 {
 		idealOutput := float64(snapshot.RunTime) / float64(idealCycle)

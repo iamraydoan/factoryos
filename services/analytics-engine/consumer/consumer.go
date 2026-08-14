@@ -188,9 +188,9 @@ func (c *TelemetryConsumer) processSinglePayload(payload *telemetryv1.TelemetryP
 				Value:           val,
 				Quality:         string(quality),
 			}); err != nil {
-				// ErrBufferFull — record was dropped; consumer already logged it.
-				// Do not count as a processing error; it is a back-pressure event.
-				_ = err
+				// ErrBufferFull — record was dropped due to back-pressure.
+				// Log at WARN level; the BatchWriter also logs individual drops.
+				log.Printf("[TelemetryConsumer][WARN] Record dropped (buffer full): asset=%s metric=%s", assetID, metricName)
 			}
 		}
 
@@ -219,4 +219,12 @@ func (c *TelemetryConsumer) Stats() (messages, readings, errors int64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.messagesConsumed, c.readingsParsed, c.errorsCount
+}
+
+// DroppedCount returns the number of records dropped by the batch writer due to back-pressure.
+func (c *TelemetryConsumer) DroppedCount() int64 {
+	if c.writer == nil {
+		return 0
+	}
+	return c.writer.DroppedCount()
 }

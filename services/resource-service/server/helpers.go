@@ -119,15 +119,15 @@ func toProtoInstallation(inst *db.PhysicalAssetInstallation) *resourcev1.Physica
 // ============================================================================
 
 // toProtoStatus converts a DB status string to a proto WorkUnitStatus enum.
-func toProtoStatus(status string) resourcev1.WorkUnitStatus {
-	switch status {
-	case "available":
+func toProtoStatus(s string) resourcev1.WorkUnitStatus {
+	switch s {
+	case StatusAvailable:
 		return resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_AVAILABLE
-	case "allocated":
+	case StatusAllocated:
 		return resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED
-	case "in_production":
+	case StatusInProduction:
 		return resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_IN_PRODUCTION
-	case "faulted":
+	case StatusFaulted:
 		return resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_FAULTED
 	default:
 		return resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_UNSPECIFIED
@@ -135,31 +135,31 @@ func toProtoStatus(status string) resourcev1.WorkUnitStatus {
 }
 
 // fromProtoStatus converts a proto WorkUnitStatus enum to a DB status string.
-func fromProtoStatus(status resourcev1.WorkUnitStatus) string {
-	switch status {
+func fromProtoStatus(s resourcev1.WorkUnitStatus) string {
+	switch s {
 	case resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_AVAILABLE:
-		return "available"
+		return StatusAvailable
 	case resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED:
-		return "allocated"
+		return StatusAllocated
 	case resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_IN_PRODUCTION:
-		return "in_production"
+		return StatusInProduction
 	case resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_FAULTED:
-		return "faulted"
+		return StatusFaulted
 	default:
 		return statusUnknown
 	}
 }
 
 // toProtoAssetStatus converts a DB status string to a proto PhysicalAssetStatus enum.
-func toProtoAssetStatus(status string) resourcev1.PhysicalAssetStatus {
-	switch status {
-	case "active":
+func toProtoAssetStatus(s string) resourcev1.PhysicalAssetStatus {
+	switch s {
+	case AssetStatusActive:
 		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE
-	case "faulted":
+	case AssetStatusFaulted:
 		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED
-	case "under_maintenance":
+	case AssetStatusUnderMaintenance:
 		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE
-	case "decommissioned":
+	case AssetStatusDecommissioned:
 		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED
 	default:
 		return resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNSPECIFIED
@@ -167,16 +167,16 @@ func toProtoAssetStatus(status string) resourcev1.PhysicalAssetStatus {
 }
 
 // fromProtoAssetStatus converts a proto PhysicalAssetStatus enum to a DB status string.
-func fromProtoAssetStatus(status resourcev1.PhysicalAssetStatus) string {
-	switch status {
+func fromProtoAssetStatus(s resourcev1.PhysicalAssetStatus) string {
+	switch s {
 	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE:
-		return "active"
+		return AssetStatusActive
 	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED:
-		return "faulted"
+		return AssetStatusFaulted
 	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE:
-		return "under_maintenance"
+		return AssetStatusUnderMaintenance
 	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED:
-		return "decommissioned"
+		return AssetStatusDecommissioned
 	default:
 		return statusUnknown
 	}

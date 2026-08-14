@@ -34,10 +34,10 @@ func TestToProtoStatus(t *testing.T) {
 		input string
 		want  resourcev1.WorkUnitStatus
 	}{
-		{"available", resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_AVAILABLE},
-		{"allocated", resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED},
-		{"in_production", resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_IN_PRODUCTION},
-		{"faulted", resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_FAULTED},
+		{StatusAvailable, resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_AVAILABLE},
+		{StatusAllocated, resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED},
+		{StatusInProduction, resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_IN_PRODUCTION},
+		{StatusFaulted, resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_FAULTED},
 		{"unknown", resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_UNSPECIFIED},
 	}
 
@@ -56,10 +56,10 @@ func TestFromProtoStatus(t *testing.T) {
 		input resourcev1.WorkUnitStatus
 		want  string
 	}{
-		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_AVAILABLE, "available"},
-		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED, "allocated"},
-		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_IN_PRODUCTION, "in_production"},
-		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_FAULTED, "faulted"},
+		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_AVAILABLE, StatusAvailable},
+		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED, StatusAllocated},
+		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_IN_PRODUCTION, StatusInProduction},
+		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_FAULTED, StatusFaulted},
 		{resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_UNSPECIFIED, "unknown"},
 	}
 
@@ -78,10 +78,10 @@ func TestToProtoAssetStatus(t *testing.T) {
 		input string
 		want  resourcev1.PhysicalAssetStatus
 	}{
-		{"active", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE},
-		{"faulted", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED},
-		{"under_maintenance", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE},
-		{"decommissioned", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED},
+		{AssetStatusActive, resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE},
+		{AssetStatusFaulted, resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED},
+		{AssetStatusUnderMaintenance, resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE},
+		{AssetStatusDecommissioned, resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED},
 		{"unknown", resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNSPECIFIED},
 	}
 
@@ -100,10 +100,10 @@ func TestFromProtoAssetStatus(t *testing.T) {
 		input resourcev1.PhysicalAssetStatus
 		want  string
 	}{
-		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE, "active"},
-		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED, "faulted"},
-		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE, "under_maintenance"},
-		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED, "decommissioned"},
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_ACTIVE, AssetStatusActive},
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_FAULTED, AssetStatusFaulted},
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE, AssetStatusUnderMaintenance},
+		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED, AssetStatusDecommissioned},
 		{resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_UNSPECIFIED, "unknown"},
 	}
 

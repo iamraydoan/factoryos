@@ -52,12 +52,11 @@ func main() {
 	}
 
 	// 2. Initialize Batch Writer
-	var batchWriter *db.BatchWriter
+	var inserter db.BatchInserter
 	if database != nil {
-		batchWriter = db.NewBatchWriter(database.AsBatchInserter(), cfg.Ingestion, cfg.Database.TableName)
-	} else {
-		batchWriter = db.NewBatchWriter(nil, cfg.Ingestion, cfg.Database.TableName)
+		inserter = database.AsBatchInserter()
 	}
+	batchWriter := db.NewBatchWriter(inserter, cfg.Ingestion, cfg.Database.TableName)
 	batchWriter.Start(ctx)
 
 	// 3. Initialize Real-Time Dynamic Alert Evaluator
@@ -126,6 +125,7 @@ func startHTTPServer(port string, cons *consumer.TelemetryConsumer, writer *db.B
 	mux.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
 		msgs, readings, errs := cons.Stats()
 		inserted, batches := writer.Stats()
+		dropped := cons.DroppedCount()
 
 		stats := map[string]any{
 			"kafka_messages_consumed": msgs,
@@ -133,6 +133,7 @@ func startHTTPServer(port string, cons *consumer.TelemetryConsumer, writer *db.B
 			"consumer_errors":         errs,
 			"timescaledb_inserted":    inserted,
 			"timescaledb_batches":     batches,
+			"records_dropped":         dropped,
 			"timestamp":               time.Now().UTC().Format(time.RFC3339),
 		}
 
@@ -164,6 +165,7 @@ func startHTTPServer(port string, cons *consumer.TelemetryConsumer, writer *db.B
 	mux.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
 		msgs, readings, errs := cons.Stats()
 		inserted, batches := writer.Stats()
+		dropped := cons.DroppedCount()
 
 		// Prometheus exposition format
 		resp := fmt.Sprintf("# HELP telemetry_consumed_total Total messages read from Kafka\n"+
@@ -180,8 +182,11 @@ func startHTTPServer(port string, cons *consumer.TelemetryConsumer, writer *db.B
 			"timescaledb_records_inserted_total %d\n\n"+
 			"# HELP timescaledb_batches_flushed_total Total CopyFrom batches flushed to TimescaleDB\n"+
 			"# TYPE timescaledb_batches_flushed_total counter\n"+
-			"timescaledb_batches_flushed_total %d\n",
-			msgs, readings, errs, inserted, batches)
+			"timescaledb_batches_flushed_total %d\n\n"+
+			"# HELP telemetry_records_dropped_total Total records dropped due to back-pressure\n"+
+			"# TYPE telemetry_records_dropped_total counter\n"+
+			"telemetry_records_dropped_total %d\n",
+			msgs, readings, errs, inserted, batches, dropped)
 
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 		_, _ = w.Write([]byte(resp))

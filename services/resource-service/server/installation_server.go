@@ -36,7 +36,8 @@ func (s *InstallationServer) InstallAsset(ctx context.Context, req *resourcev1.I
 	// Verify Physical Asset exists
 	pa, err := s.assets.GetPhysicalAsset(ctx, req.GetPhysicalAssetId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to verify physical asset: %v", err)
+		log.Printf("[InstallationServer][ERROR] GetPhysicalAsset(%s): %v", req.GetPhysicalAssetId(), err)
+		return nil, status.Error(codes.Internal, "failed to verify physical asset")
 	}
 	if pa == nil {
 		return nil, status.Error(codes.NotFound, "physical asset not found")
@@ -45,7 +46,8 @@ func (s *InstallationServer) InstallAsset(ctx context.Context, req *resourcev1.I
 	// Verify Work Unit exists
 	wu, err := s.workUnits.GetWorkUnit(ctx, req.GetWorkUnitId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to verify work unit: %v", err)
+		log.Printf("[InstallationServer][ERROR] GetWorkUnit(%s): %v", req.GetWorkUnitId(), err)
+		return nil, status.Error(codes.Internal, "failed to verify work unit")
 	}
 	if wu == nil {
 		return nil, status.Error(codes.NotFound, "work unit not found")
@@ -70,7 +72,8 @@ func (s *InstallationServer) UninstallAsset(ctx context.Context, req *resourcev1
 
 	inst, err := s.installs.UninstallAsset(ctx, req.GetWorkUnitId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to uninstall asset: %v", err)
+		log.Printf("[InstallationServer][ERROR] UninstallAsset(%s): %v", req.GetWorkUnitId(), err)
+		return nil, status.Error(codes.Internal, "failed to uninstall asset")
 	}
 	if inst == nil {
 		return nil, status.Error(codes.NotFound, "no active installation found")
@@ -89,7 +92,8 @@ func (s *InstallationServer) GetCurrentInstallation(ctx context.Context, req *re
 
 	inst, err := s.installs.GetCurrentInstallation(ctx, req.GetWorkUnitId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get current installation: %v", err)
+		log.Printf("[InstallationServer][ERROR] GetCurrentInstallation(%s): %v", req.GetWorkUnitId(), err)
+		return nil, status.Error(codes.Internal, "failed to get current installation")
 	}
 	if inst == nil {
 		return nil, status.Error(codes.NotFound, "no active installation found")
@@ -108,7 +112,8 @@ func (s *InstallationServer) ListInstallations(ctx context.Context, req *resourc
 
 	installations, err := s.installs.ListInstallations(ctx, req.GetWorkUnitId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list installations: %v", err)
+		log.Printf("[InstallationServer][ERROR] ListInstallations(%s): %v", req.GetWorkUnitId(), err)
+		return nil, status.Error(codes.Internal, "failed to list installations")
 	}
 
 	protoInstalls := make([]*resourcev1.PhysicalAssetInstallation, len(installations))

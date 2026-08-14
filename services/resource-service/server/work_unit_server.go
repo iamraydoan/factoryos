@@ -53,7 +53,8 @@ func (s *WorkUnitServer) GetWorkUnit(ctx context.Context, req *resourcev1.GetWor
 
 	wu, err := s.repo.GetWorkUnit(ctx, req.GetId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get work unit: %v", err)
+		log.Printf("[WorkUnitServer][ERROR] GetWorkUnit(%s): %v", req.GetId(), err)
+		return nil, status.Error(codes.Internal, "failed to get work unit")
 	}
 	if wu == nil {
 		return nil, status.Error(codes.NotFound, "work unit not found")
@@ -72,7 +73,8 @@ func (s *WorkUnitServer) ListWorkUnits(ctx context.Context, req *resourcev1.List
 
 	workUnits, err := s.repo.ListWorkUnits(ctx, req.GetWorkCenterId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list work units: %v", err)
+		log.Printf("[WorkUnitServer][ERROR] ListWorkUnits(%s): %v", req.GetWorkCenterId(), err)
+		return nil, status.Error(codes.Internal, "failed to list work units")
 	}
 
 	protoWorkUnits := make([]*resourcev1.WorkUnit, len(workUnits))
@@ -99,7 +101,8 @@ func (s *WorkUnitServer) UpdateWorkUnitStatus(ctx context.Context, req *resource
 	// Get current work unit to validate the transition
 	current, err := s.repo.GetWorkUnit(ctx, req.GetId())
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get work unit: %v", err)
+		log.Printf("[WorkUnitServer][ERROR] GetWorkUnit(%s): %v", req.GetId(), err)
+		return nil, status.Error(codes.Internal, "failed to get work unit")
 	}
 	if current == nil {
 		return nil, status.Error(codes.NotFound, "work unit not found")
@@ -113,7 +116,8 @@ func (s *WorkUnitServer) UpdateWorkUnitStatus(ctx context.Context, req *resource
 	// Atomic update: only succeeds if current status matches
 	updated, err := s.repo.UpdateWorkUnitStatus(ctx, req.GetId(), current.Status, newStatus)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update status: %v", err)
+		log.Printf("[WorkUnitServer][ERROR] UpdateWorkUnitStatus(%s): %v", req.GetId(), err)
+		return nil, status.Error(codes.Internal, "failed to update status")
 	}
 	if updated == nil {
 		return nil, status.Error(codes.Aborted, "status changed concurrently, please retry")
