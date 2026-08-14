@@ -21,6 +21,12 @@ jobs:
           go-version: '1.22'
           cache: true
 
+      - name: Install Buf CLI
+        uses: bufbuild/buf-setup-action@v1
+
+      - name: Generate Protobuf Code
+        run: make proto-gen
+
       - name: Verify Go Workspace Build
         run: |
           go build -o /dev/null ./platform/edge-runtime/...
