@@ -287,3 +287,97 @@ func TestListInstallations_Empty(t *testing.T) {
 		t.Errorf("ListInstallations() returned %d, want 0", len(resp.GetInstallations()))
 	}
 }
+
+// ============================================================================
+// Error-path tests: mock repos that always return errors
+// ============================================================================
+
+// mockInstallationRepoErr implements db.InstallationRepository and returns errors on all methods.
+type mockInstallationRepoErr struct{}
+
+func (m *mockInstallationRepoErr) InstallAsset(_ context.Context, _, _ string) (*db.PhysicalAssetInstallation, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockInstallationRepoErr) UninstallAsset(_ context.Context, _ string) (*db.PhysicalAssetInstallation, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockInstallationRepoErr) GetCurrentInstallation(_ context.Context, _ string) (*db.PhysicalAssetInstallation, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockInstallationRepoErr) ListInstallations(_ context.Context, _ string) ([]*db.PhysicalAssetInstallation, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func TestInstallAsset_AssetRepoError(t *testing.T) {
+	srv := NewInstallationServer(newMockWorkUnitRepo(), &mockPhysicalAssetRepoErr{}, newMockInstallationRepo())
+
+	wu, _ := srv.workUnits.(*mockWorkUnitRepo).CreateWorkUnit(context.Background(), "wc-1", "Station A")
+
+	_, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: "pa-1", WorkUnitId: wu.ID,
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("InstallAsset() = %v, want Internal", err)
+	}
+}
+
+func TestInstallAsset_WorkUnitRepoError(t *testing.T) {
+	srv := NewInstallationServer(&mockWorkUnitRepoErr{}, newMockPhysicalAssetRepo(), newMockInstallationRepo())
+
+	pa, _ := srv.assets.(*mockPhysicalAssetRepo).CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+
+	_, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID, WorkUnitId: "wu-1",
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("InstallAsset() = %v, want Internal", err)
+	}
+}
+
+func TestInstallAsset_RepoError(t *testing.T) {
+	srv := NewInstallationServer(newMockWorkUnitRepo(), newMockPhysicalAssetRepo(), &mockInstallationRepoErr{})
+
+	wu, _ := srv.workUnits.(*mockWorkUnitRepo).CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	pa, _ := srv.assets.(*mockPhysicalAssetRepo).CreatePhysicalAsset(context.Background(), &db.PhysicalAsset{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+
+	_, err := srv.InstallAsset(context.Background(), &resourcev1.InstallAssetRequest{
+		PhysicalAssetId: pa.ID, WorkUnitId: wu.ID,
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("InstallAsset() = %v, want Internal", err)
+	}
+}
+
+func TestUninstallAsset_RepoError(t *testing.T) {
+	srv := NewInstallationServer(newMockWorkUnitRepo(), newMockPhysicalAssetRepo(), &mockInstallationRepoErr{})
+
+	_, err := srv.UninstallAsset(context.Background(), &resourcev1.UninstallAssetRequest{WorkUnitId: "wu-1"})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("UninstallAsset() = %v, want Internal", err)
+	}
+}
+
+func TestGetCurrentInstallation_RepoError(t *testing.T) {
+	srv := NewInstallationServer(newMockWorkUnitRepo(), newMockPhysicalAssetRepo(), &mockInstallationRepoErr{})
+
+	_, err := srv.GetCurrentInstallation(context.Background(), &resourcev1.GetCurrentInstallationRequest{WorkUnitId: "wu-1"})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("GetCurrentInstallation() = %v, want Internal", err)
+	}
+}
+
+func TestListInstallations_RepoError(t *testing.T) {
+	srv := NewInstallationServer(newMockWorkUnitRepo(), newMockPhysicalAssetRepo(), &mockInstallationRepoErr{})
+
+	_, err := srv.ListInstallations(context.Background(), &resourcev1.ListInstallationsRequest{WorkUnitId: "wu-1"})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("ListInstallations() = %v, want Internal", err)
+	}
+}

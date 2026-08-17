@@ -161,3 +161,51 @@ func TestListPhysicalAssets_Empty(t *testing.T) {
 		t.Errorf("ListPhysicalAssets() returned %d, want 0", len(resp.GetPhysicalAssets()))
 	}
 }
+
+// ============================================================================
+// Error-path tests: mock repos that always return errors
+// ============================================================================
+
+// mockPhysicalAssetRepoErr implements db.PhysicalAssetRepository and returns errors on all methods.
+type mockPhysicalAssetRepoErr struct{}
+
+func (m *mockPhysicalAssetRepoErr) CreatePhysicalAsset(_ context.Context, _ *db.PhysicalAsset) (*db.PhysicalAsset, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockPhysicalAssetRepoErr) GetPhysicalAsset(_ context.Context, _ string) (*db.PhysicalAsset, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockPhysicalAssetRepoErr) ListPhysicalAssets(_ context.Context) ([]*db.PhysicalAsset, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func TestCreatePhysicalAsset_RepoError(t *testing.T) {
+	srv := NewPhysicalAssetServer(&mockPhysicalAssetRepoErr{})
+
+	_, err := srv.CreatePhysicalAsset(context.Background(), &resourcev1.CreatePhysicalAssetRequest{
+		Name: "Haas VF-2", SerialNumber: "SN-48291",
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("CreatePhysicalAsset() = %v, want Internal", err)
+	}
+}
+
+func TestGetPhysicalAsset_RepoError(t *testing.T) {
+	srv := NewPhysicalAssetServer(&mockPhysicalAssetRepoErr{})
+
+	_, err := srv.GetPhysicalAsset(context.Background(), &resourcev1.GetPhysicalAssetRequest{Id: "pa-1"})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("GetPhysicalAsset() = %v, want Internal", err)
+	}
+}
+
+func TestListPhysicalAssets_RepoError(t *testing.T) {
+	srv := NewPhysicalAssetServer(&mockPhysicalAssetRepoErr{})
+
+	_, err := srv.ListPhysicalAssets(context.Background(), &resourcev1.ListPhysicalAssetsRequest{})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("ListPhysicalAssets() = %v, want Internal", err)
+	}
+}

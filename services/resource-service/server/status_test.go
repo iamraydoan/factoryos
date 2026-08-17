@@ -48,3 +48,23 @@ func TestValidateTransition_Invalid(t *testing.T) {
 		})
 	}
 }
+
+// TestValidateTransition_UnknownStatus verifies that an unknown from-status returns an error.
+func TestValidateTransition_UnknownStatus(t *testing.T) {
+	tests := []struct {
+		name string
+		from string
+		to   string
+	}{
+		{"bogus to available", "bogus", StatusAvailable},
+		{"empty to allocated", "", StatusAllocated},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := ValidateTransition(tt.from, tt.to); err == nil {
+				t.Errorf("ValidateTransition(%s, %s) = nil, want error", tt.from, tt.to)
+			}
+		})
+	}
+}

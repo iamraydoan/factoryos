@@ -134,3 +134,51 @@ func TestListEquipmentClasses_Empty(t *testing.T) {
 		t.Errorf("ListEquipmentClasses() returned %d, want 0", len(resp.GetEquipmentClasses()))
 	}
 }
+
+// ============================================================================
+// Error-path tests: mock repos that always return errors
+// ============================================================================
+
+// mockEquipmentClassRepoErr implements db.EquipmentClassRepository and returns errors on all methods.
+type mockEquipmentClassRepoErr struct{}
+
+func (m *mockEquipmentClassRepoErr) CreateEquipmentClass(_ context.Context, _ string, _ *string) (*db.EquipmentClass, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockEquipmentClassRepoErr) GetEquipmentClass(_ context.Context, _ string) (*db.EquipmentClass, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockEquipmentClassRepoErr) ListEquipmentClasses(_ context.Context) ([]*db.EquipmentClass, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func TestCreateEquipmentClass_RepoError(t *testing.T) {
+	srv := NewEquipmentClassServer(&mockEquipmentClassRepoErr{})
+
+	_, err := srv.CreateEquipmentClass(context.Background(), &resourcev1.CreateEquipmentClassRequest{
+		Name: "CNC Lathe",
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("CreateEquipmentClass() = %v, want Internal", err)
+	}
+}
+
+func TestGetEquipmentClass_RepoError(t *testing.T) {
+	srv := NewEquipmentClassServer(&mockEquipmentClassRepoErr{})
+
+	_, err := srv.GetEquipmentClass(context.Background(), &resourcev1.GetEquipmentClassRequest{Id: "ec-1"})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("GetEquipmentClass() = %v, want Internal", err)
+	}
+}
+
+func TestListEquipmentClasses_RepoError(t *testing.T) {
+	srv := NewEquipmentClassServer(&mockEquipmentClassRepoErr{})
+
+	_, err := srv.ListEquipmentClasses(context.Background(), &resourcev1.ListEquipmentClassesRequest{})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("ListEquipmentClasses() = %v, want Internal", err)
+	}
+}

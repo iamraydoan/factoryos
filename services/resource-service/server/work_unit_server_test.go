@@ -215,3 +215,163 @@ func TestUpdateWorkUnitStatus_NotFound(t *testing.T) {
 		t.Errorf("UpdateWorkUnitStatus() = %v, want NotFound", err)
 	}
 }
+
+// ============================================================================
+// Error-path tests: mock repos that always return errors
+// ============================================================================
+
+// mockWorkUnitRepoErr implements db.WorkUnitRepository and returns errors on all methods.
+type mockWorkUnitRepoErr struct{}
+
+func (m *mockWorkUnitRepoErr) CreateWorkUnit(_ context.Context, _, _ string) (*db.WorkUnit, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockWorkUnitRepoErr) GetWorkUnit(_ context.Context, _ string) (*db.WorkUnit, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockWorkUnitRepoErr) ListWorkUnits(_ context.Context, _ string) ([]*db.WorkUnit, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockWorkUnitRepoErr) UpdateWorkUnitStatus(_ context.Context, _, _, _ string) (*db.WorkUnit, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func TestCreateWorkUnit_RepoError(t *testing.T) {
+	srv := NewWorkUnitServer(&mockWorkUnitRepoErr{})
+
+	_, err := srv.CreateWorkUnit(context.Background(), &resourcev1.CreateWorkUnitRequest{
+		WorkCenterId: "wc-123", Name: "Test Unit",
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("CreateWorkUnit() = %v, want Internal", err)
+	}
+}
+
+func TestGetWorkUnit_RepoError(t *testing.T) {
+	srv := NewWorkUnitServer(&mockWorkUnitRepoErr{})
+
+	_, err := srv.GetWorkUnit(context.Background(), &resourcev1.GetWorkUnitRequest{Id: "wu-1"})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("GetWorkUnit() = %v, want Internal", err)
+	}
+}
+
+func TestListWorkUnits_RepoError(t *testing.T) {
+	srv := NewWorkUnitServer(&mockWorkUnitRepoErr{})
+
+	_, err := srv.ListWorkUnits(context.Background(), &resourcev1.ListWorkUnitsRequest{WorkCenterId: "wc-1"})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("ListWorkUnits() = %v, want Internal", err)
+	}
+}
+
+func TestUpdateWorkUnitStatus_InvalidStatusEnum(t *testing.T) {
+	srv := NewWorkUnitServer(newMockWorkUnitRepo())
+
+	createResp, _ := srv.CreateWorkUnit(context.Background(), &resourcev1.CreateWorkUnitRequest{
+		WorkCenterId: "wc-123", Name: "Test Unit",
+	})
+
+	// UNSPECIFIED (0) maps to "unknown" via fromProtoStatus
+	_, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
+		Id:     createResp.GetWorkUnit().GetId(),
+		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_UNSPECIFIED,
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("UpdateWorkUnitStatus(UNSPECIFIED) = %v, want InvalidArgument", err)
+	}
+}
+
+func TestUpdateWorkUnitStatus_InvalidTransition(t *testing.T) {
+	srv := NewWorkUnitServer(newMockWorkUnitRepo())
+
+	createResp, _ := srv.CreateWorkUnit(context.Background(), &resourcev1.CreateWorkUnitRequest{
+		WorkCenterId: "wc-123", Name: "Test Unit",
+	})
+
+	// available → faulted is not a valid transition
+	_, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
+		Id:     createResp.GetWorkUnit().GetId(),
+		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_FAULTED,
+	})
+	if status.Code(err) != codes.FailedPrecondition {
+		t.Errorf("UpdateWorkUnitStatus(available→faulted) = %v, want FailedPrecondition", err)
+	}
+}
+
+func TestUpdateWorkUnitStatus_RepoGetError(t *testing.T) {
+	// Use a mock where GetWorkUnit returns an error but UpdateWorkUnitStatus is fine
+	srv := NewWorkUnitServer(&mockWorkUnitRepoGetErr{})
+
+	_, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
+		Id:     "wu-1",
+		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED,
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("UpdateWorkUnitStatus() = %v, want Internal", err)
+	}
+}
+
+func TestUpdateWorkUnitStatus_RepoUpdateError(t *testing.T) {
+	// Use a mock where GetWorkUnit succeeds but UpdateWorkUnitStatus returns error
+	srv := NewWorkUnitServer(&mockWorkUnitRepoUpdateErr{})
+
+	_, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
+		Id:     "wu-1",
+		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED,
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("UpdateWorkUnitStatus() = %v, want Internal", err)
+	}
+}
+
+func TestUpdateWorkUnitStatus_ConcurrentModification(t *testing.T) {
+	// Use a mock where GetWorkUnit succeeds but UpdateWorkUnitStatus returns nil,nil (CAS failure)
+	srv := NewWorkUnitServer(&mockWorkUnitRepoCASFail{})
+
+	_, err := srv.UpdateWorkUnitStatus(context.Background(), &resourcev1.UpdateWorkUnitStatusRequest{
+		Id:     "wu-1",
+		Status: resourcev1.WorkUnitStatus_WORK_UNIT_STATUS_ALLOCATED,
+	})
+	if status.Code(err) != codes.Aborted {
+		t.Errorf("UpdateWorkUnitStatus() = %v, want Aborted", err)
+	}
+}
+
+// mockWorkUnitRepoGetErr returns an error only from GetWorkUnit.
+type mockWorkUnitRepoGetErr struct {
+	mockWorkUnitRepo
+}
+
+func (m *mockWorkUnitRepoGetErr) GetWorkUnit(_ context.Context, _ string) (*db.WorkUnit, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+// mockWorkUnitRepoUpdateErr returns a valid WorkUnit from Get but errors on Update.
+type mockWorkUnitRepoUpdateErr struct {
+	mockWorkUnitRepo
+}
+
+func (m *mockWorkUnitRepoUpdateErr) GetWorkUnit(_ context.Context, id string) (*db.WorkUnit, error) {
+	return &db.WorkUnit{ID: id, Status: StatusAvailable}, nil
+}
+
+func (m *mockWorkUnitRepoUpdateErr) UpdateWorkUnitStatus(_ context.Context, _, _, _ string) (*db.WorkUnit, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+// mockWorkUnitRepoCASFail returns a valid WorkUnit from Get but nil,nil from Update (CAS failure).
+type mockWorkUnitRepoCASFail struct {
+	mockWorkUnitRepo
+}
+
+func (m *mockWorkUnitRepoCASFail) GetWorkUnit(_ context.Context, id string) (*db.WorkUnit, error) {
+	return &db.WorkUnit{ID: id, Status: StatusAvailable}, nil
+}
+
+func (m *mockWorkUnitRepoCASFail) UpdateWorkUnitStatus(_ context.Context, _, _, _ string) (*db.WorkUnit, error) {
+	return nil, nil
+}

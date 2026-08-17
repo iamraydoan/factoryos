@@ -234,3 +234,82 @@ func TestRemoveCapability_NotFound(t *testing.T) {
 		t.Error("RemoveCapability() = true, want false")
 	}
 }
+
+// ============================================================================
+// Error-path tests: mock repos that always return errors
+// ============================================================================
+
+// mockCapabilityRepoErr implements db.CapabilityRepository and returns errors on all methods.
+type mockCapabilityRepoErr struct{}
+
+func (m *mockCapabilityRepoErr) AssignCapability(_ context.Context, _, _ string, _ map[string]interface{}) (*db.WorkUnitCapability, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockCapabilityRepoErr) ListWorkUnitCapabilities(_ context.Context, _ string) ([]*db.WorkUnitCapability, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
+func (m *mockCapabilityRepoErr) RemoveCapability(_ context.Context, _, _ string) (bool, error) {
+	return false, fmt.Errorf("simulated db error")
+}
+
+func TestAssignCapability_WorkUnitRepoError(t *testing.T) {
+	srv := NewCapabilityServer(&mockWorkUnitRepoErr{}, newMockEquipmentClassRepo(), newMockCapabilityRepo())
+
+	ec, _ := srv.classes.(*mockEquipmentClassRepo).CreateEquipmentClass(context.Background(), "CNC Lathe", nil)
+
+	_, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId: "wu-1", EquipmentClassId: ec.ID,
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("AssignCapability() = %v, want Internal", err)
+	}
+}
+
+func TestAssignCapability_EquipmentClassRepoError(t *testing.T) {
+	srv := NewCapabilityServer(newMockWorkUnitRepo(), &mockEquipmentClassRepoErr{}, newMockCapabilityRepo())
+
+	wu, _ := srv.workUnits.(*mockWorkUnitRepo).CreateWorkUnit(context.Background(), "wc-1", "Station A")
+
+	_, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId: wu.ID, EquipmentClassId: "ec-1",
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("AssignCapability() = %v, want Internal", err)
+	}
+}
+
+func TestAssignCapability_CapabilityRepoError(t *testing.T) {
+	srv := NewCapabilityServer(newMockWorkUnitRepo(), newMockEquipmentClassRepo(), &mockCapabilityRepoErr{})
+
+	wu, _ := srv.workUnits.(*mockWorkUnitRepo).CreateWorkUnit(context.Background(), "wc-1", "Station A")
+	ec, _ := srv.classes.(*mockEquipmentClassRepo).CreateEquipmentClass(context.Background(), "CNC Lathe", nil)
+
+	_, err := srv.AssignCapability(context.Background(), &resourcev1.AssignCapabilityRequest{
+		WorkUnitId: wu.ID, EquipmentClassId: ec.ID,
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("AssignCapability() = %v, want Internal", err)
+	}
+}
+
+func TestListWorkUnitCapabilities_RepoError(t *testing.T) {
+	srv := NewCapabilityServer(newMockWorkUnitRepo(), newMockEquipmentClassRepo(), &mockCapabilityRepoErr{})
+
+	_, err := srv.ListWorkUnitCapabilities(context.Background(), &resourcev1.ListWorkUnitCapabilitiesRequest{WorkUnitId: "wu-1"})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("ListWorkUnitCapabilities() = %v, want Internal", err)
+	}
+}
+
+func TestRemoveCapability_RepoError(t *testing.T) {
+	srv := NewCapabilityServer(newMockWorkUnitRepo(), newMockEquipmentClassRepo(), &mockCapabilityRepoErr{})
+
+	_, err := srv.RemoveCapability(context.Background(), &resourcev1.RemoveCapabilityRequest{
+		WorkUnitId: "wu-1", EquipmentClassId: "ec-1",
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("RemoveCapability() = %v, want Internal", err)
+	}
+}
