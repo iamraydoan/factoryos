@@ -61,11 +61,21 @@ type IngestionConfig struct {
 	ChannelCapacityMultiplier int           `env:"CHANNEL_CAPACITY_MULTIPLIER" envDefault:"4" validate:"gt=0"`
 }
 
+// OEEAlertConfig holds OEE threshold alerting parameters.
+type OEEAlertConfig struct {
+	OEEWarningThreshold        float64 `env:"OEE_WARN" envDefault:"0.85"`
+	OEECriticalThreshold       float64 `env:"OEE_CRIT" envDefault:"0.70"`
+	ComponentWarningThreshold  float64 `env:"COMP_WARN" envDefault:"0.90"`
+	ComponentCriticalThreshold float64 `env:"COMP_CRIT" envDefault:"0.75"`
+	CooldownMinutes            int     `env:"COOLDOWN_MIN" envDefault:"5"`
+}
+
 // OEEConfig holds parameters for the real-time OEE streaming aggregator.
 type OEEConfig struct {
-	WindowDuration        time.Duration `env:"OEE_WINDOW_DURATION" envDefault:"1h" validate:"gt=0"`
-	SnapshotInterval      time.Duration `env:"OEE_SNAPSHOT_INTERVAL" envDefault:"15s" validate:"gt=0"`
-	DefaultIdealCycleTime time.Duration `env:"OEE_DEFAULT_IDEAL_CYCLE_TIME" envDefault:"30s" validate:"gt=0"`
+	WindowDuration        time.Duration  `env:"OEE_WINDOW_DURATION" envDefault:"1h" validate:"gt=0"`
+	SnapshotInterval      time.Duration  `env:"OEE_SNAPSHOT_INTERVAL" envDefault:"15s" validate:"gt=0"`
+	DefaultIdealCycleTime time.Duration  `env:"OEE_DEFAULT_IDEAL_CYCLE_TIME" envDefault:"30s" validate:"gt=0"`
+	OEEAlert              OEEAlertConfig `envPrefix:"OEE_ALERT_"`
 }
 
 // Validate verifies all configuration parameters using go-playground/validator.

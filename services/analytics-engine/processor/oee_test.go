@@ -466,3 +466,47 @@ func TestOEEAggregator_DefectPattern(t *testing.T) {
 		t.Fatalf("expected quality ~0.769, got: %.4f", snap.Quality)
 	}
 }
+
+func TestOEEAggregator_OEEAlertIntegration(t *testing.T) {
+	var mu sync.Mutex
+	var alerts []OEEAlert
+
+	alertEval := NewOEEAlertEvaluator(DefaultOEEAlertRules(), func(alert OEEAlert) {
+		mu.Lock()
+		alerts = append(alerts, alert)
+		mu.Unlock()
+	}, 0) // no cooldown for test
+
+	cfg := OEEConfig{
+		WindowDuration:        5 * time.Minute,
+		SnapshotInterval:      100 * time.Millisecond,
+		DefaultIdealCycleTime: 1 * time.Second,
+	}
+
+	handler := func(snapshot OEESnapshot) {} // no-op, we care about alerts
+	agg := NewOEEAggregator(cfg, handler)
+	agg.SetOEEAlertEvaluator(alertEval)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	agg.Start(ctx)
+
+	// Simulate a degraded asset: lots of downtime (value=0 means not running).
+	now := time.Now()
+	for i := 0; i < 10; i++ {
+		agg.ProcessReading("asset-bad", "machine_status", 0, "GOOD", now.Add(time.Duration(i)*time.Second))
+	}
+
+	// Wait for at least one snapshot cycle to fire.
+	time.Sleep(300 * time.Millisecond)
+
+	mu.Lock()
+	alertCount := len(alerts)
+	mu.Unlock()
+
+	if alertCount == 0 {
+		t.Fatal("expected at least one OEE alert for degraded asset")
+	}
+
+	agg.Stop()
+}

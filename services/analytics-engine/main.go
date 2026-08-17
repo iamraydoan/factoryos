@@ -28,7 +28,6 @@ func main() {
 		log.Fatalf("[Config][FATAL] Failed to load configuration: %v", err)
 	}
 
-
 	log.Printf("[Config] Kafka Brokers: %v | Topic: %s | Group: %s",
 		cfg.Kafka.Brokers, cfg.Kafka.Topic, cfg.Kafka.GroupID)
 	log.Printf("[Config] Database Table: %s | MaxConns: %d | Retention: %d days",
@@ -70,6 +69,17 @@ func main() {
 	}
 	oeeAggregator := processor.NewOEEAggregator(oeeCfg, nil)
 	oeeAggregator.Start(ctx)
+
+	oeeAlertEval := processor.NewOEEAlertEvaluator(
+		processor.DefaultOEEAlertRules(),
+		func(alert processor.OEEAlert) {
+			log.Printf("[OEE-ALERT][%s] Rule: %s | Asset: %s | Component: %s | Value: %.4f (Threshold: %.4f) | %s",
+				alert.Severity, alert.RuleID, alert.AssetID, alert.Component,
+				alert.Value, alert.Threshold, alert.Message)
+		},
+		time.Duration(cfg.OEE.OEEAlert.CooldownMinutes)*time.Minute,
+	)
+	oeeAggregator.SetOEEAlertEvaluator(oeeAlertEval)
 
 	// 5. Initialize Kafka Consumer
 	kafkaReader := consumer.NewKafkaReader(cfg.Kafka)

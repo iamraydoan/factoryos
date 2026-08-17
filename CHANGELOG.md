@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **OEE Threshold Alerting (`services/analytics-engine`):**
+  - `ThresholdDirection` field on `AlertRule` enabling lower-bound checks for OEE-style metrics (`processor/alerts.go`).
+  - `OEEAlertEvaluator` with per-component (Availability, Performance, Quality) and composite OEE monitoring, configurable warning/critical thresholds, and cooldown-based deduplication (`processor/oee_alerts.go`).
+  - `OEEAlertConfig` for environment-based threshold and cooldown configuration (`config/config.go`).
+  - Integration wiring: `OEEAggregator` calls `OEEAlertEvaluator.EvaluateSnapshot()` on each 15s snapshot cycle; `main.go` constructs evaluator from config.
+  - 28 processor tests with 97.1% coverage, including direction-below, cooldown suppression, asset-specific rules, and end-to-end integration.
+
 - **Equipment Class & Work Unit Capability (`services/resource-service`):**
   - `equipment_classes` table for capability type definitions with `name` and `description`.
   - `work_unit_capabilities` many-to-many link table with JSONB `properties` and `UNIQUE(work_unit_id, equipment_class_id)` constraint.

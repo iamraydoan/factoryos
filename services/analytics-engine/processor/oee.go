@@ -61,14 +61,16 @@ type OEEHandlerFunc func(snapshot OEESnapshot)
 // from streaming sensor readings. It follows the same pipeline pattern as
 // AlertEvaluator — called inline from the consumer for each reading.
 type OEEAggregator struct {
-	mu              sync.RWMutex
-	states          map[string]*assetOEEState
-	idealCycleTime  map[string]time.Duration
-	config          OEEConfig
-	handler         OEEHandlerFunc // set via constructor or SetHandler; never nil
+	mu             sync.RWMutex
+	states         map[string]*assetOEEState
+	idealCycleTime map[string]time.Duration
+	config         OEEConfig
+	handler        OEEHandlerFunc // set via constructor or SetHandler; never nil
 
 	done chan struct{}
 	wg   sync.WaitGroup
+
+	oeeAlertEval *OEEAlertEvaluator
 }
 
 // NewOEEAggregator creates a new aggregator with the given config and optional callback.
@@ -161,6 +163,9 @@ func (a *OEEAggregator) computeAndEmitAll() {
 		snapshot := a.GetSnapshotForAsset(id)
 		if snapshot != nil && a.handler != nil {
 			a.handler(*snapshot)
+			if a.oeeAlertEval != nil {
+				a.oeeAlertEval.EvaluateSnapshot(*snapshot)
+			}
 		}
 	}
 }
@@ -204,15 +209,22 @@ func (a *OEEAggregator) resetIfStale(state *assetOEEState, ts time.Time) {
 	}
 }
 
+// SetOEEAlertEvaluator attaches an OEE alert evaluator that will be called on each snapshot.
+func (a *OEEAggregator) SetOEEAlertEvaluator(eval *OEEAlertEvaluator) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	a.oeeAlertEval = eval
+}
+
 // metricClass defines the OEE component a sensor reading maps to.
 type metricClass int
 
 const (
-	metricUnclassified metricClass = iota // not matched to any OEE component
-	metricAvailability                     // machine running state indicators
-	metricPerformance                      // production output / cycle counters
-	metricQualityGood                      // good output counters (non-defective)
-	metricQualityDefective                 // defective output counters (reject, scrap, defect)
+	metricUnclassified     metricClass = iota // not matched to any OEE component
+	metricAvailability                        // machine running state indicators
+	metricPerformance                         // production output / cycle counters
+	metricQualityGood                         // good output counters (non-defective)
+	metricQualityDefective                    // defective output counters (reject, scrap, defect)
 )
 
 // classifyMetric determines which OEE component a metric name belongs to.
