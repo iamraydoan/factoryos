@@ -88,6 +88,49 @@ func TestAlertEvaluator_CustomDynamicRules(t *testing.T) {
 	}
 }
 
+func TestAlertEvaluator_DirectionBelow(t *testing.T) {
+	warnThreshold := 0.85
+	critThreshold := 0.70
+
+	rules := []AlertRule{
+		{
+			ID:                "OEE-TEST",
+			MetricNamePattern: "oee",
+			WarningThreshold:  &warnThreshold,
+			CriticalThreshold: &critThreshold,
+			Direction:         DirectionBelow,
+		},
+	}
+
+	var captured *TelemetryAlert
+	handler := func(alert TelemetryAlert) {
+		captured = &alert
+	}
+
+	evaluator := NewAlertEvaluator(rules, handler)
+
+	// Above all thresholds — no alert
+	captured = nil
+	evaluator.EvaluateReading("asset-1", "oee", 0.90, QualityGood, time.Now())
+	if captured != nil {
+		t.Fatal("expected no alert when value is above thresholds")
+	}
+
+	// Below warning — should fire warning
+	captured = nil
+	evaluator.EvaluateReading("asset-1", "oee", 0.80, QualityGood, time.Now())
+	if captured == nil || captured.Severity != SeverityWarning {
+		t.Fatalf("expected warning alert when value drops below warning threshold, got: %+v", captured)
+	}
+
+	// Below critical — should fire critical
+	captured = nil
+	evaluator.EvaluateReading("asset-1", "oee", 0.65, QualityGood, time.Now())
+	if captured == nil || captured.Severity != SeverityCritical {
+		t.Fatalf("expected critical alert when value drops below critical threshold, got: %+v", captured)
+	}
+}
+
 func TestAlertEvaluator_BadQuality(t *testing.T) {
 	evaluator := NewAlertEvaluator(nil, nil)
 	now := time.Now()

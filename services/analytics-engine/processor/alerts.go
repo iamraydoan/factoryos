@@ -11,9 +11,17 @@ import (
 // AlertSeverity defines the severity level of a detected anomaly.
 type AlertSeverity string
 
+// ThresholdDirection indicates whether an alert fires when a value goes above or below the threshold.
+type ThresholdDirection string
+
 const (
 	SeverityWarning  AlertSeverity = "WARNING"
 	SeverityCritical AlertSeverity = "CRITICAL"
+)
+
+const (
+	DirectionAbove ThresholdDirection = "above" // alert when value > threshold (default)
+	DirectionBelow ThresholdDirection = "below" // alert when value < threshold (for OEE-style metrics)
 )
 
 // SensorQuality represents the signal quality reported by the Edge Runtime.
@@ -28,12 +36,13 @@ const (
 
 // AlertRule defines dynamic threshold boundaries for a specific metric category.
 type AlertRule struct {
-	ID                string   `json:"id"`
-	MetricNamePattern string   `json:"metric_name_pattern"` // Substring matcher (e.g. "temp", "vibrat", "pressure")
-	WarningThreshold  *float64 `json:"warning_threshold,omitempty"`
-	CriticalThreshold *float64 `json:"critical_threshold,omitempty"`
-	Unit              string   `json:"unit"`
-	Description       string   `json:"description"`
+	ID                string             `json:"id"`
+	MetricNamePattern string             `json:"metric_name_pattern"` // Substring matcher (e.g. "temp", "vibrat", "pressure")
+	WarningThreshold  *float64           `json:"warning_threshold,omitempty"`
+	CriticalThreshold *float64           `json:"critical_threshold,omitempty"`
+	Unit              string             `json:"unit"`
+	Description       string             `json:"description"`
+	Direction         ThresholdDirection `json:"direction"`
 }
 
 // TelemetryAlert represents an anomaly event evaluated from a sensor reading.
@@ -128,6 +137,14 @@ func (e *AlertEvaluator) SetRules(rules []AlertRule) {
 	e.rules = rules
 }
 
+// thresholdVerb returns a human-readable verb for alert messages based on direction.
+func thresholdVerb(d ThresholdDirection) string {
+	if d == DirectionBelow {
+		return "dropped below"
+	}
+	return "exceeds"
+}
+
 // EvaluateReading checks a single sensor reading against all active dynamic alert rules.
 func (e *AlertEvaluator) EvaluateReading(assetID, metricName string, value float64, quality SensorQuality, ts time.Time) *TelemetryAlert {
 	e.mu.RLock()
@@ -136,44 +153,52 @@ func (e *AlertEvaluator) EvaluateReading(assetID, metricName string, value float
 	var alert *TelemetryAlert
 	metricLower := strings.ToLower(metricName)
 
-	// 1. Check against dynamic rules
+	// 1. Check against dynamic rules.
 	for _, rule := range e.rules {
 		if strings.Contains(metricLower, strings.ToLower(rule.MetricNamePattern)) {
-			// Check Critical threshold first
-			if rule.CriticalThreshold != nil && value > *rule.CriticalThreshold {
-				alert = &TelemetryAlert{
-					RuleID:          rule.ID,
-					PhysicalAssetID: assetID,
-					MetricName:      metricName,
-					Value:           value,
-					Threshold:       *rule.CriticalThreshold,
-					Severity:        SeverityCritical,
-					Message: fmt.Sprintf("Critical %s alarm: %.2f %s exceeds safety limit of %.2f %s",
-						rule.Description, value, rule.Unit, *rule.CriticalThreshold, rule.Unit),
-					Timestamp: ts,
+			// Check Critical threshold first (more severe).
+			if rule.CriticalThreshold != nil {
+				breaches := (rule.Direction == DirectionBelow && value < *rule.CriticalThreshold) ||
+					(rule.Direction != DirectionBelow && value > *rule.CriticalThreshold)
+				if breaches {
+					alert = &TelemetryAlert{
+						RuleID:          rule.ID,
+						PhysicalAssetID: assetID,
+						MetricName:      metricName,
+						Value:           value,
+						Threshold:       *rule.CriticalThreshold,
+						Severity:        SeverityCritical,
+						Message: fmt.Sprintf("Critical %s alarm: %.2f %s %s safety limit of %.2f %s",
+							rule.Description, value, rule.Unit, thresholdVerb(rule.Direction), *rule.CriticalThreshold, rule.Unit),
+						Timestamp: ts,
+					}
+					break
 				}
-				break
 			}
 
-			// Check Warning threshold
-			if rule.WarningThreshold != nil && value > *rule.WarningThreshold {
-				alert = &TelemetryAlert{
-					RuleID:          rule.ID,
-					PhysicalAssetID: assetID,
-					MetricName:      metricName,
-					Value:           value,
-					Threshold:       *rule.WarningThreshold,
-					Severity:        SeverityWarning,
-					Message: fmt.Sprintf("Elevated %s warning: %.2f %s exceeds threshold of %.2f %s",
-						rule.Description, value, rule.Unit, *rule.WarningThreshold, rule.Unit),
-					Timestamp: ts,
+			// Check Warning threshold.
+			if rule.WarningThreshold != nil {
+				breaches := (rule.Direction == DirectionBelow && value < *rule.WarningThreshold) ||
+					(rule.Direction != DirectionBelow && value > *rule.WarningThreshold)
+				if breaches {
+					alert = &TelemetryAlert{
+						RuleID:          rule.ID,
+						PhysicalAssetID: assetID,
+						MetricName:      metricName,
+						Value:           value,
+						Threshold:       *rule.WarningThreshold,
+						Severity:        SeverityWarning,
+						Message: fmt.Sprintf("Warning %s: %.2f %s %s threshold of %.2f %s",
+							rule.Description, value, rule.Unit, thresholdVerb(rule.Direction), *rule.WarningThreshold, rule.Unit),
+						Timestamp: ts,
+					}
+					break
 				}
-				break
 			}
 		}
 	}
 
-	// 2. Sensor Signal Quality Degraded Check
+	// 2. Check sensor signal quality degradation.
 	if alert == nil && quality == QualityBad {
 		alert = &TelemetryAlert{
 			RuleID:          "SYS-QUALITY-BAD",
