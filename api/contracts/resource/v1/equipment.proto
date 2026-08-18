@@ -7,7 +7,7 @@ import "google/protobuf/timestamp.proto";
 option go_package = "github.com/iamraydoan/factoryos/api/contracts/resource/v1";
 
 // ----------------------------------------------------------------------------
-// Entity Models (ISA-95 Equipment Hierarchy)
+// Entity Models (ISA-95 Equipment Hierarchy & Personnel)
 // ----------------------------------------------------------------------------
 
 message Site {
@@ -51,18 +51,18 @@ message WorkUnit {
 }
 
 message EquipmentClass {
-  string id = 1;
-  string name = 2;
-  string description = 3;
+  string id = 1;              // UUIDv7
+  string name = 2;            // e.g., "CNC Lathe ≥ 5-axis"
+  string description = 3;     // Capability specification
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp updated_at = 5;
 }
 
 message WorkUnitCapability {
-  string id = 1;
-  string work_unit_id = 2;
-  string equipment_class_id = 3;
-  string properties_json = 4;
+  string id = 1;              // UUIDv7
+  string work_unit_id = 2;    // Foreign key to WorkUnit
+  string equipment_class_id = 3; // Foreign key to EquipmentClass
+  string properties_json = 4; // JSON key-value properties
   google.protobuf.Timestamp created_at = 5;
   google.protobuf.Timestamp updated_at = 6;
 }
@@ -100,6 +100,35 @@ message PhysicalAssetInstallation {
   google.protobuf.Timestamp updated_at = 7;
 }
 
+// PersonClass: a role category (e.g., "Operator", "Technician").
+message PersonClass {
+  string id = 1;              // UUIDv7
+  string name = 2;            // e.g., "Operator", "Technician", "Quality Manager"
+  string description = 3;     // Role description
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+enum PersonStatus {
+  PERSON_STATUS_UNSPECIFIED = 0;
+  PERSON_STATUS_ACTIVE = 1;
+  PERSON_STATUS_INACTIVE = 2;
+  PERSON_STATUS_ON_LEAVE = 3;
+}
+
+// Person: an employee who can be assigned to work units.
+message Person {
+  string id = 1;              // UUIDv7
+  string person_class_id = 2; // Foreign key to PersonClass
+  string employee_id = 3;     // Company employee ID (e.g., "EMP-0042")
+  string first_name = 4;      // Given name
+  string last_name = 5;       // Family name
+  string email = 6;           // Work email (nullable)
+  PersonStatus status = 7;    // Current employment status
+  google.protobuf.Timestamp created_at = 8;
+  google.protobuf.Timestamp updated_at = 9;
+}
+
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
 // ----------------------------------------------------------------------------
@@ -131,7 +160,19 @@ service EquipmentService {
   rpc UninstallAsset(UninstallAssetRequest) returns (UninstallAssetResponse);
   rpc GetCurrentInstallation(GetCurrentInstallationRequest) returns (GetCurrentInstallationResponse);
   rpc ListInstallations(ListInstallationsRequest) returns (ListInstallationsResponse);
+
+  // Person Class API
+  rpc CreatePersonClass(CreatePersonClassRequest) returns (CreatePersonClassResponse);
+  rpc GetPersonClass(GetPersonClassRequest) returns (GetPersonClassResponse);
+  rpc ListPersonClasses(ListPersonClassesRequest) returns (ListPersonClassesResponse);
+
+  // Person API
+  rpc CreatePerson(CreatePersonRequest) returns (CreatePersonResponse);
+  rpc GetPerson(GetPersonRequest) returns (GetPersonResponse);
+  rpc ListPersons(ListPersonsRequest) returns (ListPersonsResponse);
 }
+
+// --- Work Unit messages ---
 
 message CreateWorkUnitRequest {
   string work_center_id = 1;
@@ -167,6 +208,8 @@ message UpdateWorkUnitStatusResponse {
   WorkUnit work_unit = 1;
 }
 
+// --- Equipment Class messages ---
+
 message CreateEquipmentClassRequest {
   string name = 1;
   string description = 2;
@@ -190,7 +233,8 @@ message ListEquipmentClassesResponse {
   repeated EquipmentClass equipment_classes = 1;
 }
 
-// Capability Assignment messages
+// --- Capability Assignment messages ---
+
 message AssignCapabilityRequest {
   string work_unit_id = 1;
   string equipment_class_id = 2;
@@ -218,7 +262,8 @@ message RemoveCapabilityResponse {
   bool removed = 1;
 }
 
-// Physical Asset messages
+// --- Physical Asset messages ---
+
 message CreatePhysicalAssetRequest {
   string name = 1;
   string serial_number = 2;
@@ -245,7 +290,8 @@ message ListPhysicalAssetsResponse {
   repeated PhysicalAsset physical_assets = 1;
 }
 
-// Installation messages
+// --- Installation messages ---
+
 message InstallAssetRequest {
   string physical_asset_id = 1;
   string work_unit_id = 2;
@@ -277,4 +323,59 @@ message ListInstallationsRequest {
 
 message ListInstallationsResponse {
   repeated PhysicalAssetInstallation installations = 1;
+}
+
+// --- Person Class messages ---
+
+message CreatePersonClassRequest {
+  string name = 1;
+  string description = 2;
+}
+
+message CreatePersonClassResponse {
+  PersonClass person_class = 1;
+}
+
+message GetPersonClassRequest {
+  string id = 1;
+}
+
+message GetPersonClassResponse {
+  PersonClass person_class = 1;
+}
+
+message ListPersonClassesRequest {}
+
+message ListPersonClassesResponse {
+  repeated PersonClass person_classes = 1;
+}
+
+// --- Person messages ---
+
+message CreatePersonRequest {
+  string person_class_id = 1;
+  string employee_id = 2;
+  string first_name = 3;
+  string last_name = 4;
+  string email = 5;
+}
+
+message CreatePersonResponse {
+  Person person = 1;
+}
+
+message GetPersonRequest {
+  string id = 1;
+}
+
+message GetPersonResponse {
+  Person person = 1;
+}
+
+message ListPersonsRequest {
+  string person_class_id = 1; // Filter by PersonClass (empty = all)
+}
+
+message ListPersonsResponse {
+  repeated Person persons = 1;
 }
