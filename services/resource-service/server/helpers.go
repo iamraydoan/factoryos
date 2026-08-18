@@ -114,6 +114,40 @@ func toProtoInstallation(inst *db.PhysicalAssetInstallation) *resourcev1.Physica
 	return proto
 }
 
+// toProtoPersonClass converts a domain PersonClass to a proto PersonClass.
+func toProtoPersonClass(pc *db.PersonClass) *resourcev1.PersonClass {
+	if pc == nil {
+		return nil
+	}
+
+	return &resourcev1.PersonClass{
+		Id:          pc.ID,
+		Name:        pc.Name,
+		Description: derefString(pc.Description),
+		CreatedAt:   timestamppb.New(pc.CreatedAt),
+		UpdatedAt:   timestamppb.New(pc.UpdatedAt),
+	}
+}
+
+// toProtoPerson converts a domain Person to a proto Person.
+func toProtoPerson(p *db.Person) *resourcev1.Person {
+	if p == nil {
+		return nil
+	}
+
+	return &resourcev1.Person{
+		Id:            p.ID,
+		PersonClassId: p.PersonClassID,
+		EmployeeId:    p.EmployeeID,
+		FirstName:     p.FirstName,
+		LastName:      p.LastName,
+		Email:         derefString(p.Email),
+		Status:        toProtoPersonStatus(p.Status),
+		CreatedAt:     timestamppb.New(p.CreatedAt),
+		UpdatedAt:     timestamppb.New(p.UpdatedAt),
+	}
+}
+
 // ============================================================================
 // Status Conversion Helpers
 // ============================================================================
@@ -177,6 +211,34 @@ func fromProtoAssetStatus(s resourcev1.PhysicalAssetStatus) string {
 		return AssetStatusUnderMaintenance
 	case resourcev1.PhysicalAssetStatus_PHYSICAL_ASSET_STATUS_DECOMMISSIONED:
 		return AssetStatusDecommissioned
+	default:
+		return statusUnknown
+	}
+}
+
+// toProtoPersonStatus converts a DB status string to a proto PersonStatus enum.
+func toProtoPersonStatus(s string) resourcev1.PersonStatus {
+	switch s {
+	case "active":
+		return resourcev1.PersonStatus_PERSON_STATUS_ACTIVE
+	case "inactive":
+		return resourcev1.PersonStatus_PERSON_STATUS_INACTIVE
+	case "on_leave":
+		return resourcev1.PersonStatus_PERSON_STATUS_ON_LEAVE
+	default:
+		return resourcev1.PersonStatus_PERSON_STATUS_UNSPECIFIED
+	}
+}
+
+// fromProtoPersonStatus converts a proto PersonStatus enum to a DB status string.
+func fromProtoPersonStatus(s resourcev1.PersonStatus) string {
+	switch s {
+	case resourcev1.PersonStatus_PERSON_STATUS_ACTIVE:
+		return "active"
+	case resourcev1.PersonStatus_PERSON_STATUS_INACTIVE:
+		return "inactive"
+	case resourcev1.PersonStatus_PERSON_STATUS_ON_LEAVE:
+		return "on_leave"
 	default:
 		return statusUnknown
 	}

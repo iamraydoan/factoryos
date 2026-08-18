@@ -4,7 +4,8 @@
 // that delegates to the focused per-domain server structs. This is needed
 // because the proto defines a single EquipmentService containing all RPCs,
 // while the implementation is split into WorkUnitServer, EquipmentClassServer,
-// CapabilityServer, PhysicalAssetServer, and InstallationServer.
+// CapabilityServer, PhysicalAssetServer, InstallationServer, PersonClassServer,
+// and PersonServer.
 package server
 
 import (
@@ -25,6 +26,8 @@ type EquipmentService struct {
 	Capabilities  *CapabilityServer
 	Assets        *PhysicalAssetServer
 	Installations *InstallationServer
+	PersonClasses *PersonClassServer
+	Persons       *PersonServer
 }
 
 // NewEquipmentService creates a combined EquipmentService from a single
@@ -36,6 +39,8 @@ func NewEquipmentService(repo *db.PostgresEquipmentRepository) *EquipmentService
 		Capabilities:  NewCapabilityServer(repo, repo, repo),
 		Assets:        NewPhysicalAssetServer(repo),
 		Installations: NewInstallationServer(repo, repo, repo),
+		PersonClasses: NewPersonClassServer(repo),
+		Persons:       NewPersonServer(repo),
 	}
 }
 
@@ -115,4 +120,32 @@ func (s *EquipmentService) GetCurrentInstallation(ctx context.Context, req *reso
 
 func (s *EquipmentService) ListInstallations(ctx context.Context, req *resourcev1.ListInstallationsRequest) (*resourcev1.ListInstallationsResponse, error) {
 	return s.Installations.ListInstallations(ctx, req)
+}
+
+// --- Person Class delegation ---
+
+func (s *EquipmentService) CreatePersonClass(ctx context.Context, req *resourcev1.CreatePersonClassRequest) (*resourcev1.CreatePersonClassResponse, error) {
+	return s.PersonClasses.CreatePersonClass(ctx, req)
+}
+
+func (s *EquipmentService) GetPersonClass(ctx context.Context, req *resourcev1.GetPersonClassRequest) (*resourcev1.GetPersonClassResponse, error) {
+	return s.PersonClasses.GetPersonClass(ctx, req)
+}
+
+func (s *EquipmentService) ListPersonClasses(ctx context.Context, req *resourcev1.ListPersonClassesRequest) (*resourcev1.ListPersonClassesResponse, error) {
+	return s.PersonClasses.ListPersonClasses(ctx, req)
+}
+
+// --- Person delegation ---
+
+func (s *EquipmentService) CreatePerson(ctx context.Context, req *resourcev1.CreatePersonRequest) (*resourcev1.CreatePersonResponse, error) {
+	return s.Persons.CreatePerson(ctx, req)
+}
+
+func (s *EquipmentService) GetPerson(ctx context.Context, req *resourcev1.GetPersonRequest) (*resourcev1.GetPersonResponse, error) {
+	return s.Persons.GetPerson(ctx, req)
+}
+
+func (s *EquipmentService) ListPersons(ctx context.Context, req *resourcev1.ListPersonsRequest) (*resourcev1.ListPersonsResponse, error) {
+	return s.Persons.ListPersons(ctx, req)
 }
