@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Person & PersonClass Management (`services/resource-service`):**
+  - `person_classes` table for role category definitions (e.g., "Operator", "Technician").
+  - `persons` table for employee records with `person_class_id` FK, unique `employee_id`, and `person_status` enum (active, inactive, on_leave).
+  - gRPC CRUD for Person Classes: `CreatePersonClass`, `GetPersonClass`, `ListPersonClasses`.
+  - gRPC CRUD for Persons: `CreatePerson`, `GetPerson`, `ListPersons` (with optional `person_class_id` filter).
+  - Unit tests with mock repositories (24 new tests, all passing with `-race`).
+
 - **OEE Threshold Alerting (`services/analytics-engine`):**
   - `ThresholdDirection` field on `AlertRule` enabling lower-bound checks for OEE-style metrics (`processor/alerts.go`).
   - `OEEAlertEvaluator` with per-component (Availability, Performance, Quality) and composite OEE monitoring, configurable warning/critical thresholds, and cooldown-based deduplication (`processor/oee_alerts.go`).
