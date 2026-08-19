@@ -148,6 +148,27 @@ func toProtoPerson(p *db.Person) *resourcev1.Person {
 	}
 }
 
+// toProtoQualificationRecord converts a domain QualificationRecord to a proto QualificationRecord.
+func toProtoQualificationRecord(qr *db.QualificationRecord) *resourcev1.QualificationRecord {
+	if qr == nil {
+		return nil
+	}
+
+	proto := &resourcev1.QualificationRecord{
+		Id:            qr.ID,
+		PersonId:      qr.PersonID,
+		PersonClassId: qr.PersonClassID,
+		WorkCenterId:  qr.WorkCenterID,
+		CertifiedAt:   timestamppb.New(qr.CertifiedAt),
+		CreatedAt:     timestamppb.New(qr.CreatedAt),
+		UpdatedAt:     timestamppb.New(qr.UpdatedAt),
+	}
+	if qr.ExpiresAt != nil {
+		proto.ExpiresAt = timestamppb.New(*qr.ExpiresAt)
+	}
+	return proto
+}
+
 // ============================================================================
 // Status Conversion Helpers
 // ============================================================================
