@@ -17,7 +17,7 @@
 
 ### Personnel & Qualification
 - [x] Implement Person and PersonClass (role) management.
-- [ ] Implement QualificationRecord: certify a Person for a PersonClass at a Work Center.
+- [x] Implement QualificationRecord: certify a Person for a PersonClass at a Work Center.
 - [ ] Implement QualificationRecord expiry tracking and alert.
 - [ ] Implement Shift and ShiftAssignment management.
 

@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - gRPC CRUD for Persons: `CreatePerson`, `GetPerson`, `ListPersons` (with optional `person_class_id` filter).
   - Unit tests with mock repositories (24 new tests, all passing with `-race`).
 
+- **Qualification Record Management (`services/resource-service`):**
+  - `qualification_records` table linking persons to certified roles at specific work centers, with `expires_at` support and `UNIQUE(person_id, person_class_id, work_center_id)` constraint.
+  - gRPC CRUD for Qualification Records: `QualifyPerson`, `GetQualification`, `ListQualifications` (with optional `person_id` and `work_center_id` filters), `RevokeQualification`.
+  - Foreign key validation: verifies Person and PersonClass exist before creating a qualification.
+  - Unit tests with mock repositories (22 new tests, all passing with `-race`).
+
 - **OEE Threshold Alerting (`services/analytics-engine`):**
   - `ThresholdDirection` field on `AlertRule` enabling lower-bound checks for OEE-style metrics (`processor/alerts.go`).
   - `OEEAlertEvaluator` with per-component (Availability, Performance, Quality) and composite OEE monitoring, configurable warning/critical thresholds, and cooldown-based deduplication (`processor/oee_alerts.go`).
