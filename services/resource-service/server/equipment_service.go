@@ -5,7 +5,7 @@
 // because the proto defines a single EquipmentService containing all RPCs,
 // while the implementation is split into WorkUnitServer, EquipmentClassServer,
 // CapabilityServer, PhysicalAssetServer, InstallationServer, PersonClassServer,
-// and PersonServer.
+// PersonServer, and QualificationServer.
 package server
 
 import (
@@ -21,26 +21,28 @@ import (
 type EquipmentService struct {
 	resourcev1.UnimplementedEquipmentServiceServer
 
-	WorkUnits     *WorkUnitServer
-	Classes       *EquipmentClassServer
-	Capabilities  *CapabilityServer
-	Assets        *PhysicalAssetServer
-	Installations *InstallationServer
-	PersonClasses *PersonClassServer
-	Persons       *PersonServer
+	WorkUnits      *WorkUnitServer
+	Classes        *EquipmentClassServer
+	Capabilities   *CapabilityServer
+	Assets         *PhysicalAssetServer
+	Installations  *InstallationServer
+	PersonClasses  *PersonClassServer
+	Persons        *PersonServer
+	Qualifications *QualificationServer
 }
 
 // NewEquipmentService creates a combined EquipmentService from a single
 // PostgresEquipmentRepository that implements all domain interfaces.
 func NewEquipmentService(repo *db.PostgresEquipmentRepository) *EquipmentService {
 	return &EquipmentService{
-		WorkUnits:     NewWorkUnitServer(repo),
-		Classes:       NewEquipmentClassServer(repo),
-		Capabilities:  NewCapabilityServer(repo, repo, repo),
-		Assets:        NewPhysicalAssetServer(repo),
-		Installations: NewInstallationServer(repo, repo, repo),
-		PersonClasses: NewPersonClassServer(repo),
-		Persons:       NewPersonServer(repo),
+		WorkUnits:      NewWorkUnitServer(repo),
+		Classes:        NewEquipmentClassServer(repo),
+		Capabilities:   NewCapabilityServer(repo, repo, repo),
+		Assets:         NewPhysicalAssetServer(repo),
+		Installations:  NewInstallationServer(repo, repo, repo),
+		PersonClasses:  NewPersonClassServer(repo),
+		Persons:        NewPersonServer(repo),
+		Qualifications: NewQualificationServer(repo, repo, repo, repo),
 	}
 }
 
@@ -148,4 +150,22 @@ func (s *EquipmentService) GetPerson(ctx context.Context, req *resourcev1.GetPer
 
 func (s *EquipmentService) ListPersons(ctx context.Context, req *resourcev1.ListPersonsRequest) (*resourcev1.ListPersonsResponse, error) {
 	return s.Persons.ListPersons(ctx, req)
+}
+
+// --- Qualification Record delegation ---
+
+func (s *EquipmentService) QualifyPerson(ctx context.Context, req *resourcev1.QualifyPersonRequest) (*resourcev1.QualifyPersonResponse, error) {
+	return s.Qualifications.QualifyPerson(ctx, req)
+}
+
+func (s *EquipmentService) GetQualification(ctx context.Context, req *resourcev1.GetQualificationRequest) (*resourcev1.GetQualificationResponse, error) {
+	return s.Qualifications.GetQualification(ctx, req)
+}
+
+func (s *EquipmentService) ListQualifications(ctx context.Context, req *resourcev1.ListQualificationsRequest) (*resourcev1.ListQualificationsResponse, error) {
+	return s.Qualifications.ListQualifications(ctx, req)
+}
+
+func (s *EquipmentService) RevokeQualification(ctx context.Context, req *resourcev1.RevokeQualificationRequest) (*resourcev1.RevokeQualificationResponse, error) {
+	return s.Qualifications.RevokeQualification(ctx, req)
 }
