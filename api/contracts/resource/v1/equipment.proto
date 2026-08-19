@@ -129,6 +129,18 @@ message Person {
   google.protobuf.Timestamp updated_at = 9;
 }
 
+// QualificationRecord: certifies a Person for a PersonClass at a Work Center.
+message QualificationRecord {
+  string id = 1;                  // UUIDv7
+  string person_id = 2;           // Foreign key to Person
+  string person_class_id = 3;     // Foreign key to PersonClass (the role being certified)
+  string work_center_id = 4;      // Foreign key to Work Center
+  google.protobuf.Timestamp certified_at = 5;  // When certification was granted
+  google.protobuf.Timestamp expires_at = 6;    // NULL = no expiry (permanent certification)
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
 // ----------------------------------------------------------------------------
@@ -170,6 +182,12 @@ service EquipmentService {
   rpc CreatePerson(CreatePersonRequest) returns (CreatePersonResponse);
   rpc GetPerson(GetPersonRequest) returns (GetPersonResponse);
   rpc ListPersons(ListPersonsRequest) returns (ListPersonsResponse);
+
+  // Qualification Record API
+  rpc QualifyPerson(QualifyPersonRequest) returns (QualifyPersonResponse);
+  rpc GetQualification(GetQualificationRequest) returns (GetQualificationResponse);
+  rpc ListQualifications(ListQualificationsRequest) returns (ListQualificationsResponse);
+  rpc RevokeQualification(RevokeQualificationRequest) returns (RevokeQualificationResponse);
 }
 
 // --- Work Unit messages ---
@@ -378,4 +396,42 @@ message ListPersonsRequest {
 
 message ListPersonsResponse {
   repeated Person persons = 1;
+}
+
+// --- Qualification Record messages ---
+
+message QualifyPersonRequest {
+  string person_id = 1;
+  string person_class_id = 2;     // Which role is being certified
+  string work_center_id = 3;      // At which Work Center
+  string expires_at = 4;          // ISO 8601 datetime (empty = no expiry)
+}
+
+message QualifyPersonResponse {
+  QualificationRecord qualification = 1;
+}
+
+message GetQualificationRequest {
+  string id = 1;
+}
+
+message GetQualificationResponse {
+  QualificationRecord qualification = 1;
+}
+
+message ListQualificationsRequest {
+  string person_id = 1;           // Filter by Person (empty = all)
+  string work_center_id = 2;      // Filter by Work Center (empty = all)
+}
+
+message ListQualificationsResponse {
+  repeated QualificationRecord qualifications = 1;
+}
+
+message RevokeQualificationRequest {
+  string id = 1;                  // QualificationRecord ID to revoke
+}
+
+message RevokeQualificationResponse {
+  bool revoked = 1;
 }
