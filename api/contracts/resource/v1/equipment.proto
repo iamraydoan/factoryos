@@ -188,6 +188,7 @@ service EquipmentService {
   rpc GetQualification(GetQualificationRequest) returns (GetQualificationResponse);
   rpc ListQualifications(ListQualificationsRequest) returns (ListQualificationsResponse);
   rpc RevokeQualification(RevokeQualificationRequest) returns (RevokeQualificationResponse);
+  rpc CheckExpiringQualifications(CheckExpiringQualificationsRequest) returns (CheckExpiringQualificationsResponse);
 }
 
 // --- Work Unit messages ---
@@ -434,4 +435,12 @@ message RevokeQualificationRequest {
 
 message RevokeQualificationResponse {
   bool revoked = 1;
+}
+
+message CheckExpiringQualificationsRequest {
+  string before = 1;  // RFC3339 timestamp (e.g., "2026-09-20T00:00:00Z")
+}
+
+message CheckExpiringQualificationsResponse {
+  repeated QualificationRecord qualifications = 1;
 }
