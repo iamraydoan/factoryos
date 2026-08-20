@@ -15,7 +15,7 @@ type QualificationRecord struct {
 	PersonClassID string
 	WorkCenterID  string
 	CertifiedAt   time.Time
-	ExpiresAt     *time.Time // nil = no expiry
+	ExpiresAt     *time.Time // nil = no expiry (permanent certification)
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -26,6 +26,7 @@ type QualificationRepository interface {
 	GetQualification(ctx context.Context, id string) (*QualificationRecord, error)
 	ListQualifications(ctx context.Context, personID, workCenterID string) ([]*QualificationRecord, error)
 	RevokeQualification(ctx context.Context, id string) (bool, error)
+	CheckExpiringQualifications(ctx context.Context, before time.Time) ([]*QualificationRecord, error)
 }
 
 // QualifyPerson creates or updates a Qualification Record (upsert on unique constraint).
@@ -72,8 +73,10 @@ func (r *PostgresEquipmentRepository) GetQualification(ctx context.Context, id s
 // ListQualifications retrieves Qualification Records, optionally filtered by personID and/or workCenterID.
 // Empty strings mean "don't filter on that dimension".
 func (r *PostgresEquipmentRepository) ListQualifications(ctx context.Context, personID, workCenterID string) ([]*QualificationRecord, error) {
-	var rows pgx.Rows
-	var err error
+	var (
+		rows pgx.Rows
+		err  error
+	)
 
 	switch {
 	case personID != "" && workCenterID != "":
@@ -122,7 +125,7 @@ func (r *PostgresEquipmentRepository) ListQualifications(ctx context.Context, pe
 		records = append(records, &qr)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating qualifications: %w", err)
+		return nil, fmt.Errorf("failed to iterate qualifications: %w", err)
 	}
 	return records, nil
 }
@@ -136,4 +139,36 @@ func (r *PostgresEquipmentRepository) RevokeQualification(ctx context.Context, i
 		return false, fmt.Errorf("failed to revoke qualification: %w", err)
 	}
 	return tag.RowsAffected() > 0, nil
+}
+
+// CheckExpiringQualifications returns all qualification records whose expires_at
+// is non-null and falls before the given time, ordered by expiry ascending.
+func (r *PostgresEquipmentRepository) CheckExpiringQualifications(ctx context.Context, before time.Time) ([]*QualificationRecord, error) {
+	query := `
+		SELECT id, person_id, person_class_id, work_center_id, certified_at, expires_at, created_at, updated_at
+		FROM qualification_records
+		WHERE expires_at IS NOT NULL AND expires_at < $1
+		ORDER BY expires_at ASC`
+
+	rows, err := r.pool.Query(ctx, query, before)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list expiring qualifications: %w", err)
+	}
+	defer rows.Close()
+
+	var records []*QualificationRecord
+	for rows.Next() {
+		var qr QualificationRecord
+		if err := rows.Scan(
+			&qr.ID, &qr.PersonID, &qr.PersonClassID, &qr.WorkCenterID,
+			&qr.CertifiedAt, &qr.ExpiresAt, &qr.CreatedAt, &qr.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan qualification: %w", err)
+		}
+		records = append(records, &qr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate qualifications: %w", err)
+	}
+	return records, nil
 }
