@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Foreign key validation: verifies Person and PersonClass exist before creating a qualification.
   - Unit tests with mock repositories (22 new tests, all passing with `-race`).
 
+- **Qualification Expiry Tracking (`services/resource-service`):**
+  - `CheckExpiringQualifications` gRPC RPC accepts RFC3339 `before` timestamp and returns all qualifications expiring before that time.
+  - `CheckExpiringQualifications` repository method with `WHERE expires_at IS NOT NULL AND expires_at < $1` query, ordered by urgency.
+  - 6 new unit tests for expiry queries (success, no expiring, already expired, invalid timestamp, missing field, repo error).
+
 - **OEE Threshold Alerting (`services/analytics-engine`):**
   - `ThresholdDirection` field on `AlertRule` enabling lower-bound checks for OEE-style metrics (`processor/alerts.go`).
   - `OEEAlertEvaluator` with per-component (Availability, Performance, Quality) and composite OEE monitoring, configurable warning/critical thresholds, and cooldown-based deduplication (`processor/oee_alerts.go`).
