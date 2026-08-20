@@ -143,3 +143,30 @@ func (s *QualificationServer) RevokeQualification(ctx context.Context, req *reso
 		Revoked: revoked,
 	}, nil
 }
+
+// CheckExpiringQualifications returns qualifications expiring before the given time.
+func (s *QualificationServer) CheckExpiringQualifications(ctx context.Context, req *resourcev1.CheckExpiringQualificationsRequest) (*resourcev1.CheckExpiringQualificationsResponse, error) {
+	beforeStr := req.GetBefore()
+	if beforeStr == "" {
+		return nil, status.Error(codes.InvalidArgument, "before is required (RFC3339 timestamp, e.g., 2026-09-20T00:00:00Z)")
+	}
+
+	before, err := time.Parse(time.RFC3339, beforeStr)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid before timestamp %q: use RFC3339 format (e.g., 2026-09-20T00:00:00Z)", beforeStr)
+	}
+
+	records, err := s.quals.CheckExpiringQualifications(ctx, before)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "list expiring qualifications: %v", err)
+	}
+
+	qualifications := make([]*resourcev1.QualificationRecord, len(records))
+	for i, r := range records {
+		qualifications[i] = toProtoQualificationRecord(r)
+	}
+
+	return &resourcev1.CheckExpiringQualificationsResponse{
+		Qualifications: qualifications,
+	}, nil
+}

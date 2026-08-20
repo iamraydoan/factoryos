@@ -169,3 +169,7 @@ func (s *EquipmentService) ListQualifications(ctx context.Context, req *resource
 func (s *EquipmentService) RevokeQualification(ctx context.Context, req *resourcev1.RevokeQualificationRequest) (*resourcev1.RevokeQualificationResponse, error) {
 	return s.Qualifications.RevokeQualification(ctx, req)
 }
+
+func (s *EquipmentService) CheckExpiringQualifications(ctx context.Context, req *resourcev1.CheckExpiringQualificationsRequest) (*resourcev1.CheckExpiringQualificationsResponse, error) {
+	return s.Qualifications.CheckExpiringQualifications(ctx, req)
+}
