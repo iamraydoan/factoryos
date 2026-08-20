@@ -67,6 +67,16 @@ func (m *mockQualificationRepo) RevokeQualification(_ context.Context, id string
 	return true, nil
 }
 
+func (m *mockQualificationRepo) CheckExpiringQualifications(_ context.Context, before time.Time) ([]*db.QualificationRecord, error) {
+	var result []*db.QualificationRecord
+	for _, qr := range m.records {
+		if qr.ExpiresAt != nil && qr.ExpiresAt.Before(before) {
+			result = append(result, qr)
+		}
+	}
+	return result, nil
+}
+
 // ============================================================================
 // QualifyPerson
 // ============================================================================
@@ -413,6 +423,10 @@ func (m *mockQualificationRepoErr) RevokeQualification(_ context.Context, _ stri
 	return false, fmt.Errorf("simulated db error")
 }
 
+func (m *mockQualificationRepoErr) CheckExpiringQualifications(_ context.Context, _ time.Time) ([]*db.QualificationRecord, error) {
+	return nil, fmt.Errorf("simulated db error")
+}
+
 func TestQualifyPerson_RepoError(t *testing.T) {
 	persons := newMockPersonRepo()
 	personClasses := newMockPersonClassRepo()
@@ -454,4 +468,117 @@ func TestRevokeQualification_RepoError(t *testing.T) {
 	if status.Code(err) != codes.Internal {
 		t.Errorf("RevokeQualification() = %v, want Internal", err)
 	}
+}
+
+// ============================================================================
+// CheckExpiringQualifications
+// ============================================================================
+
+func TestCheckExpiringQualifications_Success(t *testing.T) {
+	quals := newMockQualificationRepo()
+	srv := NewQualificationServer(newMockPersonRepo(), newMockPersonClassRepo(), newMockWorkUnitRepo(), quals)
+
+	// Seed: one expiring tomorrow, one in 90 days, one permanent (nil)
+	tomorrow := time.Now().Add(24 * time.Hour)
+	in90Days := time.Now().Add(90 * 24 * time.Hour)
+	seedQualification(quals, "p-1", "pc-1", "wc-1", &tomorrow)
+	seedQualification(quals, "p-2", "pc-1", "wc-1", &in90Days)
+	seedQualification(quals, "p-3", "pc-1", "wc-1", nil)
+
+	// "before" = 30 days from now → only "tomorrow" record matches
+	before := time.Now().Add(30 * 24 * time.Hour).Format(time.RFC3339)
+	resp, err := srv.CheckExpiringQualifications(context.Background(), &resourcev1.CheckExpiringQualificationsRequest{
+		Before: before,
+	})
+	if err != nil {
+		t.Fatalf("CheckExpiringQualifications() = %v, want nil", err)
+	}
+	if len(resp.GetQualifications()) != 1 {
+		t.Errorf("returned %d qualifications, want 1", len(resp.GetQualifications()))
+	}
+	if resp.GetQualifications()[0].GetPersonId() != "p-1" {
+		t.Errorf("PersonId = %q, want p-1", resp.GetQualifications()[0].GetPersonId())
+	}
+}
+
+func TestCheckExpiringQualifications_NoExpiring(t *testing.T) {
+	quals := newMockQualificationRepo()
+	srv := NewQualificationServer(newMockPersonRepo(), newMockPersonClassRepo(), newMockWorkUnitRepo(), quals)
+
+	seedQualification(quals, "p-1", "pc-1", "wc-1", nil) // permanent
+
+	before := time.Now().Add(30 * 24 * time.Hour).Format(time.RFC3339)
+	resp, err := srv.CheckExpiringQualifications(context.Background(), &resourcev1.CheckExpiringQualificationsRequest{
+		Before: before,
+	})
+	if err != nil {
+		t.Fatalf("CheckExpiringQualifications() = %v, want nil", err)
+	}
+	if len(resp.GetQualifications()) != 0 {
+		t.Errorf("returned %d qualifications, want 0", len(resp.GetQualifications()))
+	}
+}
+
+func TestCheckExpiringQualifications_AlreadyExpired(t *testing.T) {
+	quals := newMockQualificationRepo()
+	srv := NewQualificationServer(newMockPersonRepo(), newMockPersonClassRepo(), newMockWorkUnitRepo(), quals)
+
+	yesterday := time.Now().Add(-24 * time.Hour)
+	seedQualification(quals, "p-1", "pc-1", "wc-1", &yesterday)
+
+	before := time.Now().Add(7 * 24 * time.Hour).Format(time.RFC3339)
+	resp, err := srv.CheckExpiringQualifications(context.Background(), &resourcev1.CheckExpiringQualificationsRequest{
+		Before: before,
+	})
+	if err != nil {
+		t.Fatalf("CheckExpiringQualifications() = %v, want nil", err)
+	}
+	if len(resp.GetQualifications()) != 1 {
+		t.Errorf("returned %d qualifications, want 1 (already expired)", len(resp.GetQualifications()))
+	}
+}
+
+func TestCheckExpiringQualifications_InvalidBefore(t *testing.T) {
+	srv := NewQualificationServer(newMockPersonRepo(), newMockPersonClassRepo(), newMockWorkUnitRepo(), newMockQualificationRepo())
+
+	_, err := srv.CheckExpiringQualifications(context.Background(), &resourcev1.CheckExpiringQualificationsRequest{
+		Before: "not-a-timestamp",
+	})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("CheckExpiringQualifications() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestCheckExpiringQualifications_MissingBefore(t *testing.T) {
+	srv := NewQualificationServer(newMockPersonRepo(), newMockPersonClassRepo(), newMockWorkUnitRepo(), newMockQualificationRepo())
+
+	_, err := srv.CheckExpiringQualifications(context.Background(), &resourcev1.CheckExpiringQualificationsRequest{})
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("CheckExpiringQualifications() = %v, want InvalidArgument", err)
+	}
+}
+
+func TestCheckExpiringQualifications_RepoError(t *testing.T) {
+	srv := NewQualificationServer(newMockPersonRepo(), newMockPersonClassRepo(), newMockWorkUnitRepo(), &mockQualificationRepoErr{})
+
+	before := time.Now().Add(30 * 24 * time.Hour).Format(time.RFC3339)
+	_, err := srv.CheckExpiringQualifications(context.Background(), &resourcev1.CheckExpiringQualificationsRequest{
+		Before: before,
+	})
+	if status.Code(err) != codes.Internal {
+		t.Errorf("CheckExpiringQualifications() = %v, want Internal", err)
+	}
+}
+
+// seedQualification helper is used by CheckExpiringQualifications tests.
+func seedQualification(repo *mockQualificationRepo, personID, personClassID, workCenterID string, expiresAt *time.Time) {
+	id := fmt.Sprintf("qr-%d", repo.nextID)
+	repo.nextID++
+	now := time.Now()
+	qr := &db.QualificationRecord{
+		ID: id, PersonID: personID, PersonClassID: personClassID,
+		WorkCenterID: workCenterID, CertifiedAt: now, ExpiresAt: expiresAt,
+		CreatedAt: now, UpdatedAt: now,
+	}
+	repo.records[qr.ID] = qr
 }
