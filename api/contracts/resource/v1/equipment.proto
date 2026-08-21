@@ -141,6 +141,29 @@ message QualificationRecord {
   google.protobuf.Timestamp updated_at = 8;
 }
 
+// Shift defines a named work shift with start and end times.
+message Shift {
+  string id = 1;                  // UUIDv7
+  string name = 2;                // e.g., "Day Shift", "Night Shift A"
+  string start_time = 3;          // "HH:MM" in 24h format (e.g., "06:00")
+  string end_time = 4;            // "HH:MM" in 24h format (e.g., "14:00")
+  string description = 5;         // Optional description
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// ShiftAssignment links a Person to a Shift at a Work Center.
+message ShiftAssignment {
+  string id = 1;                  // UUIDv7
+  string person_id = 2;           // Foreign key to Person
+  string shift_id = 3;            // Foreign key to Shift
+  string work_center_id = 4;      // Foreign key to Work Center
+  google.protobuf.Timestamp effective_from = 5;  // When assignment starts
+  google.protobuf.Timestamp effective_to = 6;    // NULL = open-ended (current assignment)
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
 // ----------------------------------------------------------------------------
@@ -189,6 +212,17 @@ service EquipmentService {
   rpc ListQualifications(ListQualificationsRequest) returns (ListQualificationsResponse);
   rpc RevokeQualification(RevokeQualificationRequest) returns (RevokeQualificationResponse);
   rpc CheckExpiringQualifications(CheckExpiringQualificationsRequest) returns (CheckExpiringQualificationsResponse);
+
+  // Shift API
+  rpc CreateShift(CreateShiftRequest) returns (CreateShiftResponse);
+  rpc GetShift(GetShiftRequest) returns (GetShiftResponse);
+  rpc ListShifts(ListShiftsRequest) returns (ListShiftsResponse);
+
+  // Shift Assignment API
+  rpc AssignShift(AssignShiftRequest) returns (AssignShiftResponse);
+  rpc GetShiftAssignment(GetShiftAssignmentRequest) returns (GetShiftAssignmentResponse);
+  rpc ListShiftAssignments(ListShiftAssignmentsRequest) returns (ListShiftAssignmentsResponse);
+  rpc UnassignShift(UnassignShiftRequest) returns (UnassignShiftResponse);
 }
 
 // --- Work Unit messages ---
@@ -443,4 +477,70 @@ message CheckExpiringQualificationsRequest {
 
 message CheckExpiringQualificationsResponse {
   repeated QualificationRecord qualifications = 1;
+}
+
+// --- Shift messages ---
+
+message CreateShiftRequest {
+  string name = 1;
+  string start_time = 2;          // "HH:MM" (e.g., "06:00")
+  string end_time = 3;            // "HH:MM" (e.g., "14:00")
+  string description = 4;
+}
+
+message CreateShiftResponse {
+  Shift shift = 1;
+}
+
+message GetShiftRequest {
+  string id = 1;
+}
+
+message GetShiftResponse {
+  Shift shift = 1;
+}
+
+message ListShiftsRequest {}
+
+message ListShiftsResponse {
+  repeated Shift shifts = 1;
+}
+
+// --- Shift Assignment messages ---
+
+message AssignShiftRequest {
+  string person_id = 1;
+  string shift_id = 2;
+  string work_center_id = 3;
+  string effective_from = 4;      // RFC3339 timestamp (e.g., "2026-08-21T00:00:00Z")
+}
+
+message AssignShiftResponse {
+  ShiftAssignment assignment = 1;
+}
+
+message GetShiftAssignmentRequest {
+  string id = 1;
+}
+
+message GetShiftAssignmentResponse {
+  ShiftAssignment assignment = 1;
+}
+
+message ListShiftAssignmentsRequest {
+  string person_id = 1;           // Filter by Person (empty = all)
+  string shift_id = 2;            // Filter by Shift (empty = all)
+  string work_center_id = 3;      // Filter by Work Center (empty = all)
+}
+
+message ListShiftAssignmentsResponse {
+  repeated ShiftAssignment assignments = 1;
+}
+
+message UnassignShiftRequest {
+  string id = 1;                  // ShiftAssignment ID to remove
+}
+
+message UnassignShiftResponse {
+  bool unassigned = 1;
 }
