@@ -19,7 +19,7 @@
 - [x] Implement Person and PersonClass (role) management.
 - [x] Implement QualificationRecord: certify a Person for a PersonClass at a Work Center.
 - [x] Implement QualificationRecord expiry tracking and alert.
-- [ ] Implement Shift and ShiftAssignment management.
+- [x] Implement Shift and ShiftAssignment management.
 
 ### Material Definition
 - [ ] Implement MaterialClass and MaterialDefinition CRUD API.

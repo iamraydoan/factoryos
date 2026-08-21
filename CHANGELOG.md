@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Shift & ShiftAssignment (`services/resource-service`):** Shift definitions (TIME columns) and many-to-many shift assignments with upsert, 3-filter listing, FK validation, and 34 unit tests.
+
 ---
 
 ## [v0.3.0] - 2026-08-20
