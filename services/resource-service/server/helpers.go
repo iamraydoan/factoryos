@@ -169,6 +169,44 @@ func toProtoQualificationRecord(qr *db.QualificationRecord) *resourcev1.Qualific
 	return proto
 }
 
+// toProtoShift converts a domain Shift to a proto Shift.
+func toProtoShift(s *db.Shift) *resourcev1.Shift {
+	if s == nil {
+		return nil
+	}
+
+	return &resourcev1.Shift{
+		Id:          s.ID,
+		Name:        s.Name,
+		StartTime:   normalizeHHMM(s.StartTime),
+		EndTime:     normalizeHHMM(s.EndTime),
+		Description: derefString(s.Description),
+		CreatedAt:   timestamppb.New(s.CreatedAt),
+		UpdatedAt:   timestamppb.New(s.UpdatedAt),
+	}
+}
+
+// toProtoShiftAssignment converts a domain ShiftAssignment to a proto ShiftAssignment.
+func toProtoShiftAssignment(sa *db.ShiftAssignment) *resourcev1.ShiftAssignment {
+	if sa == nil {
+		return nil
+	}
+
+	proto := &resourcev1.ShiftAssignment{
+		Id:            sa.ID,
+		PersonId:      sa.PersonID,
+		ShiftId:       sa.ShiftID,
+		WorkCenterId:  sa.WorkCenterID,
+		EffectiveFrom: timestamppb.New(sa.EffectiveFrom),
+		CreatedAt:     timestamppb.New(sa.CreatedAt),
+		UpdatedAt:     timestamppb.New(sa.UpdatedAt),
+	}
+	if sa.EffectiveTo != nil {
+		proto.EffectiveTo = timestamppb.New(*sa.EffectiveTo)
+	}
+	return proto
+}
+
 // ============================================================================
 // Status Conversion Helpers
 // ============================================================================
@@ -275,4 +313,13 @@ func derefString(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+// normalizeHHMM strips seconds from a time string if present.
+// "06:00:00" → "06:00", "06:00" → "06:00".
+func normalizeHHMM(t string) string {
+	if len(t) == 8 && t[5] == ':' {
+		return t[:5]
+	}
+	return t
 }

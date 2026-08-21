@@ -29,6 +29,8 @@ type EquipmentService struct {
 	PersonClasses  *PersonClassServer
 	Persons        *PersonServer
 	Qualifications *QualificationServer
+	Shifts         *ShiftServer
+	Assignments    *ShiftAssignmentServer
 }
 
 // NewEquipmentService creates a combined EquipmentService from a single
@@ -43,6 +45,8 @@ func NewEquipmentService(repo *db.PostgresEquipmentRepository) *EquipmentService
 		PersonClasses:  NewPersonClassServer(repo),
 		Persons:        NewPersonServer(repo),
 		Qualifications: NewQualificationServer(repo, repo, repo, repo),
+		Shifts:         NewShiftServer(repo),
+		Assignments:    NewShiftAssignmentServer(repo, repo, repo),
 	}
 }
 
@@ -172,4 +176,36 @@ func (s *EquipmentService) RevokeQualification(ctx context.Context, req *resourc
 
 func (s *EquipmentService) CheckExpiringQualifications(ctx context.Context, req *resourcev1.CheckExpiringQualificationsRequest) (*resourcev1.CheckExpiringQualificationsResponse, error) {
 	return s.Qualifications.CheckExpiringQualifications(ctx, req)
+}
+
+// --- Shift delegation ---
+
+func (s *EquipmentService) CreateShift(ctx context.Context, req *resourcev1.CreateShiftRequest) (*resourcev1.CreateShiftResponse, error) {
+	return s.Shifts.CreateShift(ctx, req)
+}
+
+func (s *EquipmentService) GetShift(ctx context.Context, req *resourcev1.GetShiftRequest) (*resourcev1.GetShiftResponse, error) {
+	return s.Shifts.GetShift(ctx, req)
+}
+
+func (s *EquipmentService) ListShifts(ctx context.Context, req *resourcev1.ListShiftsRequest) (*resourcev1.ListShiftsResponse, error) {
+	return s.Shifts.ListShifts(ctx, req)
+}
+
+// --- Shift Assignment delegation ---
+
+func (s *EquipmentService) AssignShift(ctx context.Context, req *resourcev1.AssignShiftRequest) (*resourcev1.AssignShiftResponse, error) {
+	return s.Assignments.AssignShift(ctx, req)
+}
+
+func (s *EquipmentService) GetShiftAssignment(ctx context.Context, req *resourcev1.GetShiftAssignmentRequest) (*resourcev1.GetShiftAssignmentResponse, error) {
+	return s.Assignments.GetShiftAssignment(ctx, req)
+}
+
+func (s *EquipmentService) ListShiftAssignments(ctx context.Context, req *resourcev1.ListShiftAssignmentsRequest) (*resourcev1.ListShiftAssignmentsResponse, error) {
+	return s.Assignments.ListShiftAssignments(ctx, req)
+}
+
+func (s *EquipmentService) UnassignShift(ctx context.Context, req *resourcev1.UnassignShiftRequest) (*resourcev1.UnassignShiftResponse, error) {
+	return s.Assignments.UnassignShift(ctx, req)
 }
