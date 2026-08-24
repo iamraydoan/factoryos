@@ -21,32 +21,36 @@ import (
 type EquipmentService struct {
 	resourcev1.UnimplementedEquipmentServiceServer
 
-	WorkUnits      *WorkUnitServer
-	Classes        *EquipmentClassServer
-	Capabilities   *CapabilityServer
-	Assets         *PhysicalAssetServer
-	Installations  *InstallationServer
-	PersonClasses  *PersonClassServer
-	Persons        *PersonServer
-	Qualifications *QualificationServer
-	Shifts         *ShiftServer
-	Assignments    *ShiftAssignmentServer
+	WorkUnits       *WorkUnitServer
+	Classes         *EquipmentClassServer
+	Capabilities    *CapabilityServer
+	Assets          *PhysicalAssetServer
+	Installations   *InstallationServer
+	PersonClasses   *PersonClassServer
+	Persons         *PersonServer
+	Qualifications  *QualificationServer
+	Shifts          *ShiftServer
+	Assignments     *ShiftAssignmentServer
+	MaterialClasses *MaterialClassServer
+	MaterialDefs    *MaterialDefinitionServer
 }
 
 // NewEquipmentService creates a combined EquipmentService from a single
 // PostgresEquipmentRepository that implements all domain interfaces.
 func NewEquipmentService(repo *db.PostgresEquipmentRepository) *EquipmentService {
 	return &EquipmentService{
-		WorkUnits:      NewWorkUnitServer(repo),
-		Classes:        NewEquipmentClassServer(repo),
-		Capabilities:   NewCapabilityServer(repo, repo, repo),
-		Assets:         NewPhysicalAssetServer(repo),
-		Installations:  NewInstallationServer(repo, repo, repo),
-		PersonClasses:  NewPersonClassServer(repo),
-		Persons:        NewPersonServer(repo),
-		Qualifications: NewQualificationServer(repo, repo, repo, repo),
-		Shifts:         NewShiftServer(repo),
-		Assignments:    NewShiftAssignmentServer(repo, repo, repo),
+		WorkUnits:       NewWorkUnitServer(repo),
+		Classes:         NewEquipmentClassServer(repo),
+		Capabilities:    NewCapabilityServer(repo, repo, repo),
+		Assets:          NewPhysicalAssetServer(repo),
+		Installations:   NewInstallationServer(repo, repo, repo),
+		PersonClasses:   NewPersonClassServer(repo),
+		Persons:         NewPersonServer(repo),
+		Qualifications:  NewQualificationServer(repo, repo, repo, repo),
+		Shifts:          NewShiftServer(repo),
+		Assignments:     NewShiftAssignmentServer(repo, repo, repo),
+		MaterialClasses: NewMaterialClassServer(repo),
+		MaterialDefs:    NewMaterialDefinitionServer(repo, repo),
 	}
 }
 
@@ -208,4 +212,32 @@ func (s *EquipmentService) ListShiftAssignments(ctx context.Context, req *resour
 
 func (s *EquipmentService) UnassignShift(ctx context.Context, req *resourcev1.UnassignShiftRequest) (*resourcev1.UnassignShiftResponse, error) {
 	return s.Assignments.UnassignShift(ctx, req)
+}
+
+// --- Material Class delegation ---
+
+func (s *EquipmentService) CreateMaterialClass(ctx context.Context, req *resourcev1.CreateMaterialClassRequest) (*resourcev1.CreateMaterialClassResponse, error) {
+	return s.MaterialClasses.CreateMaterialClass(ctx, req)
+}
+
+func (s *EquipmentService) GetMaterialClass(ctx context.Context, req *resourcev1.GetMaterialClassRequest) (*resourcev1.GetMaterialClassResponse, error) {
+	return s.MaterialClasses.GetMaterialClass(ctx, req)
+}
+
+func (s *EquipmentService) ListMaterialClasses(ctx context.Context, req *resourcev1.ListMaterialClassesRequest) (*resourcev1.ListMaterialClassesResponse, error) {
+	return s.MaterialClasses.ListMaterialClasses(ctx, req)
+}
+
+// --- Material Definition delegation ---
+
+func (s *EquipmentService) CreateMaterialDefinition(ctx context.Context, req *resourcev1.CreateMaterialDefinitionRequest) (*resourcev1.CreateMaterialDefinitionResponse, error) {
+	return s.MaterialDefs.CreateMaterialDefinition(ctx, req)
+}
+
+func (s *EquipmentService) GetMaterialDefinition(ctx context.Context, req *resourcev1.GetMaterialDefinitionRequest) (*resourcev1.GetMaterialDefinitionResponse, error) {
+	return s.MaterialDefs.GetMaterialDefinition(ctx, req)
+}
+
+func (s *EquipmentService) ListMaterialDefinitions(ctx context.Context, req *resourcev1.ListMaterialDefinitionsRequest) (*resourcev1.ListMaterialDefinitionsResponse, error) {
+	return s.MaterialDefs.ListMaterialDefinitions(ctx, req)
 }

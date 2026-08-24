@@ -207,6 +207,39 @@ func toProtoShiftAssignment(sa *db.ShiftAssignment) *resourcev1.ShiftAssignment 
 	return proto
 }
 
+// toProtoMaterialClass converts a domain MaterialClass to a proto MaterialClass.
+func toProtoMaterialClass(mc *db.MaterialClass) *resourcev1.MaterialClass {
+	if mc == nil {
+		return nil
+	}
+
+	return &resourcev1.MaterialClass{
+		Id:          mc.ID,
+		Name:        mc.Name,
+		Description: derefString(mc.Description),
+		CreatedAt:   timestamppb.New(mc.CreatedAt),
+		UpdatedAt:   timestamppb.New(mc.UpdatedAt),
+	}
+}
+
+// toProtoMaterialDefinition converts a domain MaterialDefinition to a proto MaterialDefinition.
+func toProtoMaterialDefinition(md *db.MaterialDefinition) *resourcev1.MaterialDefinition {
+	if md == nil {
+		return nil
+	}
+
+	return &resourcev1.MaterialDefinition{
+		Id:              md.ID,
+		MaterialClassId: md.MaterialClassID,
+		Name:            md.Name,
+		PartNumber:      md.PartNumber,
+		UnitOfMeasure:   md.UnitOfMeasure,
+		Specification:   derefString(md.Specification),
+		CreatedAt:       timestamppb.New(md.CreatedAt),
+		UpdatedAt:       timestamppb.New(md.UpdatedAt),
+	}
+}
+
 // ============================================================================
 // Status Conversion Helpers
 // ============================================================================
