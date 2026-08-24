@@ -22,7 +22,7 @@
 - [x] Implement Shift and ShiftAssignment management.
 
 ### Material Definition
-- [ ] Implement MaterialClass and MaterialDefinition CRUD API.
+- [x] Implement MaterialClass and MaterialDefinition CRUD API.
 - [ ] Implement Bill of Materials (BOM) with versioning support.
 - [ ] Implement ProductRoutingSpec: link MaterialDefinition to Work Center sequence.
 
