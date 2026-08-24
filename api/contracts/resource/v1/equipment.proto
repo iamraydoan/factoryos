@@ -164,6 +164,27 @@ message ShiftAssignment {
   google.protobuf.Timestamp updated_at = 8;
 }
 
+// MaterialClass: a category of material (e.g., "Raw Material", "Sub-Assembly", "Finished Good").
+message MaterialClass {
+  string id = 1;                  // UUIDv7
+  string name = 2;                // e.g., "Raw Material", "Finished Good"
+  string description = 3;         // Category description
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+}
+
+// MaterialDefinition: a specific material or product with its specification.
+message MaterialDefinition {
+  string id = 1;                  // UUIDv7
+  string material_class_id = 2;   // Foreign key to MaterialClass
+  string name = 3;                // e.g., "Aluminum Sheet 3mm", "Engine Block Assembly"
+  string part_number = 4;         // Unique part number (e.g., "MAT-AL-3MM")
+  string unit_of_measure = 5;     // e.g., "kg", "pcs", "liters", "meters"
+  string specification = 6;       // Optional JSON spec (grade, tolerance, etc.)
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
 // ----------------------------------------------------------------------------
@@ -223,6 +244,16 @@ service EquipmentService {
   rpc GetShiftAssignment(GetShiftAssignmentRequest) returns (GetShiftAssignmentResponse);
   rpc ListShiftAssignments(ListShiftAssignmentsRequest) returns (ListShiftAssignmentsResponse);
   rpc UnassignShift(UnassignShiftRequest) returns (UnassignShiftResponse);
+
+  // Material Class API
+  rpc CreateMaterialClass(CreateMaterialClassRequest) returns (CreateMaterialClassResponse);
+  rpc GetMaterialClass(GetMaterialClassRequest) returns (GetMaterialClassResponse);
+  rpc ListMaterialClasses(ListMaterialClassesRequest) returns (ListMaterialClassesResponse);
+
+  // Material Definition API
+  rpc CreateMaterialDefinition(CreateMaterialDefinitionRequest) returns (CreateMaterialDefinitionResponse);
+  rpc GetMaterialDefinition(GetMaterialDefinitionRequest) returns (GetMaterialDefinitionResponse);
+  rpc ListMaterialDefinitions(ListMaterialDefinitionsRequest) returns (ListMaterialDefinitionsResponse);
 }
 
 // --- Work Unit messages ---
@@ -543,4 +574,59 @@ message UnassignShiftRequest {
 
 message UnassignShiftResponse {
   bool unassigned = 1;
+}
+
+// --- Material Class messages ---
+
+message CreateMaterialClassRequest {
+  string name = 1;                // Required: unique class name
+  string description = 2;         // Optional: category description
+}
+
+message CreateMaterialClassResponse {
+  MaterialClass material_class = 1;
+}
+
+message GetMaterialClassRequest {
+  string id = 1;                  // MaterialClass UUID
+}
+
+message GetMaterialClassResponse {
+  MaterialClass material_class = 1;
+}
+
+message ListMaterialClassesRequest {}
+
+message ListMaterialClassesResponse {
+  repeated MaterialClass material_classes = 1;
+}
+
+// --- Material Definition messages ---
+
+message CreateMaterialDefinitionRequest {
+  string material_class_id = 1;   // Required: FK to MaterialClass
+  string name = 2;                // Required: material name
+  string part_number = 3;         // Required: unique part number
+  string unit_of_measure = 4;     // Required: e.g., "kg", "pcs", "liters"
+  string specification = 5;       // Optional: JSON spec (grade, tolerance, etc.)
+}
+
+message CreateMaterialDefinitionResponse {
+  MaterialDefinition material_definition = 1;
+}
+
+message GetMaterialDefinitionRequest {
+  string id = 1;                  // MaterialDefinition UUID
+}
+
+message GetMaterialDefinitionResponse {
+  MaterialDefinition material_definition = 1;
+}
+
+message ListMaterialDefinitionsRequest {
+  string material_class_id = 1;   // Filter by MaterialClass (empty = all)
+}
+
+message ListMaterialDefinitionsResponse {
+  repeated MaterialDefinition material_definitions = 1;
 }
