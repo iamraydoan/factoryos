@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **BOM & BOMComponent (`services/resource-service`):** Bill of Materials with versioning (`material_definition_id + version` unique), child component linking with quantity/unit-of-measure, FK validation, and 26 unit tests.
 - **MaterialClass & MaterialDefinition (`services/resource-service`):** Material category and material definition CRUD with `part_number` uniqueness, optional JSON `specification`, FK validation, and 27 unit tests.
 - **Shift & ShiftAssignment (`services/resource-service`):** Shift definitions (TIME columns) and many-to-many shift assignments with upsert, 3-filter listing, FK validation, and 34 unit tests.
 

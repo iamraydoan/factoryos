@@ -23,7 +23,7 @@
 
 ### Material Definition
 - [x] Implement MaterialClass and MaterialDefinition CRUD API.
-- [ ] Implement Bill of Materials (BOM) with versioning support.
+- [x] Implement Bill of Materials (BOM) with versioning support.
 - [ ] Implement ProductRoutingSpec: link MaterialDefinition to Work Center sequence.
 
 ### Telemetry & OEE
