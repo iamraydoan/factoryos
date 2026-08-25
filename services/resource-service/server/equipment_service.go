@@ -33,6 +33,8 @@ type EquipmentService struct {
 	Assignments     *ShiftAssignmentServer
 	MaterialClasses *MaterialClassServer
 	MaterialDefs    *MaterialDefinitionServer
+	BOMs            *BOMServer
+	Components      *BOMComponentServer
 }
 
 // NewEquipmentService creates a combined EquipmentService from a single
@@ -51,6 +53,8 @@ func NewEquipmentService(repo *db.PostgresEquipmentRepository) *EquipmentService
 		Assignments:     NewShiftAssignmentServer(repo, repo, repo),
 		MaterialClasses: NewMaterialClassServer(repo),
 		MaterialDefs:    NewMaterialDefinitionServer(repo, repo),
+		BOMs:            NewBOMServer(repo, repo),
+		Components:      NewBOMComponentServer(repo, repo, repo),
 	}
 }
 
@@ -240,4 +244,28 @@ func (s *EquipmentService) GetMaterialDefinition(ctx context.Context, req *resou
 
 func (s *EquipmentService) ListMaterialDefinitions(ctx context.Context, req *resourcev1.ListMaterialDefinitionsRequest) (*resourcev1.ListMaterialDefinitionsResponse, error) {
 	return s.MaterialDefs.ListMaterialDefinitions(ctx, req)
+}
+
+// --- BOM delegation ---
+
+func (s *EquipmentService) CreateBOM(ctx context.Context, req *resourcev1.CreateBOMRequest) (*resourcev1.CreateBOMResponse, error) {
+	return s.BOMs.CreateBOM(ctx, req)
+}
+
+func (s *EquipmentService) GetBOM(ctx context.Context, req *resourcev1.GetBOMRequest) (*resourcev1.GetBOMResponse, error) {
+	return s.BOMs.GetBOM(ctx, req)
+}
+
+func (s *EquipmentService) ListBOMs(ctx context.Context, req *resourcev1.ListBOMsRequest) (*resourcev1.ListBOMsResponse, error) {
+	return s.BOMs.ListBOMs(ctx, req)
+}
+
+// --- BOM Component delegation ---
+
+func (s *EquipmentService) AddBOMComponent(ctx context.Context, req *resourcev1.AddBOMComponentRequest) (*resourcev1.AddBOMComponentResponse, error) {
+	return s.Components.AddBOMComponent(ctx, req)
+}
+
+func (s *EquipmentService) ListBOMComponents(ctx context.Context, req *resourcev1.ListBOMComponentsRequest) (*resourcev1.ListBOMComponentsResponse, error) {
+	return s.Components.ListBOMComponents(ctx, req)
 }

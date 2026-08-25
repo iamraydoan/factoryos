@@ -240,6 +240,39 @@ func toProtoMaterialDefinition(md *db.MaterialDefinition) *resourcev1.MaterialDe
 	}
 }
 
+// toProtoBOM converts a domain BillOfMaterials to a proto BillOfMaterials.
+func toProtoBOM(bom *db.BillOfMaterials) *resourcev1.BillOfMaterials {
+	if bom == nil {
+		return nil
+	}
+
+	return &resourcev1.BillOfMaterials{
+		Id:                   bom.ID,
+		MaterialDefinitionId: bom.MaterialDefinitionID,
+		Version:              bom.Version,
+		Description:          derefString(bom.Description),
+		CreatedAt:            timestamppb.New(bom.CreatedAt),
+		UpdatedAt:            timestamppb.New(bom.UpdatedAt),
+	}
+}
+
+// toProtoBOMComponent converts a domain BOMComponent to a proto BOMComponent.
+func toProtoBOMComponent(comp *db.BOMComponent) *resourcev1.BOMComponent {
+	if comp == nil {
+		return nil
+	}
+
+	return &resourcev1.BOMComponent{
+		Id:                   comp.ID,
+		BomId:                comp.BOMID,
+		MaterialDefinitionId: comp.MaterialDefinitionID,
+		Quantity:             comp.Quantity,
+		UnitOfMeasure:        comp.UnitOfMeasure,
+		CreatedAt:            timestamppb.New(comp.CreatedAt),
+		UpdatedAt:            timestamppb.New(comp.UpdatedAt),
+	}
+}
+
 // ============================================================================
 // Status Conversion Helpers
 // ============================================================================
