@@ -37,8 +37,10 @@
 				"vscjava.vscode-maven",
 				"vmware.vscode-spring-boot",
 				"bufbuild.vscode-buf",
-				"zxh404.vscode-proto3",
-				"ms-azuretools.vscode-docker"
+				"drblury.protobuf-vsc",
+				"ms-azuretools.vscode-docker",
+				"mermaidchart.vscode-mermaid-chart",
+				"anthropic.claude-code"
 			]
 		}
 	},
