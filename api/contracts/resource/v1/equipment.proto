@@ -185,6 +185,27 @@ message MaterialDefinition {
   google.protobuf.Timestamp updated_at = 8;
 }
 
+// BillOfMaterials: a versioned list of components required to produce one unit of a parent material.
+message BillOfMaterials {
+  string id = 1;                      // UUIDv7
+  string material_definition_id = 2;  // Foreign key to MaterialDefinition (the parent/finished good)
+  string version = 3;                 // Version label (e.g., "v1.0", "v2.1")
+  string description = 4;             // Optional description of this BOM version
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// BOMComponent: a line item in a Bill of Materials specifying a child material and required quantity.
+message BOMComponent {
+  string id = 1;                      // UUIDv7
+  string bom_id = 2;                  // Foreign key to BillOfMaterials
+  string material_definition_id = 3;  // Foreign key to MaterialDefinition (the child material)
+  string quantity = 4;                // Required quantity as decimal string (e.g., "2.500")
+  string unit_of_measure = 5;        // e.g., "kg", "pcs", "liters"
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
 // ----------------------------------------------------------------------------
@@ -254,6 +275,15 @@ service EquipmentService {
   rpc CreateMaterialDefinition(CreateMaterialDefinitionRequest) returns (CreateMaterialDefinitionResponse);
   rpc GetMaterialDefinition(GetMaterialDefinitionRequest) returns (GetMaterialDefinitionResponse);
   rpc ListMaterialDefinitions(ListMaterialDefinitionsRequest) returns (ListMaterialDefinitionsResponse);
+
+  // Bill of Materials API
+  rpc CreateBOM(CreateBOMRequest) returns (CreateBOMResponse);
+  rpc GetBOM(GetBOMRequest) returns (GetBOMResponse);
+  rpc ListBOMs(ListBOMsRequest) returns (ListBOMsResponse);
+
+  // BOM Component API
+  rpc AddBOMComponent(AddBOMComponentRequest) returns (AddBOMComponentResponse);
+  rpc ListBOMComponents(ListBOMComponentsRequest) returns (ListBOMComponentsResponse);
 }
 
 // --- Work Unit messages ---
@@ -629,4 +659,53 @@ message ListMaterialDefinitionsRequest {
 
 message ListMaterialDefinitionsResponse {
   repeated MaterialDefinition material_definitions = 1;
+}
+
+// --- Bill of Materials messages ---
+
+message CreateBOMRequest {
+  string material_definition_id = 1;  // Required: FK to parent MaterialDefinition
+  string version = 2;                 // Required: version label (e.g., "v1.0")
+  string description = 3;             // Optional: description of this BOM version
+}
+
+message CreateBOMResponse {
+  BillOfMaterials bom = 1;
+}
+
+message GetBOMRequest {
+  string id = 1;                      // BillOfMaterials UUID
+}
+
+message GetBOMResponse {
+  BillOfMaterials bom = 1;
+}
+
+message ListBOMsRequest {
+  string material_definition_id = 1;  // Filter by parent MaterialDefinition (empty = all)
+}
+
+message ListBOMsResponse {
+  repeated BillOfMaterials boms = 1;
+}
+
+// --- BOM Component messages ---
+
+message AddBOMComponentRequest {
+  string bom_id = 1;                  // Required: FK to BillOfMaterials
+  string material_definition_id = 2;  // Required: FK to child MaterialDefinition
+  string quantity = 3;                // Required: decimal string (e.g., "2.500")
+  string unit_of_measure = 4;        // Required: e.g., "kg", "pcs"
+}
+
+message AddBOMComponentResponse {
+  BOMComponent component = 1;
+}
+
+message ListBOMComponentsRequest {
+  string bom_id = 1;                  // Required: FK to BillOfMaterials
+}
+
+message ListBOMComponentsResponse {
+  repeated BOMComponent components = 1;
 }
