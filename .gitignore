@@ -29,3 +29,7 @@ api/contracts/openapi/**/dist/
 
 # Generated Go SDK code (output from oapi-codegen and buf generate)
 platform/platform-sdk/go/gen/
+
+# Claude Code
+.claude/settings.local.json
+
