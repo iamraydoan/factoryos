@@ -273,6 +273,40 @@ func toProtoBOMComponent(comp *db.BOMComponent) *resourcev1.BOMComponent {
 	}
 }
 
+// toProtoRoutingSpec converts a domain ProductRoutingSpec to a proto ProductRoutingSpec.
+func toProtoRoutingSpec(spec *db.ProductRoutingSpec) *resourcev1.ProductRoutingSpec {
+	if spec == nil {
+		return nil
+	}
+
+	return &resourcev1.ProductRoutingSpec{
+		Id:                   spec.ID,
+		MaterialDefinitionId: spec.MaterialDefinitionID,
+		Version:              spec.Version,
+		Description:          derefString(spec.Description),
+		CreatedAt:            timestamppb.New(spec.CreatedAt),
+		UpdatedAt:            timestamppb.New(spec.UpdatedAt),
+	}
+}
+
+// toProtoRoutingStep converts a domain ProductRoutingStep to a proto ProductRoutingStep.
+func toProtoRoutingStep(step *db.ProductRoutingStep) *resourcev1.ProductRoutingStep {
+	if step == nil {
+		return nil
+	}
+
+	return &resourcev1.ProductRoutingStep{
+		Id:                step.ID,
+		RoutingSpecId:     step.RoutingSpecID,
+		WorkCenterId:      step.WorkCenterID,
+		StepNumber:        step.StepNumber,
+		EstimatedDuration: step.EstimatedDuration,
+		Description:       derefString(step.Description),
+		CreatedAt:         timestamppb.New(step.CreatedAt),
+		UpdatedAt:         timestamppb.New(step.UpdatedAt),
+	}
+}
+
 // ============================================================================
 // Status Conversion Helpers
 // ============================================================================

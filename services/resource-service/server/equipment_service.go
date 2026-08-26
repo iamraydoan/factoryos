@@ -35,6 +35,8 @@ type EquipmentService struct {
 	MaterialDefs    *MaterialDefinitionServer
 	BOMs            *BOMServer
 	Components      *BOMComponentServer
+	RoutingSpecs    *ProductRoutingSpecServer
+	RoutingSteps    *ProductRoutingStepServer
 }
 
 // NewEquipmentService creates a combined EquipmentService from a single
@@ -55,6 +57,8 @@ func NewEquipmentService(repo *db.PostgresEquipmentRepository) *EquipmentService
 		MaterialDefs:    NewMaterialDefinitionServer(repo, repo),
 		BOMs:            NewBOMServer(repo, repo),
 		Components:      NewBOMComponentServer(repo, repo, repo),
+		RoutingSpecs:    NewProductRoutingSpecServer(repo, repo),
+		RoutingSteps:    NewProductRoutingStepServer(repo, repo, repo),
 	}
 }
 
@@ -268,4 +272,28 @@ func (s *EquipmentService) AddBOMComponent(ctx context.Context, req *resourcev1.
 
 func (s *EquipmentService) ListBOMComponents(ctx context.Context, req *resourcev1.ListBOMComponentsRequest) (*resourcev1.ListBOMComponentsResponse, error) {
 	return s.Components.ListBOMComponents(ctx, req)
+}
+
+// --- Product Routing Spec delegation ---
+
+func (s *EquipmentService) CreateRoutingSpec(ctx context.Context, req *resourcev1.CreateRoutingSpecRequest) (*resourcev1.CreateRoutingSpecResponse, error) {
+	return s.RoutingSpecs.CreateRoutingSpec(ctx, req)
+}
+
+func (s *EquipmentService) GetRoutingSpec(ctx context.Context, req *resourcev1.GetRoutingSpecRequest) (*resourcev1.GetRoutingSpecResponse, error) {
+	return s.RoutingSpecs.GetRoutingSpec(ctx, req)
+}
+
+func (s *EquipmentService) ListRoutingSpecs(ctx context.Context, req *resourcev1.ListRoutingSpecsRequest) (*resourcev1.ListRoutingSpecsResponse, error) {
+	return s.RoutingSpecs.ListRoutingSpecs(ctx, req)
+}
+
+// --- Product Routing Step delegation ---
+
+func (s *EquipmentService) AddRoutingStep(ctx context.Context, req *resourcev1.AddRoutingStepRequest) (*resourcev1.AddRoutingStepResponse, error) {
+	return s.RoutingSteps.AddRoutingStep(ctx, req)
+}
+
+func (s *EquipmentService) ListRoutingSteps(ctx context.Context, req *resourcev1.ListRoutingStepsRequest) (*resourcev1.ListRoutingStepsResponse, error) {
+	return s.RoutingSteps.ListRoutingSteps(ctx, req)
 }
