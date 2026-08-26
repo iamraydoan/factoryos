@@ -206,6 +206,29 @@ message BOMComponent {
   google.protobuf.Timestamp updated_at = 7;
 }
 
+// ProductRoutingSpec: a versioned sequence of Work Centers required to produce a material.
+message ProductRoutingSpec {
+  string id = 1;                      // UUIDv7
+  string material_definition_id = 2;  // Foreign key to MaterialDefinition (the product being routed)
+  string version = 3;                 // Version label (e.g., "v1.0", "v2.1")
+  string description = 4;             // Optional description of this routing version
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// ProductRoutingStep: a line item in a Product Routing Spec specifying a Work Center and its order.
+message ProductRoutingStep {
+  string id = 1;                      // UUIDv7
+  string routing_spec_id = 2;         // Foreign key to ProductRoutingSpec
+  string work_center_id = 3;          // Foreign key to WorkCenter
+  int32 step_number = 4;              // Sequence order (1, 2, 3, ...)
+  string estimated_duration = 5;      // Estimated time as duration string (e.g., "45m", "1h30m")
+  string description = 6;             // Optional: what happens at this step
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+}
+
+
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
 // ----------------------------------------------------------------------------
@@ -284,6 +307,15 @@ service EquipmentService {
   // BOM Component API
   rpc AddBOMComponent(AddBOMComponentRequest) returns (AddBOMComponentResponse);
   rpc ListBOMComponents(ListBOMComponentsRequest) returns (ListBOMComponentsResponse);
+
+  // Product Routing Spec API
+  rpc CreateRoutingSpec(CreateRoutingSpecRequest) returns (CreateRoutingSpecResponse);
+  rpc GetRoutingSpec(GetRoutingSpecRequest) returns (GetRoutingSpecResponse);
+  rpc ListRoutingSpecs(ListRoutingSpecsRequest) returns (ListRoutingSpecsResponse);
+
+  // Product Routing Step API
+  rpc AddRoutingStep(AddRoutingStepRequest) returns (AddRoutingStepResponse);
+  rpc ListRoutingSteps(ListRoutingStepsRequest) returns (ListRoutingStepsResponse);
 }
 
 // --- Work Unit messages ---
@@ -708,4 +740,54 @@ message ListBOMComponentsRequest {
 
 message ListBOMComponentsResponse {
   repeated BOMComponent components = 1;
+}
+
+// --- Product Routing Spec messages ---
+
+message CreateRoutingSpecRequest {
+  string material_definition_id = 1;  // Required: FK to MaterialDefinition
+  string version = 2;                 // Required: version label (e.g., "v1.0")
+  string description = 3;             // Optional: description of this routing version
+}
+
+message CreateRoutingSpecResponse {
+  ProductRoutingSpec routing_spec = 1;
+}
+
+message GetRoutingSpecRequest {
+  string id = 1;                      // ProductRoutingSpec UUID
+}
+
+message GetRoutingSpecResponse {
+  ProductRoutingSpec routing_spec = 1;
+}
+
+message ListRoutingSpecsRequest {
+  string material_definition_id = 1;  // Filter by MaterialDefinition (empty = all)
+}
+
+message ListRoutingSpecsResponse {
+  repeated ProductRoutingSpec routing_specs = 1;
+}
+
+// --- Product Routing Step messages ---
+
+message AddRoutingStepRequest {
+  string routing_spec_id = 1;         // Required: FK to ProductRoutingSpec
+  string work_center_id = 2;          // Required: FK to WorkCenter
+  int32 step_number = 3;              // Required: sequence order (1, 2, 3, ...)
+  string estimated_duration = 4;      // Required: e.g., "45m", "1h30m"
+  string description = 5;             // Optional: what happens at this step
+}
+
+message AddRoutingStepResponse {
+  ProductRoutingStep step = 1;
+}
+
+message ListRoutingStepsRequest {
+  string routing_spec_id = 1;         // Required: FK to ProductRoutingSpec
+}
+
+message ListRoutingStepsResponse {
+  repeated ProductRoutingStep steps = 1;
 }
