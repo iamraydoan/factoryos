@@ -24,7 +24,7 @@
 ### Material Definition
 - [x] Implement MaterialClass and MaterialDefinition CRUD API.
 - [x] Implement Bill of Materials (BOM) with versioning support.
-- [ ] Implement ProductRoutingSpec: link MaterialDefinition to Work Center sequence.
+- [x] Implement ProductRoutingSpec: link MaterialDefinition to Work Center sequence.
 
 ### Telemetry & OEE
 - [x] Build Go Edge Runtime OPC-UA collector (`platform/edge-runtime`).
