@@ -1,4 +1,4 @@
-package com.factoryos.production_service;
+package com.factoryos.production;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
