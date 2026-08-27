@@ -1,7 +1,7 @@
 # EPIC-003: Production Operations
 
 * **Milestone:** Milestone 2
-* **Status:** Planned
+* **Status:** In Progress
 * **Domain:** `docs/03-domain/02-production-operations/`
 * **RFCs:** `RFC-0002`
 
