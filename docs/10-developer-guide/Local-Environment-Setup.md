@@ -44,18 +44,26 @@ If you prefer coding directly on your Mac/Linux/Windows machine without Dev Cont
 FactoryOS relies on a comprehensive local infrastructure stack (Kafka, Postgres, Zitadel, Valkey). To start the entire stack:
 
 1. Open your terminal at the root of the `factoryos` project.
-2. Run the following command:
+2. Create the shared Docker network (one-time setup):
+
+```bash
+docker network create factoryos_net
+```
+
+3. Start the infrastructure:
 
 ```bash
 docker compose up -d
 ```
 
-3. (First time only) Docker will pull all the latest images. This may take a few minutes depending on your internet connection.
-4. Verify all containers are running and healthy:
+4. (First time only) Docker will pull all the latest images. This may take a few minutes depending on your internet connection.
+5. Verify all containers are running and healthy:
 
 ```bash
 docker compose ps
 ```
+
+> **Why the network?** Devcontainer joins `factoryos_net` to access services by name (e.g., `factoryos-db`) instead of `localhost`. This matches production behavior where services discover each other via DNS.
 
 ---
 
@@ -101,7 +109,51 @@ docker compose down -v
 
 ---
 
-## 5. Testing Telemetry & Mock PLC Simulation
+## 5. Java Services Configuration
+
+Java services (Production, Warehouse, Quality, Maintenance) use environment variables for configuration.
+
+### Environment Files
+
+| File | Purpose |
+|------|---------|
+| `.env.example` | Template with all available env vars |
+
+### Setup
+
+```bash
+cd services/production-service
+cp .env.example .env
+```
+
+### Spring Profiles
+
+The production-service uses Spring profiles to switch between environments:
+
+| Profile | Use Case | DB Host | Kafka Host |
+|---------|----------|---------|------------|
+| *(none)* | Default — works locally out of the box | `localhost` | `localhost` |
+| `local` | Local dev with `show-sql` enabled | `localhost` | `localhost` |
+| `docker` | Devcontainer / Docker network | `factoryos-db` | `kafka` |
+
+### Running Java Services
+
+```bash
+cd services/production-service
+
+# Local (default)
+mvn spring-boot:run
+
+# With SQL logging
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+
+# Inside devcontainer / Docker network
+mvn spring-boot:run -Dspring-boot.run.profiles=docker
+```
+
+---
+
+## 6. Testing Telemetry & Mock PLC Simulation
 
 To test end-to-end telemetry ingestion locally:
 
@@ -126,7 +178,7 @@ To test end-to-end telemetry ingestion locally:
 
 ---
 
-## 6. Makefile Shortcuts (Optional)
+## 7. Makefile Shortcuts (Optional)
 
 For developers who prefer using `make`, a top-level `Makefile` is provided with convenient shortcuts. Running commands directly via `go` or `docker compose` is always supported.
 
@@ -145,7 +197,7 @@ For developers who prefer using `make`, a top-level `Makefile` is provided with 
 
 ---
 
-## 7. CI/CD & Automated Release Pipelines
+## 8. CI/CD & Automated Release Pipelines
 
 The repository uses GitHub Actions workflows for continuous integration and automated binary releases:
 
@@ -160,7 +212,7 @@ The repository uses GitHub Actions workflows for continuous integration and auto
 
 ---
 
-## 8. Adding New Services (For Maintainers)
+## 9. Adding New Services (For Maintainers)
 
 When adding a new backing service (e.g., Temporal, OpenTelemetry) to `docker-compose.yml`:
 1. Ensure you use a **specific image version tag** (avoid `latest`).
