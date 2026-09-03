@@ -1,0 +1,6 @@
+# Docker / Devcontainer
+spring:
+  datasource:
+    url: jdbc:postgresql://factoryos-db:5432/factoryos
+  jpa:
+    show-sql: true

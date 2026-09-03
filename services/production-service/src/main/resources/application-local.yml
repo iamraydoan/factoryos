@@ -1,0 +1,4 @@
+# Local Development
+spring:
+  jpa:
+    show-sql: true
