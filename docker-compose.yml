@@ -155,4 +155,5 @@ volumes:
 
 networks:
   factoryos_net:
+    name: 'factoryos_net'
     driver: bridge
