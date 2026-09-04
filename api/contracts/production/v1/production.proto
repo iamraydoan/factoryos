@@ -15,16 +15,16 @@ option java_multiple_files = true;
 // WorkOrder: the primary execution unit dispatched to the shop floor.
 // ISA-95 Reference: Part 2, Section 4 — Job Order.
 message WorkOrder {
-  string                    id                     = 1;                        // UUIDv7
-  string                    material_definition_id = 2;    // FK to MaterialDefinition (the product to produce)
-  string                    routing_spec_id        = 3;           // FK to ProductRoutingSpec (the routing to follow)
-  string                    work_center_id         = 4;            // FK to WorkCenter (where to produce)
-  string                    target_quantity        = 5;           // Target quantity as decimal string (e.g., "100")
-  string                    unit_of_measure        = 6;          // e.g., "pcs", "kg"
-  string                    state                  = 7;                     // State machine: draft, released, dispatched, in_progress, held, completed, closed
-  string                    priority               = 8;                  // Priority level: low, medium, high, urgent
-  string                    description            = 9;              // Optional description or notes
-  google.protobuf.Timestamp due_date               = 10;       // When the WO must be completed
+  string                    id                     = 1;   // UUIDv7
+  string                    material_definition_id = 2;   // FK to MaterialDefinition (the product to produce)
+  string                    routing_spec_id        = 3;   // FK to ProductRoutingSpec (the routing to follow)
+  string                    work_center_id         = 4;   // FK to WorkCenter (where to produce)
+  string                    target_quantity        = 5;   // Target quantity as decimal string (e.g., "100")
+  string                    unit_of_measure        = 6;   // e.g., "pcs", "kg"
+  string                    state                  = 7;   // State machine: draft, released, dispatched, in_progress, held, completed, closed
+  string                    priority               = 8;   // Priority level: low, medium, high, urgent
+  string                    description            = 9;   // Optional description or notes
+  google.protobuf.Timestamp due_date               = 10;  // When the WO must be completed
   google.protobuf.Timestamp created_at             = 11;
   google.protobuf.Timestamp updated_at             = 12;
 }
@@ -52,14 +52,14 @@ service ProductionService {
 // --- Work Order CRUD messages ---
 
 message CreateWorkOrderRequest {
-  string material_definition_id = 1;    // Required: FK to MaterialDefinition
-  string routing_spec_id        = 2;           // Required: FK to ProductRoutingSpec
-  string work_center_id         = 3;            // Required: FK to WorkCenter
-  string target_quantity        = 4;           // Required: e.g., "100"
-  string unit_of_measure        = 5;          // Required: e.g., "pcs"
-  string priority               = 6;                  // Required: low, medium, high, urgent
-  string description            = 7;              // Optional
-  string due_date               = 8;                 // Required: RFC3339 timestamp (e.g., "2026-09-15T00:00:00Z")
+  string material_definition_id = 1;   // Required: FK to MaterialDefinition
+  string routing_spec_id        = 2;   // Required: FK to ProductRoutingSpec
+  string work_center_id         = 3;   // Required: FK to WorkCenter
+  string target_quantity        = 4;   // Required: e.g., "100"
+  string unit_of_measure        = 5;   // Required: e.g., "pcs"
+  string priority               = 6;   // Required: low, medium, high, urgent
+  string description            = 7;   // Optional
+  string due_date               = 8;   // Required: RFC3339 timestamp (e.g., "2026-09-15T00:00:00Z")
 }
 
 message CreateWorkOrderResponse {
@@ -67,7 +67,7 @@ message CreateWorkOrderResponse {
 }
 
 message GetWorkOrderRequest {
-  string id = 1;                        // WorkOrder UUID
+  string id = 1;   // WorkOrder UUID
 }
 
 message GetWorkOrderResponse {
@@ -75,18 +75,21 @@ message GetWorkOrderResponse {
 }
 
 message ListWorkOrdersRequest {
-  string work_center_id = 1;            // Filter by Work Center (empty = all)
-  string state          = 2;                     // Filter by state (empty = all)
+  string work_center_id = 1;   // Filter by Work Center (empty = all)
+  string state          = 2;   // Filter by state (empty = all)
+  int32  page_size      = 3;   // Items per page (default 20, max 100)
+  string page_token     = 4;   // Opaque cursor from previous response (empty = first page)
 }
 
 message ListWorkOrdersResponse {
   repeated WorkOrder work_orders = 1;
+  string next_page_token = 2;   // Pass to next request; empty = last page
 }
 
 // --- Work Order State Machine messages ---
 
 message ReleaseWorkOrderRequest {
-  string id = 1;                        // WorkOrder UUID
+  string id = 1;   // WorkOrder UUID
 }
 
 message ReleaseWorkOrderResponse {
@@ -94,8 +97,8 @@ message ReleaseWorkOrderResponse {
 }
 
 message DispatchWorkOrderRequest {
-  string id           = 1;                        // WorkOrder UUID
-  string work_unit_id = 2;             // Required: FK to WorkUnit (which station)
+  string id           = 1;   // WorkOrder UUID
+  string work_unit_id = 2;   // Required: FK to WorkUnit (which station)
 }
 
 message DispatchWorkOrderResponse {
@@ -103,7 +106,7 @@ message DispatchWorkOrderResponse {
 }
 
 message StartWorkOrderRequest {
-  string id = 1;                        // WorkOrder UUID
+  string id = 1;   // WorkOrder UUID
 }
 
 message StartWorkOrderResponse {
@@ -111,7 +114,7 @@ message StartWorkOrderResponse {
 }
 
 message CompleteWorkOrderRequest {
-  string id = 1;                        // WorkOrder UUID
+  string id = 1;   // WorkOrder UUID
 }
 
 message CompleteWorkOrderResponse {
@@ -119,8 +122,8 @@ message CompleteWorkOrderResponse {
 }
 
 message HoldWorkOrderRequest {
-  string id     = 1;                        // WorkOrder UUID
-  string reason = 2;                    // Required: reason for hold
+  string id     = 1;   // WorkOrder UUID
+  string reason = 2;   // Required: reason for hold
 }
 
 message HoldWorkOrderResponse {
@@ -128,7 +131,7 @@ message HoldWorkOrderResponse {
 }
 
 message ResumeWorkOrderRequest {
-  string id = 1;                        // WorkOrder UUID
+  string id = 1;   // WorkOrder UUID
 }
 
 message ResumeWorkOrderResponse {
@@ -136,7 +139,7 @@ message ResumeWorkOrderResponse {
 }
 
 message CloseWorkOrderRequest {
-  string id = 1;                        // WorkOrder UUID
+  string id = 1;   // WorkOrder UUID
 }
 
 message CloseWorkOrderResponse {
