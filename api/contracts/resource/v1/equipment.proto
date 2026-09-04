@@ -11,223 +11,222 @@ option go_package = "github.com/iamraydoan/factoryos/api/contracts/resource/v1";
 // ----------------------------------------------------------------------------
 
 message Site {
-  string id = 1;              // UUIDv7
-  string name = 2;            // e.g., "Austin Gigafactory"
-  string location = 3;        // Physical address or region
+  string                    id         = 1;              // UUIDv7
+  string                    name       = 2;            // e.g., "Austin Gigafactory"
+  string                    location   = 3;        // Physical address or region
   google.protobuf.Timestamp created_at = 4;
 }
 
 message Area {
-  string id = 1;              // UUIDv7
-  string site_id = 2;         // Foreign key to Site
-  string name = 3;            // e.g., "Stamping Area"
+  string                    id         = 1;              // UUIDv7
+  string                    site_id    = 2;         // Foreign key to Site
+  string                    name       = 3;            // e.g., "Stamping Area"
   google.protobuf.Timestamp created_at = 4;
 }
 
 message WorkCenter {
-  string id = 1;              // UUIDv7
-  string area_id = 2;         // Foreign key to Area
-  string name = 3;            // e.g., "Press Line 1"
-  string equipment_class = 4; // Capability spec (e.g., "Heavy Press")
-  google.protobuf.Timestamp created_at = 5;
+  string                    id              = 1;              // UUIDv7
+  string                    area_id         = 2;         // Foreign key to Area
+  string                    name            = 3;            // e.g., "Press Line 1"
+  string                    equipment_class = 4; // Capability spec (e.g., "Heavy Press")
+  google.protobuf.Timestamp created_at      = 5;
 }
 
 enum WorkUnitStatus {
-  WORK_UNIT_STATUS_UNSPECIFIED = 0;
-  WORK_UNIT_STATUS_AVAILABLE = 1;
-  WORK_UNIT_STATUS_ALLOCATED = 2;
+  WORK_UNIT_STATUS_UNSPECIFIED   = 0;
+  WORK_UNIT_STATUS_AVAILABLE     = 1;
+  WORK_UNIT_STATUS_ALLOCATED     = 2;
   WORK_UNIT_STATUS_IN_PRODUCTION = 3;
-  WORK_UNIT_STATUS_FAULTED = 4;
+  WORK_UNIT_STATUS_FAULTED       = 4;
 }
 
 message WorkUnit {
-  string id = 1;              // UUIDv7
-  string work_center_id = 2;  // Foreign key to WorkCenter
-  string name = 3;            // e.g., "Press Station 1A"
-  WorkUnitStatus status = 4;  // Current operational status
-  string physical_asset_id = 5; // Optional: Link to Physical Asset currently installed
-  google.protobuf.Timestamp created_at = 6;
-  google.protobuf.Timestamp updated_at = 7;
+  string                    id                = 1;              // UUIDv7
+  string                    work_center_id    = 2;  // Foreign key to WorkCenter
+  string                    name              = 3;            // e.g., "Press Station 1A"
+  WorkUnitStatus            status            = 4;  // Current operational status
+  string                    physical_asset_id = 5; // Optional: Link to Physical Asset currently installed
+  google.protobuf.Timestamp created_at        = 6;
+  google.protobuf.Timestamp updated_at        = 7;
 }
 
 message EquipmentClass {
-  string id = 1;              // UUIDv7
-  string name = 2;            // e.g., "CNC Lathe ≥ 5-axis"
-  string description = 3;     // Capability specification
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp updated_at = 5;
+  string                    id          = 1;              // UUIDv7
+  string                    name        = 2;            // e.g., "CNC Lathe ≥ 5-axis"
+  string                    description = 3;     // Capability specification
+  google.protobuf.Timestamp created_at  = 4;
+  google.protobuf.Timestamp updated_at  = 5;
 }
 
 message WorkUnitCapability {
-  string id = 1;              // UUIDv7
-  string work_unit_id = 2;    // Foreign key to WorkUnit
-  string equipment_class_id = 3; // Foreign key to EquipmentClass
-  string properties_json = 4; // JSON key-value properties
-  google.protobuf.Timestamp created_at = 5;
-  google.protobuf.Timestamp updated_at = 6;
+  string                    id                 = 1;              // UUIDv7
+  string                    work_unit_id       = 2;    // Foreign key to WorkUnit
+  string                    equipment_class_id = 3; // Foreign key to EquipmentClass
+  string                    properties_json    = 4; // JSON key-value properties
+  google.protobuf.Timestamp created_at         = 5;
+  google.protobuf.Timestamp updated_at         = 6;
 }
 
 // Physical Asset: a real machine with a serial number.
 message PhysicalAsset {
-  string id = 1;                    // UUIDv7
-  string name = 2;                  // Human-readable name (e.g., "Haas VF-2")
-  string serial_number = 3;         // Manufacturer serial number
-  string manufacturer = 4;          // e.g., "Haas Automation"
-  string model = 5;                 // e.g., "VF-2"
-  string asset_type = 6;            // e.g., "CNC Mill", "Press", "Robot"
-  PhysicalAssetStatus status = 7;   // Current operational status
-  google.protobuf.Timestamp installed_at = 8;  // When current install began (nullable)
-  google.protobuf.Timestamp created_at = 9;
-  google.protobuf.Timestamp updated_at = 10;
+  string                    id            = 1;                    // UUIDv7
+  string                    name          = 2;                  // Human-readable name (e.g., "Haas VF-2")
+  string                    serial_number = 3;         // Manufacturer serial number
+  string                    manufacturer  = 4;          // e.g., "Haas Automation"
+  string                    model         = 5;                 // e.g., "VF-2"
+  string                    asset_type    = 6;            // e.g., "CNC Mill", "Press", "Robot"
+  PhysicalAssetStatus       status        = 7;   // Current operational status
+  google.protobuf.Timestamp installed_at  = 8;  // When current install began (nullable)
+  google.protobuf.Timestamp created_at    = 9;
+  google.protobuf.Timestamp updated_at    = 10;
 }
 
 enum PhysicalAssetStatus {
-  PHYSICAL_ASSET_STATUS_UNSPECIFIED = 0;
-  PHYSICAL_ASSET_STATUS_ACTIVE = 1;
-  PHYSICAL_ASSET_STATUS_FAULTED = 2;
+  PHYSICAL_ASSET_STATUS_UNSPECIFIED       = 0;
+  PHYSICAL_ASSET_STATUS_ACTIVE            = 1;
+  PHYSICAL_ASSET_STATUS_FAULTED           = 2;
   PHYSICAL_ASSET_STATUS_UNDER_MAINTENANCE = 3;
-  PHYSICAL_ASSET_STATUS_DECOMMISSIONED = 4;
+  PHYSICAL_ASSET_STATUS_DECOMMISSIONED    = 4;
 }
 
 // Physical Asset Installation: time-bounded link between asset and work unit.
 message PhysicalAssetInstallation {
-  string id = 1;
-  string physical_asset_id = 2;
-  string work_unit_id = 3;
-  google.protobuf.Timestamp installed_at = 4;
-  google.protobuf.Timestamp removed_at = 5;   // NULL = currently installed
-  google.protobuf.Timestamp created_at = 6;
-  google.protobuf.Timestamp updated_at = 7;
+  string                    id                = 1;
+  string                    physical_asset_id = 2;
+  string                    work_unit_id      = 3;
+  google.protobuf.Timestamp installed_at      = 4;
+  google.protobuf.Timestamp removed_at        = 5;   // NULL = currently installed
+  google.protobuf.Timestamp created_at        = 6;
+  google.protobuf.Timestamp updated_at        = 7;
 }
 
 // PersonClass: a role category (e.g., "Operator", "Technician").
 message PersonClass {
-  string id = 1;              // UUIDv7
-  string name = 2;            // e.g., "Operator", "Technician", "Quality Manager"
-  string description = 3;     // Role description
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp updated_at = 5;
+  string                    id          = 1;              // UUIDv7
+  string                    name        = 2;            // e.g., "Operator", "Technician", "Quality Manager"
+  string                    description = 3;     // Role description
+  google.protobuf.Timestamp created_at  = 4;
+  google.protobuf.Timestamp updated_at  = 5;
 }
 
 enum PersonStatus {
   PERSON_STATUS_UNSPECIFIED = 0;
-  PERSON_STATUS_ACTIVE = 1;
-  PERSON_STATUS_INACTIVE = 2;
-  PERSON_STATUS_ON_LEAVE = 3;
+  PERSON_STATUS_ACTIVE      = 1;
+  PERSON_STATUS_INACTIVE    = 2;
+  PERSON_STATUS_ON_LEAVE    = 3;
 }
 
 // Person: an employee who can be assigned to work units.
 message Person {
-  string id = 1;              // UUIDv7
-  string person_class_id = 2; // Foreign key to PersonClass
-  string employee_id = 3;     // Company employee ID (e.g., "EMP-0042")
-  string first_name = 4;      // Given name
-  string last_name = 5;       // Family name
-  string email = 6;           // Work email (nullable)
-  PersonStatus status = 7;    // Current employment status
-  google.protobuf.Timestamp created_at = 8;
-  google.protobuf.Timestamp updated_at = 9;
+  string                    id              = 1;              // UUIDv7
+  string                    person_class_id = 2; // Foreign key to PersonClass
+  string                    employee_id     = 3;     // Company employee ID (e.g., "EMP-0042")
+  string                    first_name      = 4;      // Given name
+  string                    last_name       = 5;       // Family name
+  string                    email           = 6;           // Work email (nullable)
+  PersonStatus              status          = 7;    // Current employment status
+  google.protobuf.Timestamp created_at      = 8;
+  google.protobuf.Timestamp updated_at      = 9;
 }
 
 // QualificationRecord: certifies a Person for a PersonClass at a Work Center.
 message QualificationRecord {
-  string id = 1;                  // UUIDv7
-  string person_id = 2;           // Foreign key to Person
-  string person_class_id = 3;     // Foreign key to PersonClass (the role being certified)
-  string work_center_id = 4;      // Foreign key to Work Center
-  google.protobuf.Timestamp certified_at = 5;  // When certification was granted
-  google.protobuf.Timestamp expires_at = 6;    // NULL = no expiry (permanent certification)
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
+  string                    id              = 1;                  // UUIDv7
+  string                    person_id       = 2;           // Foreign key to Person
+  string                    person_class_id = 3;     // Foreign key to PersonClass (the role being certified)
+  string                    work_center_id  = 4;      // Foreign key to Work Center
+  google.protobuf.Timestamp certified_at    = 5;  // When certification was granted
+  google.protobuf.Timestamp expires_at      = 6;    // NULL = no expiry (permanent certification)
+  google.protobuf.Timestamp created_at      = 7;
+  google.protobuf.Timestamp updated_at      = 8;
 }
 
 // Shift defines a named work shift with start and end times.
 message Shift {
-  string id = 1;                  // UUIDv7
-  string name = 2;                // e.g., "Day Shift", "Night Shift A"
-  string start_time = 3;          // "HH:MM" in 24h format (e.g., "06:00")
-  string end_time = 4;            // "HH:MM" in 24h format (e.g., "14:00")
-  string description = 5;         // Optional description
-  google.protobuf.Timestamp created_at = 6;
-  google.protobuf.Timestamp updated_at = 7;
+  string                    id          = 1;                  // UUIDv7
+  string                    name        = 2;                // e.g., "Day Shift", "Night Shift A"
+  string                    start_time  = 3;          // "HH:MM" in 24h format (e.g., "06:00")
+  string                    end_time    = 4;            // "HH:MM" in 24h format (e.g., "14:00")
+  string                    description = 5;         // Optional description
+  google.protobuf.Timestamp created_at  = 6;
+  google.protobuf.Timestamp updated_at  = 7;
 }
 
 // ShiftAssignment links a Person to a Shift at a Work Center.
 message ShiftAssignment {
-  string id = 1;                  // UUIDv7
-  string person_id = 2;           // Foreign key to Person
-  string shift_id = 3;            // Foreign key to Shift
-  string work_center_id = 4;      // Foreign key to Work Center
+  string                    id             = 1;                  // UUIDv7
+  string                    person_id      = 2;           // Foreign key to Person
+  string                    shift_id       = 3;            // Foreign key to Shift
+  string                    work_center_id = 4;      // Foreign key to Work Center
   google.protobuf.Timestamp effective_from = 5;  // When assignment starts
-  google.protobuf.Timestamp effective_to = 6;    // NULL = open-ended (current assignment)
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp effective_to   = 6;    // NULL = open-ended (current assignment)
+  google.protobuf.Timestamp created_at     = 7;
+  google.protobuf.Timestamp updated_at     = 8;
 }
 
 // MaterialClass: a category of material (e.g., "Raw Material", "Sub-Assembly", "Finished Good").
 message MaterialClass {
-  string id = 1;                  // UUIDv7
-  string name = 2;                // e.g., "Raw Material", "Finished Good"
-  string description = 3;         // Category description
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp updated_at = 5;
+  string                    id          = 1;                  // UUIDv7
+  string                    name        = 2;                // e.g., "Raw Material", "Finished Good"
+  string                    description = 3;         // Category description
+  google.protobuf.Timestamp created_at  = 4;
+  google.protobuf.Timestamp updated_at  = 5;
 }
 
 // MaterialDefinition: a specific material or product with its specification.
 message MaterialDefinition {
-  string id = 1;                  // UUIDv7
-  string material_class_id = 2;   // Foreign key to MaterialClass
-  string name = 3;                // e.g., "Aluminum Sheet 3mm", "Engine Block Assembly"
-  string part_number = 4;         // Unique part number (e.g., "MAT-AL-3MM")
-  string unit_of_measure = 5;     // e.g., "kg", "pcs", "liters", "meters"
-  string specification = 6;       // Optional JSON spec (grade, tolerance, etc.)
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
+  string                    id                = 1;                  // UUIDv7
+  string                    material_class_id = 2;   // Foreign key to MaterialClass
+  string                    name              = 3;                // e.g., "Aluminum Sheet 3mm", "Engine Block Assembly"
+  string                    part_number       = 4;         // Unique part number (e.g., "MAT-AL-3MM")
+  string                    unit_of_measure   = 5;     // e.g., "kg", "pcs", "liters", "meters"
+  string                    specification     = 6;       // Optional JSON spec (grade, tolerance, etc.)
+  google.protobuf.Timestamp created_at        = 7;
+  google.protobuf.Timestamp updated_at        = 8;
 }
 
 // BillOfMaterials: a versioned list of components required to produce one unit of a parent material.
 message BillOfMaterials {
-  string id = 1;                      // UUIDv7
-  string material_definition_id = 2;  // Foreign key to MaterialDefinition (the parent/finished good)
-  string version = 3;                 // Version label (e.g., "v1.0", "v2.1")
-  string description = 4;             // Optional description of this BOM version
-  google.protobuf.Timestamp created_at = 5;
-  google.protobuf.Timestamp updated_at = 6;
+  string                    id                     = 1;                      // UUIDv7
+  string                    material_definition_id = 2;  // Foreign key to MaterialDefinition (the parent/finished good)
+  string                    version                = 3;                 // Version label (e.g., "v1.0", "v2.1")
+  string                    description            = 4;             // Optional description of this BOM version
+  google.protobuf.Timestamp created_at             = 5;
+  google.protobuf.Timestamp updated_at             = 6;
 }
 
 // BOMComponent: a line item in a Bill of Materials specifying a child material and required quantity.
 message BOMComponent {
-  string id = 1;                      // UUIDv7
-  string bom_id = 2;                  // Foreign key to BillOfMaterials
-  string material_definition_id = 3;  // Foreign key to MaterialDefinition (the child material)
-  string quantity = 4;                // Required quantity as decimal string (e.g., "2.500")
-  string unit_of_measure = 5;        // e.g., "kg", "pcs", "liters"
-  google.protobuf.Timestamp created_at = 6;
-  google.protobuf.Timestamp updated_at = 7;
+  string                    id                     = 1;                      // UUIDv7
+  string                    bom_id                 = 2;                  // Foreign key to BillOfMaterials
+  string                    material_definition_id = 3;  // Foreign key to MaterialDefinition (the child material)
+  string                    quantity               = 4;                // Required quantity as decimal string (e.g., "2.500")
+  string                    unit_of_measure        = 5;        // e.g., "kg", "pcs", "liters"
+  google.protobuf.Timestamp created_at             = 6;
+  google.protobuf.Timestamp updated_at             = 7;
 }
 
 // ProductRoutingSpec: a versioned sequence of Work Centers required to produce a material.
 message ProductRoutingSpec {
-  string id = 1;                      // UUIDv7
-  string material_definition_id = 2;  // Foreign key to MaterialDefinition (the product being routed)
-  string version = 3;                 // Version label (e.g., "v1.0", "v2.1")
-  string description = 4;             // Optional description of this routing version
-  google.protobuf.Timestamp created_at = 5;
-  google.protobuf.Timestamp updated_at = 6;
+  string                    id                     = 1;                      // UUIDv7
+  string                    material_definition_id = 2;  // Foreign key to MaterialDefinition (the product being routed)
+  string                    version                = 3;                 // Version label (e.g., "v1.0", "v2.1")
+  string                    description            = 4;             // Optional description of this routing version
+  google.protobuf.Timestamp created_at             = 5;
+  google.protobuf.Timestamp updated_at             = 6;
 }
 
 // ProductRoutingStep: a line item in a Product Routing Spec specifying a Work Center and its order.
 message ProductRoutingStep {
-  string id = 1;                      // UUIDv7
-  string routing_spec_id = 2;         // Foreign key to ProductRoutingSpec
-  string work_center_id = 3;          // Foreign key to WorkCenter
-  int32 step_number = 4;              // Sequence order (1, 2, 3, ...)
-  string estimated_duration = 5;      // Estimated time as duration string (e.g., "45m", "1h30m")
-  string description = 6;             // Optional: what happens at this step
-  google.protobuf.Timestamp created_at = 7;
-  google.protobuf.Timestamp updated_at = 8;
+  string                    id                 = 1;                      // UUIDv7
+  string                    routing_spec_id    = 2;         // Foreign key to ProductRoutingSpec
+  string                    work_center_id     = 3;          // Foreign key to WorkCenter
+  int32                     step_number        = 4;              // Sequence order (1, 2, 3, ...)
+  string                    estimated_duration = 5;      // Estimated time as duration string (e.g., "45m", "1h30m")
+  string                    description        = 6;             // Optional: what happens at this step
+  google.protobuf.Timestamp created_at         = 7;
+  google.protobuf.Timestamp updated_at         = 8;
 }
-
 
 // ----------------------------------------------------------------------------
 // gRPC Service & Request/Response Models
@@ -322,7 +321,7 @@ service EquipmentService {
 
 message CreateWorkUnitRequest {
   string work_center_id = 1;
-  string name = 2;
+  string name           = 2;
 }
 
 message CreateWorkUnitResponse {
@@ -346,7 +345,7 @@ message ListWorkUnitsResponse {
 }
 
 message UpdateWorkUnitStatusRequest {
-  string id = 1;
+  string         id     = 1;
   WorkUnitStatus status = 2;
 }
 
@@ -357,7 +356,7 @@ message UpdateWorkUnitStatusResponse {
 // --- Equipment Class messages ---
 
 message CreateEquipmentClassRequest {
-  string name = 1;
+  string name        = 1;
   string description = 2;
 }
 
@@ -382,9 +381,9 @@ message ListEquipmentClassesResponse {
 // --- Capability Assignment messages ---
 
 message AssignCapabilityRequest {
-  string work_unit_id = 1;
+  string work_unit_id       = 1;
   string equipment_class_id = 2;
-  string properties_json = 3;
+  string properties_json    = 3;
 }
 
 message AssignCapabilityResponse {
@@ -400,7 +399,7 @@ message ListWorkUnitCapabilitiesResponse {
 }
 
 message RemoveCapabilityRequest {
-  string work_unit_id = 1;
+  string work_unit_id       = 1;
   string equipment_class_id = 2;
 }
 
@@ -411,11 +410,11 @@ message RemoveCapabilityResponse {
 // --- Physical Asset messages ---
 
 message CreatePhysicalAssetRequest {
-  string name = 1;
+  string name          = 1;
   string serial_number = 2;
-  string manufacturer = 3;
-  string model = 4;
-  string asset_type = 5;
+  string manufacturer  = 3;
+  string model         = 4;
+  string asset_type    = 5;
 }
 
 message CreatePhysicalAssetResponse {
@@ -440,7 +439,7 @@ message ListPhysicalAssetsResponse {
 
 message InstallAssetRequest {
   string physical_asset_id = 1;
-  string work_unit_id = 2;
+  string work_unit_id      = 2;
 }
 
 message InstallAssetResponse {
@@ -474,7 +473,7 @@ message ListInstallationsResponse {
 // --- Person Class messages ---
 
 message CreatePersonClassRequest {
-  string name = 1;
+  string name        = 1;
   string description = 2;
 }
 
@@ -500,10 +499,10 @@ message ListPersonClassesResponse {
 
 message CreatePersonRequest {
   string person_class_id = 1;
-  string employee_id = 2;
-  string first_name = 3;
-  string last_name = 4;
-  string email = 5;
+  string employee_id     = 2;
+  string first_name      = 3;
+  string last_name       = 4;
+  string email           = 5;
 }
 
 message CreatePersonResponse {
@@ -529,10 +528,10 @@ message ListPersonsResponse {
 // --- Qualification Record messages ---
 
 message QualifyPersonRequest {
-  string person_id = 1;
+  string person_id       = 1;
   string person_class_id = 2;     // Which role is being certified
-  string work_center_id = 3;      // At which Work Center
-  string expires_at = 4;          // ISO 8601 datetime (empty = no expiry)
+  string work_center_id  = 3;      // At which Work Center
+  string expires_at      = 4;          // ISO 8601 datetime (empty = no expiry)
 }
 
 message QualifyPersonResponse {
@@ -548,7 +547,7 @@ message GetQualificationResponse {
 }
 
 message ListQualificationsRequest {
-  string person_id = 1;           // Filter by Person (empty = all)
+  string person_id      = 1;           // Filter by Person (empty = all)
   string work_center_id = 2;      // Filter by Work Center (empty = all)
 }
 
@@ -575,9 +574,9 @@ message CheckExpiringQualificationsResponse {
 // --- Shift messages ---
 
 message CreateShiftRequest {
-  string name = 1;
-  string start_time = 2;          // "HH:MM" (e.g., "06:00")
-  string end_time = 3;            // "HH:MM" (e.g., "14:00")
+  string name        = 1;
+  string start_time  = 2;          // "HH:MM" (e.g., "06:00")
+  string end_time    = 3;            // "HH:MM" (e.g., "14:00")
   string description = 4;
 }
 
@@ -602,8 +601,8 @@ message ListShiftsResponse {
 // --- Shift Assignment messages ---
 
 message AssignShiftRequest {
-  string person_id = 1;
-  string shift_id = 2;
+  string person_id      = 1;
+  string shift_id       = 2;
   string work_center_id = 3;
   string effective_from = 4;      // RFC3339 timestamp (e.g., "2026-08-21T00:00:00Z")
 }
@@ -621,8 +620,8 @@ message GetShiftAssignmentResponse {
 }
 
 message ListShiftAssignmentsRequest {
-  string person_id = 1;           // Filter by Person (empty = all)
-  string shift_id = 2;            // Filter by Shift (empty = all)
+  string person_id      = 1;           // Filter by Person (empty = all)
+  string shift_id       = 2;            // Filter by Shift (empty = all)
   string work_center_id = 3;      // Filter by Work Center (empty = all)
 }
 
@@ -641,7 +640,7 @@ message UnassignShiftResponse {
 // --- Material Class messages ---
 
 message CreateMaterialClassRequest {
-  string name = 1;                // Required: unique class name
+  string name        = 1;                // Required: unique class name
   string description = 2;         // Optional: category description
 }
 
@@ -667,10 +666,10 @@ message ListMaterialClassesResponse {
 
 message CreateMaterialDefinitionRequest {
   string material_class_id = 1;   // Required: FK to MaterialClass
-  string name = 2;                // Required: material name
-  string part_number = 3;         // Required: unique part number
-  string unit_of_measure = 4;     // Required: e.g., "kg", "pcs", "liters"
-  string specification = 5;       // Optional: JSON spec (grade, tolerance, etc.)
+  string name              = 2;                // Required: material name
+  string part_number       = 3;         // Required: unique part number
+  string unit_of_measure   = 4;     // Required: e.g., "kg", "pcs", "liters"
+  string specification     = 5;       // Optional: JSON spec (grade, tolerance, etc.)
 }
 
 message CreateMaterialDefinitionResponse {
@@ -697,8 +696,8 @@ message ListMaterialDefinitionsResponse {
 
 message CreateBOMRequest {
   string material_definition_id = 1;  // Required: FK to parent MaterialDefinition
-  string version = 2;                 // Required: version label (e.g., "v1.0")
-  string description = 3;             // Optional: description of this BOM version
+  string version                = 2;                 // Required: version label (e.g., "v1.0")
+  string description            = 3;             // Optional: description of this BOM version
 }
 
 message CreateBOMResponse {
@@ -724,10 +723,10 @@ message ListBOMsResponse {
 // --- BOM Component messages ---
 
 message AddBOMComponentRequest {
-  string bom_id = 1;                  // Required: FK to BillOfMaterials
+  string bom_id                 = 1;                  // Required: FK to BillOfMaterials
   string material_definition_id = 2;  // Required: FK to child MaterialDefinition
-  string quantity = 3;                // Required: decimal string (e.g., "2.500")
-  string unit_of_measure = 4;        // Required: e.g., "kg", "pcs"
+  string quantity               = 3;                // Required: decimal string (e.g., "2.500")
+  string unit_of_measure        = 4;        // Required: e.g., "kg", "pcs"
 }
 
 message AddBOMComponentResponse {
@@ -746,8 +745,8 @@ message ListBOMComponentsResponse {
 
 message CreateRoutingSpecRequest {
   string material_definition_id = 1;  // Required: FK to MaterialDefinition
-  string version = 2;                 // Required: version label (e.g., "v1.0")
-  string description = 3;             // Optional: description of this routing version
+  string version                = 2;                 // Required: version label (e.g., "v1.0")
+  string description            = 3;             // Optional: description of this routing version
 }
 
 message CreateRoutingSpecResponse {
@@ -773,11 +772,11 @@ message ListRoutingSpecsResponse {
 // --- Product Routing Step messages ---
 
 message AddRoutingStepRequest {
-  string routing_spec_id = 1;         // Required: FK to ProductRoutingSpec
-  string work_center_id = 2;          // Required: FK to WorkCenter
-  int32 step_number = 3;              // Required: sequence order (1, 2, 3, ...)
+  string routing_spec_id    = 1;         // Required: FK to ProductRoutingSpec
+  string work_center_id     = 2;          // Required: FK to WorkCenter
+  int32  step_number        = 3;              // Required: sequence order (1, 2, 3, ...)
   string estimated_duration = 4;      // Required: e.g., "45m", "1h30m"
-  string description = 5;             // Optional: what happens at this step
+  string description        = 5;             // Optional: what happens at this step
 }
 
 message AddRoutingStepResponse {
