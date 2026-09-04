@@ -1,0 +1,144 @@
+syntax = "proto3";
+
+package production.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/iamraydoan/factoryos/api/contracts/production/v1";
+option java_package = "com.factoryos.production.proto";
+option java_multiple_files = true;
+
+// ----------------------------------------------------------------------------
+// Entity Models (Production Operations — ISA-95 Job Order / Execution)
+// ----------------------------------------------------------------------------
+
+// WorkOrder: the primary execution unit dispatched to the shop floor.
+// ISA-95 Reference: Part 2, Section 4 — Job Order.
+message WorkOrder {
+  string                    id                     = 1;                        // UUIDv7
+  string                    material_definition_id = 2;    // FK to MaterialDefinition (the product to produce)
+  string                    routing_spec_id        = 3;           // FK to ProductRoutingSpec (the routing to follow)
+  string                    work_center_id         = 4;            // FK to WorkCenter (where to produce)
+  string                    target_quantity        = 5;           // Target quantity as decimal string (e.g., "100")
+  string                    unit_of_measure        = 6;          // e.g., "pcs", "kg"
+  string                    state                  = 7;                     // State machine: draft, released, dispatched, in_progress, held, completed, closed
+  string                    priority               = 8;                  // Priority level: low, medium, high, urgent
+  string                    description            = 9;              // Optional description or notes
+  google.protobuf.Timestamp due_date               = 10;       // When the WO must be completed
+  google.protobuf.Timestamp created_at             = 11;
+  google.protobuf.Timestamp updated_at             = 12;
+}
+
+// ----------------------------------------------------------------------------
+// gRPC Service & Request/Response Models
+// ----------------------------------------------------------------------------
+
+service ProductionService {
+  // Work Order CRUD
+  rpc CreateWorkOrder(CreateWorkOrderRequest) returns (CreateWorkOrderResponse);
+  rpc GetWorkOrder(GetWorkOrderRequest) returns (GetWorkOrderResponse);
+  rpc ListWorkOrders(ListWorkOrdersRequest) returns (ListWorkOrdersResponse);
+
+  // Work Order State Machine
+  rpc ReleaseWorkOrder(ReleaseWorkOrderRequest) returns (ReleaseWorkOrderResponse);
+  rpc DispatchWorkOrder(DispatchWorkOrderRequest) returns (DispatchWorkOrderResponse);
+  rpc StartWorkOrder(StartWorkOrderRequest) returns (StartWorkOrderResponse);
+  rpc CompleteWorkOrder(CompleteWorkOrderRequest) returns (CompleteWorkOrderResponse);
+  rpc HoldWorkOrder(HoldWorkOrderRequest) returns (HoldWorkOrderResponse);
+  rpc ResumeWorkOrder(ResumeWorkOrderRequest) returns (ResumeWorkOrderResponse);
+  rpc CloseWorkOrder(CloseWorkOrderRequest) returns (CloseWorkOrderResponse);
+}
+
+// --- Work Order CRUD messages ---
+
+message CreateWorkOrderRequest {
+  string material_definition_id = 1;    // Required: FK to MaterialDefinition
+  string routing_spec_id        = 2;           // Required: FK to ProductRoutingSpec
+  string work_center_id         = 3;            // Required: FK to WorkCenter
+  string target_quantity        = 4;           // Required: e.g., "100"
+  string unit_of_measure        = 5;          // Required: e.g., "pcs"
+  string priority               = 6;                  // Required: low, medium, high, urgent
+  string description            = 7;              // Optional
+  string due_date               = 8;                 // Required: RFC3339 timestamp (e.g., "2026-09-15T00:00:00Z")
+}
+
+message CreateWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
+
+message GetWorkOrderRequest {
+  string id = 1;                        // WorkOrder UUID
+}
+
+message GetWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
+
+message ListWorkOrdersRequest {
+  string work_center_id = 1;            // Filter by Work Center (empty = all)
+  string state          = 2;                     // Filter by state (empty = all)
+}
+
+message ListWorkOrdersResponse {
+  repeated WorkOrder work_orders = 1;
+}
+
+// --- Work Order State Machine messages ---
+
+message ReleaseWorkOrderRequest {
+  string id = 1;                        // WorkOrder UUID
+}
+
+message ReleaseWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
+
+message DispatchWorkOrderRequest {
+  string id           = 1;                        // WorkOrder UUID
+  string work_unit_id = 2;             // Required: FK to WorkUnit (which station)
+}
+
+message DispatchWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
+
+message StartWorkOrderRequest {
+  string id = 1;                        // WorkOrder UUID
+}
+
+message StartWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
+
+message CompleteWorkOrderRequest {
+  string id = 1;                        // WorkOrder UUID
+}
+
+message CompleteWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
+
+message HoldWorkOrderRequest {
+  string id     = 1;                        // WorkOrder UUID
+  string reason = 2;                    // Required: reason for hold
+}
+
+message HoldWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
+
+message ResumeWorkOrderRequest {
+  string id = 1;                        // WorkOrder UUID
+}
+
+message ResumeWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
+
+message CloseWorkOrderRequest {
+  string id = 1;                        // WorkOrder UUID
+}
+
+message CloseWorkOrderResponse {
+  WorkOrder work_order = 1;
+}
