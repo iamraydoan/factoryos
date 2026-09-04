@@ -71,7 +71,8 @@ docs/
 │   └── 📄 0003-material-genealogy-tracking.md
 │
 ├── 📁 07-api/                     # API & Event Contracts Catalog
-│   └── 📄 ASYNC_EVENT_CATALOG.md  # Async Kafka Event Specification Catalog
+│   ├── 📄 ASYNC_EVENT_CATALOG.md  # Async Kafka Event Specification Catalog
+│   └── 📄 PAGINATION_DESIGN.md   # Pagination Standard (gRPC cursor / REST page)
 │
 ├── 📁 08-roadmap/                 # Evolutionary Roadmap & Milestones
 │   └── 📄 MILESTONES.md           # Milestone 1 to 5 Deliverables & Timelines
@@ -97,6 +98,7 @@ docs/
 * [Strategic Milestones & Roadmap](./08-roadmap/MILESTONES.md)
 * [Active Epic: EPIC-001 Platform Foundation](./09-epics/EPIC-001-Platform-Foundation.md)
 * [Local Environment Setup](./10-developer-guide/Local-Environment-Setup.md)
+* [Pagination Design Standard](./07-api/PAGINATION_DESIGN.md)
 
 ---
 
