@@ -56,6 +56,18 @@ public class Cursor {
         return values;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Cursor other)) return false;
+        return keyNames.equals(other.keyNames) && values.equals(other.values);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(keyNames, values);
+    }
+
     public String encode() {
         try {
             Map<String, Object> payload = new LinkedHashMap<>();
@@ -96,7 +108,7 @@ public class Cursor {
             List<String> expectedKeys = sortKeys.stream().map(SortKey::fieldName).toList();
             if (!actualKeys.equals(expectedKeys)) {
                 throw new InvalidCursorException(
-                        "Cursor keys %s do not match expected keys %s".formatted(actualKeys, expectedKeys));
+                        "Cursor keys mismatch: expected %s but got %s".formatted(expectedKeys, actualKeys));
             }
 
             // Parse each value using the corresponding SortKey
