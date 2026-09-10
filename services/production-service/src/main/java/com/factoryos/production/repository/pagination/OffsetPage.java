@@ -16,6 +16,25 @@ import org.springframework.data.domain.Page;
 public record OffsetPage<T>(List<T> items, int page, int pageSize, long total, int totalPages) {
 
     /**
+     * Compact constructor with validation.
+     *
+     * @throws IllegalArgumentException if page < 0, pageSize < 1, or total < 0
+     * @throws NullPointerException     if items is null
+     */
+    public OffsetPage {
+        Objects.requireNonNull(items, "items must not be null");
+        if (page < 0) {
+            throw new IllegalArgumentException("page must be >= 0, got %d".formatted(page));
+        }
+        if (pageSize < 1) {
+            throw new IllegalArgumentException("pageSize must be >= 1, got %d".formatted(pageSize));
+        }
+        if (total < 0) {
+            throw new IllegalArgumentException("total must be >= 0, got %d".formatted(total));
+        }
+    }
+
+    /**
      * Creates an OffsetPage from Spring Data's Page result.
      *
      * @param springPage the Spring Data Page

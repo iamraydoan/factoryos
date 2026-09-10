@@ -41,7 +41,7 @@ public record OffsetPageRequest(int page, int pageSize, List<SortCriteria> sortC
     /**
      * Creates an OffsetPageRequest from raw request parameters.
      *
-     * @param rawPage        the page number (0-indexed, negative becomes 0)
+     * @param rawPage        the page number (0-indexed, negative = error)
      * @param rawPageSize    the page size (0 = default, negative or >100 = error)
      * @param sortCriteriaList the sort criteria
      * @return a validated OffsetPageRequest
@@ -62,7 +62,15 @@ public record OffsetPageRequest(int page, int pageSize, List<SortCriteria> sortC
         return PageRequest.of(page, pageSize, sort);
     }
 
-    private Sort toSort() {
+    /**
+     * Builds a Spring Data {@link Sort} object from the sort criteria.
+     *
+     * <p>Supports mixed directions:
+     * {@code Sort.by(DESC, "createdAt").and(Sort.by(ASC, "name")).and(Sort.by(DESC, "id"))}
+     *
+     * @return the Sort object
+     */
+    public Sort toSort() {
         Sort result = null;
         for (SortCriteria criteria : sortCriteriaList) {
             Sort s = Sort.by(criteria.direction(), criteria.key().fieldName());
