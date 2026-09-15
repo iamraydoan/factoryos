@@ -28,3 +28,6 @@
 ### Platform Services & SDK
 - [ ] Implement `platform-sdk` event producer/consumer wrappers with transactional outbox helpers (Java & Go).
 - [ ] Setup Temporal.io cluster for Durable Workflow Engine.
+- [x] Define the global error handling standard: category-based taxonomy, transport mapping rules, and the contract schema in `api/contracts/openapi/common/` ([ERROR_HANDLING.md](../07-api/ERROR_HANDLING.md), [ADR-0007](../05-adr/0007-global-error-handling-standard.md)).
+- [ ] Implement the shared error taxonomy and transport adapters for Java services per [ERROR_HANDLING.md](../07-api/ERROR_HANDLING.md).
+- [ ] Adopt the error taxonomy in Go services per [ERROR_HANDLING.md](../07-api/ERROR_HANDLING.md) §8.
