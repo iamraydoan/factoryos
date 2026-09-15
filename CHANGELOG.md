@@ -10,10 +10,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Work Order (`services/production-service`):** JPA entity with UUIDv7 identifiers, Flyway migrations `V001` (table + indexes) and `V002` (composite pagination index), and `ListWorkOrders` over gRPC with cursor-based pagination.
+- **Cursor & offset pagination library (`services/production-service`):** Keyset pagination with versioned opaque cursors (`SortKey`, `SortCriteria`, `Cursor`, `KeysetCondition`, `CursorPage`, `CursorPageRequest`) and page-number pagination (`OffsetPage`, `OffsetPageRequest`). 116 unit tests.
+- **REST pagination DTOs (`services/production-service`):** `CursorPageResponse` and `OffsetPageResponse` implementing the `{ data, pagination }` envelope from [PAGINATION_DESIGN.md](docs/07-api/PAGINATION_DESIGN.md), with REST/gRPC key-name mapping (`limit`/`cursor` vs `pageSize`/`pageToken`).
+- **Work Order REST API (`services/production-service`):** `GET /api/v1/work-orders` with page-based and cursor-based pagination, plus `work_center_id` and `state` filters.
+- **Error taxonomy contract (`api/contracts/openapi/common/v1/schemas/errors.yaml`):** `ErrorResponse` and `ErrorDetail` schemas implementing RFC 9457 Problem Details with FactoryOS extension members (`code`, `errors[]`, `retryable`, `traceId`). The previously-orphaned common schema is now canonical.
+- **Error handling design standard ([docs/07-api/ERROR_HANDLING.md](docs/07-api/ERROR_HANDLING.md)):** Language-neutral specification — the nine error categories, their HTTP and gRPC mappings, both wire formats, the code taxonomy and naming rules, and the logging contract.
+- **ADR-0007:** Global error handling standard — errors classified by category rather than transport status, adapters own the transport mapping, RFC 9457 with a `code` extension.
 - **ProductRoutingSpec & ProductRoutingStep (`services/resource-service`):** Versioned routing with step sequencing, FK validation to WorkCenter and MaterialDefinition, and 28 unit tests. Completes EPIC-002 Material Definition section.
 - **BOM & BOMComponent (`services/resource-service`):** Bill of Materials with versioning (`material_definition_id + version` unique), child component linking with quantity/unit-of-measure, FK validation, and 26 unit tests.
 - **MaterialClass & MaterialDefinition (`services/resource-service`):** Material category and material definition CRUD with `part_number` uniqueness, optional JSON `specification`, FK validation, and 27 unit tests.
 - **Shift & ShiftAssignment (`services/resource-service`):** Shift definitions (TIME columns) and many-to-many shift assignments with upsert, 3-filter listing, FK validation, and 34 unit tests.
+
+### Removed
+- **Per-domain `ErrorResponse` copies (`telemetry/v1/schemas/common.yaml`):** The local `ErrorResponse` schema copy is deleted — all specs now `$ref` the canonical `common/v1/schemas/errors.yaml`. The shape itself was kept and expanded with RFC 7807 fields.
+
+### Fixed
+- **`docs/07-api/PAGINATION_DESIGN.md`:** Rewritten as a language-neutral standard — implementation code removed in favour of wire formats, token format, validation rules, and language-agnostic implementation requirements. Corrected the earlier Java section, which omitted `SortCriteria`, `CursorPageResponse`, and `OffsetPageResponse` and used signatures that do not match the shipped library. Also fixed a malformed code fence that had caused everything after it to render as a single code block.
+
+### Documentation Note
+- The error handling standard above is **design-first**: the taxonomy, mappings, and contract schemas are fixed, while the implementation in each language is not yet done. Implementations must satisfy [ERROR_HANDLING.md](docs/07-api/ERROR_HANDLING.md) rather than define their own vocabulary.
 
 ---
 

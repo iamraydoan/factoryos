@@ -32,7 +32,7 @@ api/contracts/openapi/
         │   ├── ready.yaml                   # GET /ready
         │   └── ...
         ├── schemas/                         # [SOURCE] Domain-specific DTO models
-        │   ├── common.yaml                  # HealthStatusResponse, ErrorResponse
+        │   ├── common.yaml                  # HealthStatusResponse, ReadinessResponse
         │   └── ...
         └── dist/                            # [GENERATED] gitignored — do not edit manually
             └── openapi.bundled.yaml         # redocly bundle output (single resolved file)

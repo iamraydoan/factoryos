@@ -21,7 +21,11 @@
 - [ ] Implement Emergency Work Order insertion at queue top with Plant Manager approval.
 
 ### Work Order (Job Order)
-- [ ] Implement Work Order CRUD and full state machine (Draft → Released → Dispatched → In Progress → Completed → Closed).
+- [x] Implement Work Order entity, repository, and Flyway migrations (`V001`, `V002`).
+- [x] Implement `ListWorkOrders` over gRPC with cursor-based pagination.
+- [x] Implement the REST Work Order list API with page-based and cursor-based pagination.
+- [ ] Implement Work Order CRUD (Create, Get) and the full state machine (Draft → Released → Dispatched → In Progress → Completed → Closed).
+- [ ] Implement the Work Order state machine guard: transition validation plus a database CHECK constraint and transition trigger (`V003`).
 - [ ] Implement dispatch validation: Work Unit capability match + Operator qualification check + materials staged.
 - [ ] Implement Work Order hold / resume with reason recording.
 
