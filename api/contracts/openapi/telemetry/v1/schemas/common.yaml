@@ -47,19 +47,6 @@ components:
           type: string
           format: date-time
 
-    ErrorResponse:
-      type: object
-      required:
-        - code
-        - message
-      properties:
-        code:
-          type: string
-          example: INVALID_ARGUMENT
-        message:
-          type: string
-          example: Required query parameter is missing or malformed
-        details:
-          type: array
-          items:
-            type: string
+    # Error responses are defined once, canonically, in
+    # api/contracts/openapi/common/v1/schemas/errors.yaml (ErrorResponse).
+    # Import them from there rather than re-declaring in this file.

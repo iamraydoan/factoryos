@@ -29,23 +29,21 @@ components:
     BadRequestError:
       description: Invalid request parameters or payload
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
     InternalServerError:
       description: Internal server error occurred
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
 
   schemas:
     HealthStatusResponse:
       $ref: './schemas/common.yaml#/components/schemas/HealthStatusResponse'
     ReadinessResponse:
       $ref: './schemas/common.yaml#/components/schemas/ReadinessResponse'
-    ErrorResponse:
-      $ref: './schemas/common.yaml#/components/schemas/ErrorResponse'
     ServiceStatsResponse:
       $ref: './schemas/stats.yaml#/components/schemas/ServiceStatsResponse'
     SensorQuality:

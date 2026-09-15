@@ -43,12 +43,12 @@ get:
     '400':
       description: Invalid request parameters
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '../schemas/common.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
     '500':
       description: Internal server error
       content:
-        application/json:
+        application/problem+json:
           schema:
-            $ref: '../schemas/common.yaml#/components/schemas/ErrorResponse'
+            $ref: '../../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
