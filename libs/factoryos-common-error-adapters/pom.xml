@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.factoryos</groupId>
+        <artifactId>factoryos-services-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+        <relativePath>../../services/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>factoryos-common-error-adapters</artifactId>
+    <name>FactoryOS Common Error Transport Adapters</name>
+    <description>
+        Projects the category-based error taxonomy onto HTTP (RFC 9457 Problem Details)
+        and gRPC (google.rpc.Status). One adapter per protocol, written once and reused
+        by every handler (ERROR_HANDLING.md section 8).
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.factoryos</groupId>
+            <artifactId>factoryos-common-error</artifactId>
+        </dependency>
+
+        <!-- REST projector -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+
+        <!-- gRPC projector: google.rpc.Status, ErrorInfo, BadRequest -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.api.grpc</groupId>
+            <artifactId>proto-google-common-protos</artifactId>
+            <version>2.64.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-grpc-server</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-grpc-server-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

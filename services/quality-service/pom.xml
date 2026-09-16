@@ -15,9 +15,16 @@
     <description>Inspection specifications, non-conformance reports, and CAPA workflows</description>
 
     <dependencies>
+        <!-- Spring gRPC server (org.springframework.grpc), managed by the parent. -->
         <dependency>
-            <groupId>net.devh</groupId>
-            <artifactId>grpc-spring-boot-starter</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-grpc-server</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-grpc-server-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

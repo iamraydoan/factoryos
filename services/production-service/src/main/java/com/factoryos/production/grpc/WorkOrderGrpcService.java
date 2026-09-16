@@ -18,7 +18,7 @@ import com.factoryos.production.repository.pagination.CursorPageRequest;
 import com.google.protobuf.Timestamp;
 
 import io.grpc.stub.StreamObserver;
-import net.devh.boot.grpc.server.service.GrpcService;
+import org.springframework.grpc.server.service.GrpcService;
 
 @GrpcService
 public class WorkOrderGrpcService extends ProductionServiceGrpc.ProductionServiceImplBase {

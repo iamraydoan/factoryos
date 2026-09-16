@@ -4,6 +4,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!--
+      One Spring Boot for the whole build. Every service inherits from here, so a
+      service that declares spring-boot-starter-parent directly would resolve a
+      different Boot major than its siblings. See docs/10-developer-guide/
+      ERROR_HANDLING_TUTORIAL.md Part 2.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.1.1</version>
+        <relativePath/>
+    </parent>
+
     <groupId>com.factoryos</groupId>
     <artifactId>factoryos-services-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
@@ -12,96 +25,56 @@
     <name>FactoryOS Domain Services Parent</name>
     <description>Parent POM for all FactoryOS Spring Boot microservices</description>
 
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.3.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
-
     <properties>
         <java.version>21</java.version>
-        <grpc.starter.version>3.1.0.RELEASE</grpc.starter.version>
-        <protobuf.version>3.25.3</protobuf.version>
-        <grpc.version>1.64.0</grpc.version>
+        <factoryos-common-error.version>0.1.0-SNAPSHOT</factoryos-common-error.version>
     </properties>
 
+    <!--
+      The two libs/ modules are NOT listed until they exist: a <module> pointing at
+      a directory with no pom.xml fails the whole reactor. Part 3 of the tutorial
+      adds factoryos-common-error here, and Part 4 adds the adapters.
+    -->
     <modules>
         <module>production-service</module>
         <module>warehouse-service</module>
         <module>quality-service</module>
         <module>maintenance-service</module>
         <module>planning-service</module>
+        <module>../libs/factoryos-common-error</module>
+        <module>../libs/factoryos-common-error-adapters</module>
     </modules>
 
     <dependencyManagement>
         <dependencies>
-            <!-- gRPC Spring Boot Starter -->
+            <!-- Versions only: services opt in by declaring the dependency. -->
             <dependency>
-                <groupId>net.devh</groupId>
-                <artifactId>grpc-spring-boot-starter</artifactId>
-                <version>${grpc.starter.version}</version>
+                <groupId>com.factoryos</groupId>
+                <artifactId>factoryos-common-error</artifactId>
+                <version>${factoryos-common-error.version}</version>
             </dependency>
             <dependency>
-                <groupId>net.devh</groupId>
-                <artifactId>grpc-client-spring-boot-starter</artifactId>
-                <version>${grpc.starter.version}</version>
+                <groupId>com.factoryos</groupId>
+                <artifactId>factoryos-common-error-adapters</artifactId>
+                <version>${factoryos-common-error.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
-        <!-- Common Spring Boot Starters -->
+        <!--
+          Spring Boot 4 renamed spring-boot-starter-web to spring-boot-starter-webmvc.
+          The old artifact name does not exist at 4.1.1, so it must not be used.
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
-        <!-- Database Driver -->
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka-test</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
