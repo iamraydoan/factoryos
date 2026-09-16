@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **`docs/07-api/PAGINATION_DESIGN.md`:** Rewritten as a language-neutral standard — implementation code removed in favour of wire formats, token format, validation rules, and language-agnostic implementation requirements. Corrected the earlier Java section, which omitted `SortCriteria`, `CursorPageResponse`, and `OffsetPageResponse` and used signatures that do not match the shipped library. Also fixed a malformed code fence that had caused everything after it to render as a single code block.
 
+### Changed
+- **Java services migrated to Spring gRPC (`services/*/pom.xml`):** `net.devh:grpc-spring-boot-starter` is replaced by Spring Boot 4.1.1's managed `spring-boot-starter-grpc-server`, which brings `spring-grpc-core` 1.1.1, `grpc-netty` / `grpc-services` 1.83.1, and `protobuf-java` 4.35.1 — all version-managed, so the hand-pinned `io.grpc` and `protobuf-java` dependencies are deleted. The `@GrpcService`, `@GrpcAdvice`, and `@GrpcExceptionHandler` annotations keep their names and move to the `org.springframework.grpc` package. `org.xolstice:protobuf-maven-plugin` is replaced by `io.github.ascopes:protobuf-maven-plugin` (Boot-managed), retiring the last unmaintained build plugin. `javax.annotation-api` is no longer needed.
+- **All five Java services now inherit `services/pom.xml` (`services/pom.xml`, `services/*/pom.xml`):** the parent moves from Spring Boot 3.3.0 to 4.1.1, and `production-service` drops `<relativePath/>` so it can no longer resolve a different Spring Boot major than its siblings. `spring-boot-starter-web` becomes `spring-boot-starter-webmvc` (the old name does not exist at 4.1.1). The parent no longer forces `data-jpa`, `spring-kafka`, `postgresql`, and `lombok` on every service — each declares what it uses.
+
 ### Documentation Note
 - The error handling standard above is **design-first**: the taxonomy, mappings, and contract schemas are fixed, while the implementation in each language is not yet done. Implementations must satisfy [ERROR_HANDLING.md](docs/07-api/ERROR_HANDLING.md) rather than define their own vocabulary.
 
