@@ -55,7 +55,7 @@ api/contracts/
 
 ### Automation & Tooling:
 * `make openapi-gen`: Compiles OpenAPI contracts into `platform/platform-sdk/go/gen/openapi/...`.
-* [swaggerui](file:///workspaces/factoryos/platform/platform-sdk/go/swaggerui/swaggerui.go): Standard embedded HTTP handler serving Scalar/Swagger documentation on `/docs` or `/swagger`.
+* `swagger-ui` Docker Compose service (`docs` profile, dev/tester only): renders the bundled OpenAPI spec via the official `swaggerapi/swagger-ui` image on `http://localhost:8082/docs` (replaces the former embedded Go `swaggerui` handler, removed).
 
 ---
 

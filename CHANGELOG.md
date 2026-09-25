@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shift & ShiftAssignment (`services/resource-service`):** Shift definitions (TIME columns) and many-to-many shift assignments with upsert, 3-filter listing, FK validation, and 34 unit tests.
 
 ### Removed
+- **Go `swaggerui` placeholder handler (`platform/platform-sdk/go/swaggerui/`):** deleted — no service mounted it and it rendered no real Swagger UI. Interactive docs are served only by the dev-only Docker `swagger-ui` service (`make docs-up`).
 - **Per-domain `ErrorResponse` copies (`telemetry/v1/schemas/common.yaml`):** The local `ErrorResponse` schema copy is deleted — all specs now `$ref` the canonical `common/v1/schemas/errors.yaml`. The shape itself was kept and expanded with RFC 7807 fields.
 
 ### Fixed

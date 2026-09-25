@@ -18,7 +18,7 @@ make test-all
 make test-analytics    # Analytics Engine with -race, -cover, and timeout
 make test-ingestion    # Telemetry Ingestion Gateway Service (gRPC)
 make test-edge         # Edge Runtime collector, mqtt, forwarder, and store-and-forward buffer
-make test-sdk          # Platform SDK (Protobuf stubs, OpenAPI models, Swagger UI)
+make test-sdk          # Platform SDK (Protobuf stubs, OpenAPI models)
 
 # Generate code coverage for Analytics Engine
 make test-coverage
