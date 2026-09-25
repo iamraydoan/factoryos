@@ -24,6 +24,7 @@
 - [ ] Setup Traefik API Gateway for gRPC routing.
 - [ ] Setup Valkey (Redis Drop-in Replacement) for distributed caching.
 - [ ] Setup Observability stack (OpenTelemetry, Prometheus, Jaeger, Loki, Grafana).
+- [x] Provide dev-only Dockerized Swagger UI (`swagger-ui`, `docs` profile, `make docs-up`) rendering the bundled telemetry OpenAPI spec.
 
 ### Platform Services & SDK
 - [ ] Implement `platform-sdk` event producer/consumer wrappers with transactional outbox helpers (Java & Go).

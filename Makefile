@@ -10,7 +10,7 @@ BIN_DIR := bin
         test-coverage test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk \
         run-analytics run-ingestion run-edge run-simulator run-resource \
         proto-lint proto-gen openapi-bundle openapi-gen \
-        infra-up infra-down infra-ps infra-logs clean
+        infra-up infra-down infra-ps infra-logs docs-up docs-down clean
 
 all: help
 
@@ -219,6 +219,15 @@ infra-ps:
 ## infra-logs: Follow logs from infrastructure containers
 infra-logs:
 	@docker compose logs -f
+
+## docs-up: Bundle OpenAPI specs then start dev-only Swagger UI (http://localhost:8082/docs)
+docs-up: openapi-bundle
+	@docker compose --profile docs up -d swagger-ui
+	@echo "[DOCS] Swagger UI -> http://localhost:8082/docs"
+
+## docs-down: Stop dev-only Swagger UI
+docs-down:
+	@docker compose --profile docs stop swagger-ui || true
 
 # ==============================================================================
 # Cleanup

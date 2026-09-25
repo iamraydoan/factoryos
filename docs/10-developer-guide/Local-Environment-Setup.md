@@ -82,6 +82,7 @@ Once the stack is up, the following services and ports are available on your `lo
 | **Valkey (Cache)** | `6379` | Redis drop-in replacement | `localhost:6379` |
 | **Mosquitto MQTT** | `1883` | Edge MQTT Broker for IIoT telemetry | `localhost:1883` |
 | **Zitadel Console** | `8081` | IAM Web Interface | http://localhost:8081/ui/console (User: `zitadel-admin@zitadel.localhost` / Pass: `Password123!`) |
+| **Swagger UI (docs profile, opt-in)** | `8082` | Dev/tester-only OpenAPI viewer (telemetry, no Traefik) | http://localhost:8082/docs — start with `make docs-up` after `make openapi-bundle` |
 
 ---
 
@@ -218,3 +219,7 @@ When adding a new backing service (e.g., Temporal, OpenTelemetry) to `docker-com
 1. Ensure you use a **specific image version tag** (avoid `latest`).
 2. Add a **named volume** if the service requires persistent state.
 3. Update the "Local Service Directory" table above so the team knows the new ports.
+
+> **Docs profile:** `swagger-ui` runs under Compose profile `docs` and is not part of
+> default `docker compose up -d`. Use `make docs-up` / `make docs-down`.
+> Prerequisite: `make openapi-bundle` (the `dist/*.bundled.yaml` output is gitignored).

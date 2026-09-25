@@ -52,7 +52,7 @@ services:
     ports:
       - "5433:5432" # Exposed on 5433 to avoid conflict with FactoryOS DB
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 3s
       timeout: 3s
       retries: 10
@@ -146,6 +146,24 @@ services:
       - ./deploy/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
     networks:
       - factoryos_net
+
+  # ==========================================
+  # API Docs (Swagger UI, dev-only, opt-in via `docs` profile)
+  # ==========================================
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.33.0
+    container_name: factoryos_swagger_ui
+    environment:
+      SWAGGER_JSON: /spec/openapi.bundled.yaml
+      BASE_URL: /docs
+    volumes:
+      - ./api/contracts/openapi/telemetry/v1/dist/openapi.bundled.yaml:/spec/openapi.bundled.yaml:ro
+    ports:
+      - "8082:8080"
+    networks:
+      - factoryos_net
+    profiles:
+      - docs
 
 volumes:
   factoryos_db_data:
