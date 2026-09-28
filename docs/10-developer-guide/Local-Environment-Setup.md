@@ -23,19 +23,30 @@ If you use VS Code or cursor:
 2. Open the project in VS Code.
 3. Click **"Reopen in Container"** when prompted (or `Cmd+Shift+P` -> `Dev Containers: Reopen in Container`).
 4. VS Code will spin up a pre-configured Ubuntu container with **Java 21, Go, Node.js, and Protobuf plugins** pre-installed.
+5. The container automatically runs `make install-tools` on create so the Buf, Protobuf, OpenAPI, and Redocly toolchain is ready to use.
 
 ### Option B: Native Host Machine (Manual Setup)
-If you prefer coding directly on your Mac/Linux/Windows machine without Dev Containers, install these manually:
+If you prefer coding directly on your Mac/Linux/Windows machine without Dev Containers, install the required toolchain first and then run the repo's single setup command:
 * **JDK 21** (Amazon Corretto, Temurin, or Zulu)
 * **Go 1.22+**
 * **Node.js 20+**
 * **Make** (Optional - for shortcut targets)
-* **Protobuf Compiler (`protoc`)** & Go plugins:
-  ```bash
-  go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-  go install github.com/bufbuild/buf/cmd/buf@latest
-  ```
+
+Then run:
+```bash
+make install-tools
+```
+
+This is the same toolchain the devcontainer installs automatically during container creation. The command is the canonical source of truth; do not treat the block below as an additional second installation step.
+
+```bash
+# Reference only: same commands executed by `make install-tools`
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+go install github.com/bufbuild/buf/cmd/buf@latest
+go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1
+npm install --global --no-fund --no-audit @redocly/cli@1.34.0
+```
 
 ---
 
@@ -186,6 +197,7 @@ For developers who prefer using `make`, a top-level `Makefile` is provided with 
 | Task | Make Shortcut | Direct Command Equivalent |
 |---|---|---|
 | **View help** | `make help` | — |
+| **Install dev toolchain** | `make install-tools` | `go install ...` + `npm install --global @redocly/cli` |
 | **Build all binaries** | `make build` | `go build ./...` |
 | **Build specific service** | `make build-analytics`<br>`make build-edge`<br>`make build-simulator` | `go build -o bin/<service> ./...` |
 | **Run all Go tests** | `make test` | `go test ./...` |

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Developer tool installation (`Makefile`, `.devcontainer/devcontainer.json`):** Added `make install-tools` and use it during container creation for protobuf, Buf, OpenAPI generator, and Redocly CLI tools.
 - **Dev-only Swagger UI (`docker-compose.yml`, `Makefile`):** `swagger-ui` service on the `docs` profile using pinned `docker.swagger.io/swaggerapi/swagger-ui:v5.11.0`, rendering `api/contracts/openapi/telemetry/v1/dist/openapi.bundled.yaml` at `http://localhost:8082/docs` (direct port, no Traefik routing). Start with `make docs-up` (runs `make openapi-bundle` first); stop with `make docs-down`.
 - **Work Order (`services/production-service`):** JPA entity with UUIDv7 identifiers, Flyway migrations `V001` (table + indexes) and `V002` (composite pagination index), and `ListWorkOrders` over gRPC with cursor-based pagination.
 - **Cursor & offset pagination library (`services/production-service`):** Keyset pagination with versioned opaque cursors (`SortKey`, `SortCriteria`, `Cursor`, `KeysetCondition`, `CursorPage`, `CursorPageRequest`) and page-number pagination (`OffsetPage`, `OffsetPageRequest`). 116 unit tests.

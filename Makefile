@@ -9,6 +9,7 @@ BIN_DIR := bin
         test test-all test-analytics test-ingestion test-edge test-sdk test-resource \
         test-coverage test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk \
         run-analytics run-ingestion run-edge run-simulator run-resource \
+		install-tools \
         proto-lint proto-gen openapi-lint openapi-bundle openapi-gen \
         infra-up infra-down infra-ps infra-logs docs-up docs-down clean
 
@@ -18,6 +19,14 @@ all: help
 help:
 	@echo "FactoryOS Monorepo - Available commands (Optional Convenience):"
 	@sed -n "s/^##//p" $(MAKEFILE_LIST) | column -t -s ":" | sed -e "s/^/ /"
+
+## install-tools: Install protobuf, Buf, OpenAPI generator, and Redocly CLI tools
+install-tools:
+	@go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+	@go install github.com/bufbuild/buf/cmd/buf@latest
+	@go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1
+	@npm install --global --no-fund --no-audit @redocly/cli@1.34.0
 
 # ==============================================================================
 # Build Targets
