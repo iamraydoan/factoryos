@@ -1,9 +1,12 @@
 get:
   summary: Service Runtime Statistics
-  description: Returns JSON metrics for consumed messages, batch flushes, dropped records, and runtime uptime.
+  description: Returns JSON metrics for consumed messages, batch flushes, dropped records, and runtime uptime. Requires the `ops.read` scope.
   operationId: getServiceStats
   tags:
     - Observability
+  security:
+    - zitadel:
+        - ops.read
   responses:
     '200':
       description: Real-time service metrics
@@ -11,3 +14,13 @@ get:
         application/json:
           schema:
             $ref: '../schemas/stats.yaml#/components/schemas/ServiceStatsResponse'
+    '401':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+    '403':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+    '429':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
+    '500':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+    '503':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'

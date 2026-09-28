@@ -1,9 +1,12 @@
 get:
   summary: Get latest sensor readings for assets
-  description: Retrieve the most recent sensor readings across all machines or filtered by asset ID.
+  description: Retrieve the most recent sensor readings across all machines or filtered by asset ID. Requires the `telemetry.read` scope.
   operationId: getLatestTelemetry
   tags:
     - Telemetry
+  security:
+    - zitadel:
+        - telemetry.read
   parameters:
     - name: asset_id
       in: query
@@ -39,16 +42,17 @@ get:
                   $ref: '../schemas/telemetry.yaml#/components/schemas/TelemetryReading'
               total:
                 type: integer
+                minimum: 0
                 example: 2
     '400':
-      description: Invalid request parameters
-      content:
-        application/problem+json:
-          schema:
-            $ref: '../../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+    '401':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+    '403':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+    '429':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
     '500':
-      description: Internal server error
-      content:
-        application/problem+json:
-          schema:
-            $ref: '../../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+    '503':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'

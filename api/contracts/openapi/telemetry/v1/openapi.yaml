@@ -1,14 +1,38 @@
 openapi: 3.0.3
 info:
   title: FactoryOS Telemetry & Analytics Query API
-  description: RESTful API for querying real-time equipment telemetry, aggregate history, threshold alerts, and service health.
+  description: |
+    Target-state REST contract for querying real-time equipment telemetry,
+    aggregate history, threshold alerts, and service health. Authentication
+    and authorization are defined centrally by the FactoryOS REST standard.
   version: 1.0.0
   contact:
     name: FactoryOS Architecture Team
     url: https://github.com/iamraydoan/factoryos
+  license:
+    name: FactoryOS Proprietary License
+    url: https://github.com/iamraydoan/factoryos/blob/main/LICENSE
+
+externalDocs:
+  description: FactoryOS API governance documentation
+  url: https://github.com/iamraydoan/factoryos/tree/main/docs/07-api
+
 servers:
-  - url: /api/v1
-    description: Production & Local Gateway
+  - url: http://localhost/api/v1
+    description: Local Traefik API gateway
+
+tags:
+  - name: Telemetry
+    description: Real-time equipment telemetry queries
+  - name: Analytics
+    description: Historical and aggregated telemetry analytics
+  - name: Alerts
+    description: Active telemetry threshold alerts
+  - name: Observability
+    description: Liveness, readiness, and protected service statistics
+
+security:
+  - zitadel: []
 
 paths:
   /healthz:
@@ -25,25 +49,31 @@ paths:
     $ref: './paths/alerts.yaml'
 
 components:
+  securitySchemes:
+    zitadel:
+      $ref: '../../common/v1/security/oidc.yaml#/components/securitySchemes/zitadel'
+
   responses:
     BadRequestError:
-      description: Invalid request parameters or payload
-      content:
-        application/problem+json:
-          schema:
-            $ref: '../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
+      $ref: '../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+    UnauthorizedError:
+      $ref: '../../common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+    ForbiddenError:
+      $ref: '../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+    NotFoundError:
+      $ref: '../../common/v1/responses/errors.yaml#/components/responses/NotFoundError'
+    TooManyRequestsError:
+      $ref: '../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
     InternalServerError:
-      description: Internal server error occurred
-      content:
-        application/problem+json:
-          schema:
-            $ref: '../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
+      $ref: '../../common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+    ServiceUnavailableError:
+      $ref: '../../common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'
 
   schemas:
     HealthStatusResponse:
-      $ref: './schemas/common.yaml#/components/schemas/HealthStatusResponse'
+      $ref: '../../common/v1/schemas/health.yaml#/components/schemas/HealthStatusResponse'
     ReadinessResponse:
-      $ref: './schemas/common.yaml#/components/schemas/ReadinessResponse'
+      $ref: '../../common/v1/schemas/health.yaml#/components/schemas/ReadinessResponse'
     ServiceStatsResponse:
       $ref: './schemas/stats.yaml#/components/schemas/ServiceStatsResponse'
     SensorQuality:

@@ -1,0 +1,68 @@
+components:
+  responses:
+    BadRequestError:
+      description: Invalid request parameters or payload
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
+
+    UnauthorizedError:
+      description: Credentials are missing, invalid, or expired
+      headers:
+        WWW-Authenticate:
+          description: Authentication challenge returned by the API gateway
+          schema:
+            type: string
+          example: Bearer
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
+
+    ForbiddenError:
+      description: The authenticated caller does not have permission for this operation
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
+
+    NotFoundError:
+      description: The requested resource does not exist
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
+
+    TooManyRequestsError:
+      description: The caller exceeded the configured request quota
+      headers:
+        Retry-After:
+          description: Suggested delay in seconds before retrying
+          schema:
+            type: string
+          example: '5'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Internal server error occurred
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
+
+    ServiceUnavailableError:
+      description: A required downstream or authorization dependency is unavailable
+      headers:
+        Retry-After:
+          description: Suggested delay in seconds before retrying
+          schema:
+            type: string
+          example: '5'
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'

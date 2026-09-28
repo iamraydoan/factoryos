@@ -1,13 +1,14 @@
 get:
   summary: Liveness Probe
-  description: Returns 200 OK if the service process is alive. Used by Kubernetes Liveness Probes.
+  description: Returns 200 OK if the service process is alive. Used by Kubernetes Liveness Probes and intentionally does not depend on the identity provider.
   operationId: getHealthz
   tags:
     - Observability
+  security: []
   responses:
     '200':
       description: Service process is healthy
       content:
         application/json:
           schema:
-            $ref: '../schemas/common.yaml#/components/schemas/HealthStatusResponse'
+            $ref: '../../../common/v1/schemas/health.yaml#/components/schemas/HealthStatusResponse'

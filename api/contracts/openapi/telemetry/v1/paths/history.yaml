@@ -1,9 +1,12 @@
 get:
   summary: Query time-bucketed historical aggregate telemetry
-  description: Returns rolled-up aggregates (AVG, MIN, MAX, COUNT) from TimescaleDB continuous aggregates.
+  description: Returns rolled-up aggregates (AVG, MIN, MAX, COUNT) from TimescaleDB continuous aggregates. Requires the `telemetry.read` scope.
   operationId: getHistoricalTelemetry
   tags:
     - Analytics
+  security:
+    - zitadel:
+        - telemetry.read
   parameters:
     - name: asset_id
       in: query
@@ -23,7 +26,7 @@ get:
     - name: from
       in: query
       required: true
-      description: Start ISO8601 timestamp
+      description: Inclusive start ISO-8601 timestamp; must be earlier than `to`
       schema:
         type: string
         format: date-time
@@ -31,7 +34,7 @@ get:
     - name: to
       in: query
       required: true
-      description: End ISO8601 timestamp
+      description: Exclusive end ISO-8601 timestamp; must be later than `from`
       schema:
         type: string
         format: date-time
@@ -66,14 +69,14 @@ get:
                 items:
                   $ref: '../schemas/aggregate.yaml#/components/schemas/TelemetryAggregateBucket'
     '400':
-      description: Invalid request parameters
-      content:
-        application/problem+json:
-          schema:
-            $ref: '../../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+    '401':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+    '403':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+    '429':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
     '500':
-      description: Internal server error
-      content:
-        application/problem+json:
-          schema:
-            $ref: '../../../common/v1/schemas/errors.yaml#/components/schemas/ErrorResponse'
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+    '503':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'

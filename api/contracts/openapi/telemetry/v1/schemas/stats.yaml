@@ -10,16 +10,38 @@ components:
           format: date-time
         kafka_messages_consumed:
           type: integer
+          format: int64
+          minimum: 0
           example: 154200
         sensor_readings_parsed:
           type: integer
+          format: int64
+          minimum: 0
           example: 308400
         timescaledb_batches:
           type: integer
+          format: int64
+          minimum: 0
           example: 616
         timescaledb_inserted:
           type: integer
+          format: int64
+          minimum: 0
           example: 308000
         consumer_errors:
           type: integer
+          format: int64
+          minimum: 0
           example: 0
+        records_dropped:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Records discarded due to back-pressure or an unrecoverable processing error
+          example: 0
+        uptime_seconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Time since the service became ready
+          example: 86400

@@ -9,7 +9,7 @@ BIN_DIR := bin
         test test-all test-analytics test-ingestion test-edge test-sdk test-resource \
         test-coverage test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk \
         run-analytics run-ingestion run-edge run-simulator run-resource \
-        proto-lint proto-gen openapi-bundle openapi-gen \
+        proto-lint proto-gen openapi-lint openapi-bundle openapi-gen \
         infra-up infra-down infra-ps infra-logs docs-up docs-down clean
 
 all: help
@@ -170,15 +170,26 @@ proto-gen:
 	@echo "[BUF] Generating code from api/contracts..."
 	@cd api/contracts && buf generate
 
-## openapi-bundle: Bundle all multi-file OpenAPI domain contracts into dist/ (via Redocly)
+## openapi-lint: Lint all OpenAPI domain contracts with Redocly
 ##   Auto-discovers every api/contracts/openapi/<domain>/<version>/openapi.yaml
-openapi-bundle:
+openapi-lint:
+	@echo "[OPENAPI] Linting domain specs in api/contracts/openapi/..."
+	@specs=$$(find api/contracts/openapi -name "openapi.yaml" -not -path "*/dist/*"); \
+	for spec in $$specs; do \
+		redocly lint "$$spec" || exit 1; \
+	done
+
+## openapi-bundle: Lint and bundle all multi-file OpenAPI domain contracts into dist/ (via Redocly)
+##   Auto-discovers every api/contracts/openapi/<domain>/<version>/openapi.yaml
+openapi-bundle: openapi-lint
 	@echo "[OPENAPI] Bundling all domain specs in api/contracts/openapi/..."
-	@find api/contracts/openapi -name "openapi.yaml" -not -path "*/dist/*" | while read spec; do \
-		dir=$$(dirname $$spec); \
-		mkdir -p $$dir/dist; \
+	@set -e; \
+	find api/contracts/openapi -name "openapi.yaml" -not -path "*/dist/*" -print0 | \
+	while IFS= read -r -d '' spec; do \
+		dir=$$(dirname "$$spec"); \
+		mkdir -p "$$dir/dist"; \
 		echo "  [BUNDLE] $$spec"; \
-		redocly bundle $$spec -o $$dir/dist/openapi.bundled.yaml 2>/dev/null; \
+		redocly bundle "$$spec" -o "$$dir/dist/openapi.bundled.yaml"; \
 	done
 	@echo "[OPENAPI] Bundle complete -> api/contracts/openapi/**/dist/openapi.bundled.yaml"
 
