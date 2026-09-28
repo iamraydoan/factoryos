@@ -65,7 +65,7 @@ services:
   # Identity & Access Management (Zitadel)
   # ==========================================
   zitadel:
-    image: ghcr.io/zitadel/zitadel:v4.16.2
+    image: ghcr.io/zitadel/zitadel:v4.19.1
     container_name: zitadel
     depends_on:
       zitadel-db:
