@@ -32,7 +32,7 @@ api/contracts/openapi/
         │   ├── ready.yaml                   # GET /ready
         │   └── ...
         ├── schemas/                         # [SOURCE] Domain-specific DTO models
-        │   ├── common.yaml                  # HealthStatusResponse, ReadinessResponse
+        │   ├── telemetry.yaml               # Domain-specific telemetry models
         │   └── ...
         └── dist/                            # [GENERATED] gitignored — do not edit manually
             └── openapi.bundled.yaml         # redocly bundle output (single resolved file)
@@ -69,10 +69,12 @@ make openapi-gen       # → platform/platform-sdk/go/gen/openapi/<domain>/v1/<d
 2. **New endpoint:** Add `paths/<group>.yaml`, reference it from `openapi.yaml` via `$ref`.
 3. **Run generation:** `make openapi-gen` — bundle + codegen runs for all domains.
 4. **Implement:** In your service, implement the generated `ServerInterface`.
-5. **Mount Swagger UI:**
-   ```go
-   r.Get("/docs", swaggerui.Handler("Service API", telemetryv1.OpenAPISpec))
+5. **View docs (dev-only Docker Swagger UI):**
+   ```bash
+   make docs-up    # bundles specs, starts swagger-ui -> http://localhost:8082/docs
    ```
+   The `swagger-ui` Compose service (`docs` profile)
+   renders the bundled spec with the official `swaggerapi/swagger-ui` image.
 
 ---
 
@@ -98,6 +100,9 @@ make proto-gen
 
 # Lint Protobuf contracts
 make proto-lint
+
+# Lint every multi-file OpenAPI domain contract
+make openapi-lint
 
 # Bundle multi-file OpenAPI specs per domain (via Redocly)
 make openapi-bundle
