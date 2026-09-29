@@ -49,6 +49,7 @@
 	"runArgs": [
 		"--network=factoryos_net"
 	],
+	"initializeCommand": "docker network inspect factoryos_net >/dev/null 2>&1 || docker network create factoryos_net",
 	"remoteUser": "vscode",
 	// Run commands after the container is created to install any global tools
 	"postCreateCommand": "make install-tools"
