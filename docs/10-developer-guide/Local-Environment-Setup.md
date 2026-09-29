@@ -55,11 +55,13 @@ npm install --global --no-fund --no-audit @redocly/cli@1.34.0
 FactoryOS relies on a comprehensive local infrastructure stack (Kafka, Postgres, Zitadel, Valkey). To start the entire stack:
 
 1. Open your terminal at the root of the `factoryos` project.
-2. Create the shared Docker network (one-time setup):
+2. (Optional) Configure local infrastructure ports and credentials. Defaults work without this file:
 
 ```bash
-docker network create factoryos_net
+cp .env.example .env
 ```
+
+Edit `.env` before starting the stack if any default host port is already in use. The sample credentials and Zitadel master key are for local development only.
 
 3. Start the infrastructure:
 
@@ -74,8 +76,6 @@ docker compose up -d
 docker compose ps
 ```
 
-> **Why the network?** Devcontainer joins `factoryos_net` to access services by name (e.g., `factoryos-db`) instead of `localhost`. This matches production behavior where services discover each other via DNS.
-
 ---
 
 ## 3. Local Service Directory
@@ -84,16 +84,16 @@ Once the stack is up, the following services and ports are available on your `lo
 
 | Service | Port | Description | Credentials / Access |
 |---|---|---|---|
-| **Traefik Dashboard** | `8080` | API Gateway routing UI | http://localhost:8080 |
-| **Traefik Ingress** | `80` | Main entrypoint for HTTP requests | http://localhost |
-| **Traefik gRPC** | `50051` | Main entrypoint for gRPC requests | `localhost:50051` |
-| **FactoryOS DB** | `5432` | TimescaleDB for core services & telemetry | User: `factoryos` / Pass: `factoryos_password` / DB: `factoryos` |
-| **Zitadel DB** | `5433` | Dedicated Postgres for IAM | User: `postgres` / Pass: `zitadel_password` / DB: `zitadel` |
-| **Kafka (KRaft)** | `9092` | Event Bus broker | `localhost:9092` |
-| **Valkey (Cache)** | `6379` | Redis drop-in replacement | `localhost:6379` |
-| **Mosquitto MQTT** | `1883` | Edge MQTT Broker for IIoT telemetry | `localhost:1883` |
-| **Zitadel Console** | `8081` | IAM Web Interface | http://localhost:8081/ui/console (User: `zitadel-admin@zitadel.localhost` / Pass: `Password123!`) |
-| **Swagger UI (docs profile, opt-in)** | `8082` | Dev/tester-only OpenAPI viewer (telemetry, no Traefik) | http://localhost:8082/docs — start with `make docs-up` after `make openapi-bundle` |
+| **Traefik Dashboard** | `8080` (`TRAEFIK_DASHBOARD_PORT`) | API Gateway routing UI | http://localhost:8080 |
+| **Traefik Ingress** | `80` (`TRAEFIK_HTTP_PORT`) | Main entrypoint for HTTP requests | http://localhost |
+| **Traefik gRPC** | `50051` (`TRAEFIK_GRPC_PORT`) | Main entrypoint for gRPC requests | `localhost:50051` |
+| **FactoryOS DB** | `5432` (`FACTORYOS_DB_PORT`) | TimescaleDB for core services & telemetry | User: `factoryos` / Pass: `factoryos_password` / DB: `factoryos` |
+| **Zitadel DB** | `5433` (`ZITADEL_DB_PORT`) | Dedicated Postgres for IAM | User: `postgres` / Pass: `zitadel_password` / DB: `zitadel` |
+| **Kafka (KRaft)** | `9092` (`KAFKA_PORT`) | Event Bus broker | `localhost:9092` |
+| **Valkey (Cache)** | `6379` (`VALKEY_PORT`) | Redis drop-in replacement | `localhost:6379` |
+| **Mosquitto MQTT** | `1883` (`MQTT_PORT`) | Edge MQTT Broker for IIoT telemetry | `localhost:1883` |
+| **Zitadel Console** | `8081` (`ZITADEL_PORT`) | IAM Web Interface | http://localhost:8081/ui/console (User: `zitadel-admin@zitadel.localhost` / Pass: `Password123!`) |
+| **Swagger UI (docs profile, opt-in)** | `8082` (`SWAGGER_UI_PORT`) | Dev/tester-only OpenAPI viewer (telemetry, no Traefik) | http://localhost:8082/docs — start with `make docs-up` after `make openapi-bundle` |
 
 ---
 
@@ -129,11 +129,16 @@ Java services (Production, Warehouse, Quality, Maintenance) use environment vari
 
 | File | Purpose |
 |------|---------|
-| `.env.example` | Template with all available env vars |
+| Root `.env.example` | Optional Docker Compose ports and local infrastructure credentials |
+| `services/<service>/.env.example` | Service-specific configuration template |
 
 ### Setup
 
 ```bash
+# Optional: Docker Compose infrastructure settings, from the repository root
+cp .env.example .env
+
+# Java service settings remain service-specific
 cd services/production-service
 cp .env.example .env
 ```
