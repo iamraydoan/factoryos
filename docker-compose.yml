@@ -14,9 +14,9 @@ services:
       - "--entrypoints.web.address=:80"
       - "--entrypoints.grpc.address=:50051"
     ports:
-      - "80:80"
-      - "8080:8080" # Dashboard
-      - "50051:50051" # gRPC
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080" # Dashboard
+      - "${TRAEFIK_GRPC_PORT:-50051}:50051" # gRPC
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
@@ -29,11 +29,11 @@ services:
     image: timescale/timescaledb:2.18.0-pg17
     container_name: factoryos_db
     environment:
-      POSTGRES_USER: factoryos
-      POSTGRES_PASSWORD: factoryos_password
-      POSTGRES_DB: factoryos
+      POSTGRES_USER: "${FACTORYOS_DB_USER:-factoryos}"
+      POSTGRES_PASSWORD: "${FACTORYOS_DB_PASSWORD:-factoryos_password}"
+      POSTGRES_DB: "${FACTORYOS_DB_NAME:-factoryos}"
     ports:
-      - "5432:5432"
+      - "${FACTORYOS_DB_PORT:-5432}:5432"
     volumes:
       - factoryos_db_data:/var/lib/postgresql/data
     networks:
@@ -46,13 +46,13 @@ services:
     image: postgres:17.0
     container_name: zitadel_db
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: zitadel_password
-      POSTGRES_DB: zitadel
+      POSTGRES_USER: "${ZITADEL_DB_USER:-postgres}"
+      POSTGRES_PASSWORD: "${ZITADEL_DB_PASSWORD:-zitadel_password}"
+      POSTGRES_DB: "${ZITADEL_DB_NAME:-zitadel}"
     ports:
-      - "5433:5432" # Exposed on 5433 to avoid conflict with FactoryOS DB
+      - "${ZITADEL_DB_PORT:-5433}:5432" # Exposed separately from FactoryOS DB
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER}" ]
       interval: 3s
       timeout: 3s
       retries: 10
@@ -73,25 +73,25 @@ services:
     command:
       - 'start-from-init'
       - '--masterkey'
-      - '12345678901234567890123456789012'
+      - "${ZITADEL_MASTERKEY:-12345678901234567890123456789012}"
       - '--tlsMode'
       - 'disabled'
     environment:
       ZITADEL_DATABASE_POSTGRES_HOST: zitadel-db
       ZITADEL_DATABASE_POSTGRES_PORT: 5432
-      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
-      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: postgres
-      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: zitadel_password
-      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: postgres
-      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: zitadel_password
-      ZITADEL_EXTERNALPORT: 8081
-      ZITADEL_EXTERNALDOMAIN: localhost
+      ZITADEL_DATABASE_POSTGRES_DATABASE: "${ZITADEL_DB_NAME:-zitadel}"
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: "${ZITADEL_DB_USER:-postgres}"
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: "${ZITADEL_DB_PASSWORD:-zitadel_password}"
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: "${ZITADEL_DB_USER:-postgres}"
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: "${ZITADEL_DB_PASSWORD:-zitadel_password}"
+      ZITADEL_EXTERNALPORT: "${ZITADEL_PORT:-8081}"
+      ZITADEL_EXTERNALDOMAIN: "${ZITADEL_EXTERNAL_DOMAIN:-localhost}"
       ZITADEL_EXTERNALSECURE: 'false'
       ZITADEL_DEFAULTINSTANCE_FEATURES_LOGINV2_REQUIRED: 'false'
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAILVERIFIED: 'true'
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: 'Password123!'
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: "${ZITADEL_ADMIN_PASSWORD:-Password123!}"
     ports:
-      - "8081:8080"
+      - "${ZITADEL_PORT:-8081}:8080"
     networks:
       - factoryos_net
 
@@ -114,7 +114,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     ports:
-      - "9092:9092"
+      - "${KAFKA_PORT:-9092}:9092"
     volumes:
       - kafka_data:/var/lib/kafka/data
     networks:
@@ -127,7 +127,7 @@ services:
     image: valkey/valkey:9.1.1
     container_name: valkey
     ports:
-      - "6379:6379"
+      - "${VALKEY_PORT:-6379}:6379"
     volumes:
       - valkey_data:/data
     networks:
@@ -140,8 +140,8 @@ services:
     image: eclipse-mosquitto:2.0.18
     container_name: mosquitto
     ports:
-      - "1883:1883" # Standard MQTT Port
-      - "9001:9001" # WebSockets MQTT Port
+      - "${MQTT_PORT:-1883}:1883" # Standard MQTT Port
+      - "${MQTT_WEBSOCKET_PORT:-9001}:9001" # WebSockets MQTT Port
     volumes:
       - ./deploy/mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
     networks:
@@ -159,7 +159,7 @@ services:
     volumes:
       - ./api/contracts/openapi/telemetry/v1/dist/openapi.bundled.yaml:/spec/openapi.bundled.yaml:ro
     ports:
-      - "8082:8080"
+      - "${SWAGGER_UI_PORT:-8082}:8080"
     networks:
       - factoryos_net
     profiles:
