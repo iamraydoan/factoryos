@@ -5,12 +5,15 @@
 SHELL := /bin/bash
 BIN_DIR := bin
 
+# Explicit path: npm ships an `openapi` alias that collides, so never rely on bare `openapi` on PATH.
+OPENAPI_OVERLAY_BIN ?= $(shell go env GOPATH)/bin/openapi
+
 .PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator build-resource \
         test test-all test-analytics test-ingestion test-edge test-sdk test-resource \
         test-coverage test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk \
         run-analytics run-ingestion run-edge run-simulator run-resource \
 		install-tools \
-        proto-lint proto-gen openapi-lint openapi-bundle openapi-gen \
+        proto-lint proto-gen openapi-lint openapi-bundle openapi-gateway openapi-gen \
         infra-up infra-down infra-ps infra-logs docs-up docs-down clean
 
 all: help
@@ -27,6 +30,7 @@ install-tools:
 	@go install github.com/bufbuild/buf/cmd/buf@latest
 	@go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1
 	@npm install --global --no-fund --no-audit @redocly/cli@1.34.0
+	@go install github.com/speakeasy-api/openapi/cmd/openapi@latest
 
 # ==============================================================================
 # Build Targets
@@ -202,8 +206,34 @@ openapi-bundle: openapi-lint
 	done
 	@echo "[OPENAPI] Bundle complete -> api/contracts/openapi/**/dist/openapi.bundled.yaml"
 
+## openapi-gateway: Validate and apply gateway overlays to bundled specs (Swagger UI only, never codegen)
+##   Input:  api/contracts/openapi/<domain>/<version>/dist/openapi.bundled.yaml (pure, auth-free)
+##   Overlay: api/contracts/openapi/overlays/<env>.gateway.overlay.yaml
+##   Output: api/contracts/openapi/<domain>/<version>/dist/openapi.gateway.<env>.yaml
+openapi-gateway: openapi-bundle
+	@echo "[OPENAPI] Applying gateway overlays..."
+	@set -e; \
+	if [ ! -x "$(OPENAPI_OVERLAY_BIN)" ]; then \
+		echo "[OPENAPI][ERROR] overlay CLI not found at $(OPENAPI_OVERLAY_BIN). Run 'make install-tools' first." >&2; \
+		exit 1; \
+	fi; \
+	for overlay in api/contracts/openapi/overlays/*.gateway.overlay.yaml; do \
+		env=$$(basename "$$overlay" | sed 's|\.gateway\.overlay\.yaml$$||'); \
+		echo "  [OVERLAY] env=$$env overlay=$$overlay"; \
+		"$(OPENAPI_OVERLAY_BIN)" overlay validate --overlay "$$overlay" || exit 1; \
+		find api/contracts/openapi -name "openapi.bundled.yaml" -path "*/dist/*" -print0 | \
+		while IFS= read -r -d '' bundle; do \
+			dir=$$(dirname "$$bundle"); \
+			out="$$dir/openapi.gateway.$$env.yaml"; \
+			echo "  [OVERLAY] $$bundle + $$overlay -> $$out"; \
+			"$(OPENAPI_OVERLAY_BIN)" overlay apply --overlay "$$overlay" --schema "$$bundle" --out "$$out" || exit 1; \
+		done; \
+	done
+	@echo "[OPENAPI] Gateway overlays complete -> api/contracts/openapi/**/dist/openapi.gateway.<env>.yaml"
+
 ## openapi-gen: Bundle all OpenAPI domain contracts then generate Go SDKs for each
 ##   Output: platform/platform-sdk/go/gen/openapi/<domain>/<version>/<domain>.gen.go
+##   NOTE: consumes pure openapi.bundled.yaml only -- never openapi.gateway.*.yaml
 openapi-gen: openapi-bundle
 	@echo "[OPENAPI] Generating Go SDKs from all bundled domain specs..."
 	@find api/contracts/openapi -name "openapi.bundled.yaml" | while read bundle; do \
@@ -240,8 +270,8 @@ infra-ps:
 infra-logs:
 	@docker compose logs -f
 
-## docs-up: Bundle OpenAPI specs then start dev-only Swagger UI (http://localhost:8082/docs)
-docs-up: openapi-bundle
+## docs-up: Bundle specs + apply gateway overlays then start dev-only Swagger UI (http://localhost:8082/docs)
+docs-up: openapi-gateway
 	@docker compose --profile docs up -d swagger-ui
 	@echo "[DOCS] Swagger UI -> http://localhost:8082/docs"
 
