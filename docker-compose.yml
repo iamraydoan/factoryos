@@ -154,10 +154,10 @@ services:
     image: swaggerapi/swagger-ui:v5.33.0
     container_name: factoryos_swagger_ui
     environment:
-      SWAGGER_JSON: /spec/openapi.bundled.yaml
+      SWAGGER_JSON: /spec/${SWAGGER_SPEC_FILE:-openapi.gateway.local.yaml}
       BASE_URL: /docs
     volumes:
-      - ./api/contracts/openapi/telemetry/v1/dist/openapi.bundled.yaml:/spec/openapi.bundled.yaml:ro
+      - ./api/contracts/openapi/telemetry/v1/dist/:/spec/:ro
     ports:
       - "${SWAGGER_UI_PORT:-8082}:8080"
     networks:
