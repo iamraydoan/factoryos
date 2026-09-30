@@ -25,6 +25,7 @@
 - [ ] Setup Valkey (Redis Drop-in Replacement) for distributed caching.
 - [ ] Setup Observability stack (OpenTelemetry, Prometheus, Jaeger, Loki, Grafana).
 - [x] Provide dev-only Dockerized Swagger UI (`swagger-ui`, `docs` profile, `make docs-up`) rendering the bundled telemetry OpenAPI spec.
+- [x] Split OpenAPI contract vs gateway auth via Overlay Spec 1.0: pure auth-free sources (`servers: /api/v1`), local gateway overlay, `make openapi-gateway`, Swagger UI serves gateway artifact ([ADR-0008](../05-adr/0008-openapi-contract-gateway-overlay-split.md)).
 
 ### Platform Services & SDK
 - [ ] Implement `platform-sdk` event producer/consumer wrappers with transactional outbox helpers (Java & Go).

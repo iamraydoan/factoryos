@@ -34,8 +34,11 @@ api/contracts/openapi/
         ├── schemas/                         # [SOURCE] Domain-specific DTO models
         │   ├── telemetry.yaml               # Domain-specific telemetry models
         │   └── ...
+        ├── overlays/                        # [SOURCE] Gateway overlays (Overlay Spec 1.0, Swagger UI only)
+        │   └── <env>.gateway.overlay.yaml  # e.g. local.gateway.overlay.yaml — host + Zitadel scheme + scopes
         └── dist/                            # [GENERATED] gitignored — do not edit manually
-            └── openapi.bundled.yaml         # redocly bundle output (single resolved file)
+            ├── openapi.bundled.yaml         # [PURE] redocly bundle output — auth-free, for oapi-codegen
+            └── openapi.gateway.<env>.yaml   # [GATEWAY] overlay applied — for Swagger UI only, never codegen
 ```
 
 > **Key principle:** `dist/` and `platform/platform-sdk/go/gen/` are both **gitignored**. Only source specs
@@ -45,20 +48,33 @@ api/contracts/openapi/
 
 ```mermaid
 graph LR
-    A["1. Author paths/*.yaml\n& schemas/*.yaml"] --> B["2. make openapi-bundle\n(redocly — resolves all $ref)"]
-    B --> C["dist/openapi.bundled.yaml\n(intermediate artifact)"]
-    C --> D["3. make openapi-gen\n(oapi-codegen per domain)"]
+    A["1. Author paths/*.yaml\n& schemas/*.yaml\n(auth-free)"] --> B["2. make openapi-bundle\n(redocly — resolves all $ref)"]
+    B --> C["dist/openapi.bundled.yaml\n(PURE — auth-free)"]
+    C --> D["3a. make openapi-gen\n(oapi-codegen per domain)"]
+    C --> G["3b. make openapi-gateway\n(overlay apply — Swagger UI only)"]
     D --> E["platform-sdk/go/gen/openapi/\n&lt;domain&gt;/v1/&lt;domain&gt;.gen.go"]
     E --> F["4. Implement ServerInterface\nin microservice"]
+    G --> H["dist/openapi.gateway.<env>.yaml\n(GATEWAY — host + Zitadel + scopes)"]
+    H --> I["Swagger UI\n(http://localhost:8082/docs)"]
 ```
+
+> **Contract vs gateway split ([ADR-0008](../05-adr/0008-openapi-contract-gateway-overlay-split.md)):**
+> versioned specs are 100% auth-free (relative `servers: /api/v1`, no `security` blocks).
+> Gateway auth (host, Zitadel `openIdConnect` scheme, per-operation scopes) lives only in
+> `api/contracts/openapi/overlays/<env>.gateway.overlay.yaml` and is applied post-bundle by
+> `make openapi-gateway`. Codegen consumes the pure bundle; Swagger UI serves the gateway file
+> (override with `SWAGGER_SPEC_FILE=/spec/openapi.bundled.yaml`).
 
 ### Makefile Commands
 
 ```bash
 # [Step 1] Bundle all multi-file domain specs (auto-discovers all openapi.yaml)
-make openapi-bundle    # → api/contracts/openapi/<domain>/v1/dist/openapi.bundled.yaml
+make openapi-bundle    # → api/contracts/openapi/<domain>/v1/dist/openapi.bundled.yaml (PURE)
 
-# [Step 2] Generate Go SDKs for all discovered domains (runs openapi-bundle first)
+# [Step 1b] Validate + apply gateway overlays (Swagger UI only, never codegen)
+make openapi-gateway   # → api/contracts/openapi/<domain>/v1/dist/openapi.gateway.<env>.yaml
+
+# [Step 2] Generate Go SDKs from PURE bundles for all discovered domains (runs openapi-bundle first)
 make openapi-gen       # → platform/platform-sdk/go/gen/openapi/<domain>/v1/<domain>.gen.go
                        #   Package names: telemetryv1, resourcev1, productionv1, …
 ```
@@ -71,10 +87,11 @@ make openapi-gen       # → platform/platform-sdk/go/gen/openapi/<domain>/v1/<d
 4. **Implement:** In your service, implement the generated `ServerInterface`.
 5. **View docs (dev-only Docker Swagger UI):**
    ```bash
-   make docs-up    # bundles specs, starts swagger-ui -> http://localhost:8082/docs
+   make docs-up    # bundles specs + applies gateway overlays, starts swagger-ui -> http://localhost:8082/docs
    ```
    The `swagger-ui` Compose service (`docs` profile)
-   renders the bundled spec with the official `swaggerapi/swagger-ui` image.
+   renders the gateway spec (`openapi.gateway.local.yaml`) with the official `swaggerapi/swagger-ui` image.
+   Set `SWAGGER_SPEC_FILE=/spec/openapi.bundled.yaml` to preview the pure auth-free bundle instead.
 
 ---
 
