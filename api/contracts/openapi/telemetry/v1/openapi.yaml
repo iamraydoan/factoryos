@@ -3,8 +3,9 @@ info:
   title: FactoryOS Telemetry & Analytics Query API
   description: |
     Target-state REST contract for querying real-time equipment telemetry,
-    aggregate history, threshold alerts, and service health. Authentication
-    and authorization are defined centrally by the FactoryOS REST standard.
+    aggregate history, threshold alerts, and service health. This contract
+    carries no security requirements; authentication and authorization are
+    enforced at the API gateway and documented via the gateway overlay artifact.
   version: 1.0.0
   contact:
     name: FactoryOS Architecture Team
@@ -18,8 +19,8 @@ externalDocs:
   url: https://github.com/iamraydoan/factoryos/tree/main/docs/07-api
 
 servers:
-  - url: http://localhost/api/v1
-    description: Local Traefik API gateway
+  - url: /api/v1
+    description: FactoryOS REST API v1 (relative; gateway host applied via overlay)
 
 tags:
   - name: Telemetry
@@ -30,9 +31,6 @@ tags:
     description: Active telemetry threshold alerts
   - name: Observability
     description: Liveness, readiness, and protected service statistics
-
-security:
-  - zitadel: []
 
 paths:
   /healthz:
@@ -49,10 +47,6 @@ paths:
     $ref: './paths/alerts.yaml'
 
 components:
-  securitySchemes:
-    zitadel:
-      $ref: '../../common/v1/security/oidc.yaml#/components/securitySchemes/zitadel'
-
   responses:
     BadRequestError:
       $ref: '../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'

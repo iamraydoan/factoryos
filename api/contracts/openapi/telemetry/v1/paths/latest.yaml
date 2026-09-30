@@ -1,12 +1,9 @@
 get:
   summary: Get latest sensor readings for assets
-  description: Retrieve the most recent sensor readings across all machines or filtered by asset ID. Requires the `telemetry.read` scope.
+  description: Retrieve the most recent sensor readings across all machines or filtered by asset ID.
   operationId: getLatestTelemetry
   tags:
     - Telemetry
-  security:
-    - zitadel:
-        - telemetry.read
   parameters:
     - name: asset_id
       in: query

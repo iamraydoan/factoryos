@@ -4,7 +4,6 @@ get:
   operationId: getHealthz
   tags:
     - Observability
-  security: []
   responses:
     '200':
       description: Service process is healthy

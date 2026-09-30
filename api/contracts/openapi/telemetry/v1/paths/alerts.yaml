@@ -1,12 +1,9 @@
 get:
   summary: List active threshold alerts
-  description: Returns real-time alerts evaluated from stream processing. Requires the `alerts.read` scope.
+  description: Returns real-time alerts evaluated from stream processing.
   operationId: getActiveAlerts
   tags:
     - Alerts
-  security:
-    - zitadel:
-        - alerts.read
   parameters:
     - name: severity
       in: query

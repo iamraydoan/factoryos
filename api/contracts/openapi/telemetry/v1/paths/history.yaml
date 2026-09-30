@@ -1,12 +1,9 @@
 get:
   summary: Query time-bucketed historical aggregate telemetry
-  description: Returns rolled-up aggregates (AVG, MIN, MAX, COUNT) from TimescaleDB continuous aggregates. Requires the `telemetry.read` scope.
+  description: Returns rolled-up aggregates (AVG, MIN, MAX, COUNT) from TimescaleDB continuous aggregates.
   operationId: getHistoricalTelemetry
   tags:
     - Analytics
-  security:
-    - zitadel:
-        - telemetry.read
   parameters:
     - name: asset_id
       in: query

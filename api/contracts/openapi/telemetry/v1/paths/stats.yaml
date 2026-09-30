@@ -1,12 +1,9 @@
 get:
   summary: Service Runtime Statistics
-  description: Returns JSON metrics for consumed messages, batch flushes, dropped records, and runtime uptime. Requires the `ops.read` scope.
+  description: Returns JSON metrics for consumed messages, batch flushes, dropped records, and runtime uptime.
   operationId: getServiceStats
   tags:
     - Observability
-  security:
-    - zitadel:
-        - ops.read
   responses:
     '200':
       description: Real-time service metrics

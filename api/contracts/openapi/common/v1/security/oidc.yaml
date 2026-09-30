@@ -1,9 +1,0 @@
-components:
-  securitySchemes:
-    zitadel:
-      type: openIdConnect
-      openIdConnectUrl: http://localhost:8081/.well-known/openid-configuration
-      description: |
-        Canonical FactoryOS REST identity scheme. The API gateway exposes the
-        active environment's Zitadel discovery document at this same-origin
-        path. Clients send the issued access token as an HTTP Bearer token.
