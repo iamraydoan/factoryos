@@ -55,6 +55,46 @@ class OffsetPageRequestTest {
     }
 
     // ========================================================================
+    // ofApiPage(): 1-indexed wire adapter
+    // ========================================================================
+
+    @Test
+    void ofApiPage_firstPage_mapsToZeroIndexed() {
+        OffsetPageRequest pr = OffsetPageRequest.ofApiPage(1, 20, SORT_BY_ID_ASC);
+        assertEquals(0, pr.page());
+    }
+
+    @Test
+    void ofApiPage_thirdPage_mapsToZeroIndexed() {
+        OffsetPageRequest pr = OffsetPageRequest.ofApiPage(3, 20, SORT_BY_ID_ASC);
+        assertEquals(2, pr.page());
+    }
+
+    @Test
+    void ofApiPage_zero_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+            () -> OffsetPageRequest.ofApiPage(0, 20, SORT_BY_ID_ASC));
+    }
+
+    @Test
+    void ofApiPage_negative_throwsIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+            () -> OffsetPageRequest.ofApiPage(-2, 20, SORT_BY_ID_ASC));
+    }
+
+    @Test
+    void ofApiPage_zeroPageSize_usesDefault() {
+        OffsetPageRequest pr = OffsetPageRequest.ofApiPage(1, 0, SORT_BY_ID_ASC);
+        assertEquals(20, pr.pageSize());
+    }
+
+    @Test
+    void ofApiPage_toPageable_usesZeroIndexedPageNumber() {
+        OffsetPageRequest pr = OffsetPageRequest.ofApiPage(2, 25, SORT_BY_CREATED_THEN_ID_DESC);
+        assertEquals(1, pr.toPageable().getPageNumber());
+    }
+
+    // ========================================================================
     // toPageable()
     // ========================================================================
 
