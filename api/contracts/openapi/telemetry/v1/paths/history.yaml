@@ -1,11 +1,24 @@
 get:
   summary: Query time-bucketed historical aggregate telemetry
-  description: Returns rolled-up aggregates (AVG, MIN, MAX, COUNT) from TimescaleDB continuous aggregates.
+  description: |-
+    Returns rolled-up aggregates (AVG, MIN, MAX, COUNT) from TimescaleDB continuous aggregates.
+
+    This is a bounded aggregate query, not an open collection: it carries no
+    pagination params. Instead the time-range/bucket combination is capped —
+    more than ~10,000 buckets is BUCKET_COUNT_OUT_OF_RANGE (400); widen `bucket`.
+
+    Query conventions ([QUERY_CONVENTIONS.md](../../../../docs/07-api/QUERY_CONVENTIONS.md)):
+    sortable — `bucketTime` only (default ascending, `-bucketTime` for descending);
+    selectable — `bucketTime, avgValue, minValue, maxValue, sampleCount`
+    (projects `buckets[]` entries). Violations are INVALID_SORT_FIELD /
+    INVALID_FIELD_SELECTION (400).
   operationId: getHistoricalTelemetry
   tags:
     - Analytics
   parameters:
-    - name: asset_id
+    - $ref: '../../../common/v1/parameters/query.yaml#/components/parameters/Sort'
+    - $ref: '../../../common/v1/parameters/query.yaml#/components/parameters/Fields'
+    - name: assetId
       in: query
       required: true
       description: UUID of the physical asset
@@ -13,7 +26,7 @@ get:
         type: string
         format: uuid
         example: 0194eb82-8234-789a-bcde-0123456789ab
-    - name: metric_name
+    - name: metricName
       in: query
       required: true
       description: Sensor metric name
@@ -52,14 +65,14 @@ get:
           schema:
             type: object
             required:
-              - asset_id
-              - metric_name
+              - assetId
+              - metricName
               - buckets
             properties:
-              asset_id:
+              assetId:
                 type: string
                 format: uuid
-              metric_name:
+              metricName:
                 type: string
               buckets:
                 type: array
