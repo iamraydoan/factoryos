@@ -13,7 +13,7 @@ import com.factoryos.production.repository.pagination.SortCriteria;
  * <pre>
  * {
  *   "data": [ ... ],
- *   "pagination": { "limit": 20, "nextCursor": "v1.eyJ..." }
+ *   "meta": { "limit": 20, "nextCursor": "v1.eyJ..." }
  * }
  * </pre>
  *
@@ -21,7 +21,7 @@ import com.factoryos.production.repository.pagination.SortCriteria;
  *
  * @param <T> the item type
  */
-public record CursorPageResponse<T>(List<T> data, Pagination pagination) {
+public record CursorPageResponse<T>(List<T> data, Meta meta) {
 
     /**
      * Pagination metadata for cursor-based responses.
@@ -29,7 +29,7 @@ public record CursorPageResponse<T>(List<T> data, Pagination pagination) {
      * @param limit      items per page used
      * @param nextCursor pass as {@code cursor} in the next request; empty = last page
      */
-    public record Pagination(int limit, String nextCursor) {
+    public record Meta(int limit, String nextCursor) {
     }
 
     /**
@@ -60,6 +60,6 @@ public record CursorPageResponse<T>(List<T> data, Pagination pagination) {
      * @param <T> the item type
      */
     public static <T> CursorPageResponse<T> from(CursorPage<T> page, int pageSize) {
-        return new CursorPageResponse<>(page.items(), new Pagination(pageSize, page.nextPageToken()));
+        return new CursorPageResponse<>(page.items(), new Meta(pageSize, page.nextPageToken()));
     }
 }

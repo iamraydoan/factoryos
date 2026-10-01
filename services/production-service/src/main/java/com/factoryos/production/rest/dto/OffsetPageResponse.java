@@ -13,23 +13,23 @@ import com.factoryos.production.repository.pagination.OffsetPage;
  * <pre>
  * {
  *   "data": [ ... ],
- *   "pagination": { "page": 0, "limit": 20, "total": 150, "totalPages": 8 }
+ *   "meta": { "page": 1, "limit": 20, "total": 150, "totalPages": 8 }
  * }
  * </pre>
  *
  * @param <T> the item type
  */
-public record OffsetPageResponse<T>(List<T> data, Pagination pagination) {
+public record OffsetPageResponse<T>(List<T> data, Meta meta) {
 
     /**
      * Pagination metadata for page-based responses.
      *
-     * @param page       current page number (0-indexed)
+     * @param page       current page number (1-indexed on the wire)
      * @param limit      items per page
      * @param total      total matching records
      * @param totalPages total page count
      */
-    public record Pagination(int page, int limit, long total, int totalPages) {
+    public record Meta(int page, int limit, long total, int totalPages) {
     }
 
     /**
@@ -48,12 +48,15 @@ public record OffsetPageResponse<T>(List<T> data, Pagination pagination) {
     /**
      * Wraps an {@link OffsetPage} into the REST response envelope.
      *
-     * @param page the offset page result
+     * <p>The outbound half of the index-base adapter: the internal 0-indexed
+     * page becomes the 1-indexed wire page ({@code ?page=1} is the first page).
+     *
+     * @param page the offset page result (0-indexed)
      * @return a response matching the REST pagination design spec
      * @param <T> the item type
      */
     public static <T> OffsetPageResponse<T> from(OffsetPage<T> page) {
         return new OffsetPageResponse<>(page.items(),
-                new Pagination(page.page(), page.pageSize(), page.total(), page.totalPages()));
+                new Meta(page.page() + 1, page.pageSize(), page.total(), page.totalPages()));
     }
 }

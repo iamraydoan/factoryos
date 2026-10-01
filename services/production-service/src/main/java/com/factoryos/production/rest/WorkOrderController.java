@@ -28,11 +28,11 @@ public class WorkOrderController {
     }
 
     @GetMapping("")
-    public OffsetPageResponse<WorkOrder> listWorkOrders(@RequestParam(defaultValue = "0") int page,
+    public OffsetPageResponse<WorkOrder> listWorkOrders(@RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) UUID workCenterId,
             @RequestParam(required = false) String state) {
-        OffsetPageRequest pageReq = OffsetPageRequest.of(page, limit, WorkOrderSpecs.SORT_NEWEST_FIRST);
+        OffsetPageRequest pageReq = OffsetPageRequest.ofApiPage(page, limit, WorkOrderSpecs.SORT_NEWEST_FIRST);
         Specification<WorkOrder> spec = WorkOrderSpecs.withFilters(workCenterId, state);
 
         return OffsetPageResponse.of(workOrderRepository.findAll(spec, pageReq.toPageable()));
