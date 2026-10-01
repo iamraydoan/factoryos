@@ -95,6 +95,14 @@ make openapi-gen       # → platform/platform-sdk/go/gen/openapi/<domain>/v1/<d
 
 ---
 
+## 2b. REST Design Standards
+
+Collection endpoints follow three companion standards:
+
+- [PAGINATION_DESIGN.md](PAGINATION_DESIGN.md) — page/cursor pagination, `{data, meta}` envelope.
+- [QUERY_CONVENTIONS.md](QUERY_CONVENTIONS.md) — filtering, sorting, full-text search, sparse fieldsets.
+- [ERROR_HANDLING.md](ERROR_HANDLING.md) — error taxonomy and RFC 9457 wire format.
+
 ## 3. Standard Observability & Operational Endpoints
 
 Every FactoryOS microservice MUST expose standard operational endpoints for Kubernetes orchestration, load balancer health checks, and Prometheus metrics scraping:

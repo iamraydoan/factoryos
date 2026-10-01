@@ -35,7 +35,7 @@
 **Request**
 
 ```
-GET /api/v1/work-orders?page=0&limit=20&state=released
+GET /api/v1/work-orders?page=1&limit=20&state=released
 ```
 
 **Response** — `200 OK`, `application/json`:
@@ -43,8 +43,8 @@ GET /api/v1/work-orders?page=0&limit=20&state=released
 ```json
 {
   "data": [ ... ],
-  "pagination": {
-    "page": 0,
+  "meta": {
+    "page": 1,
     "limit": 20,
     "total": 150,
     "totalPages": 8
@@ -65,7 +65,7 @@ GET /api/v1/work-orders?limit=20&cursor=v1.eyJ2IjoxLCJrZXlzIjpbImlkIl0sInZhbHMiO
 ```json
 {
   "data": [ ... ],
-  "pagination": {
+  "meta": {
     "limit": 20,
     "nextCursor": "v1.eyJ2IjoxLCJrZXlzIjpbImlkIl0sInZhbHMiOlsiNTUwZTg0MDAiXX0"
   }
@@ -78,13 +78,13 @@ GET /api/v1/work-orders?limit=20&cursor=v1.eyJ2IjoxLCJrZXlzIjpbImlkIl0sInZhbHMiO
 
 | Request | Type | Default | Description |
 |---|---|---|---|
-| `page` | int | 0 | Page number, 0-indexed (page-based only) |
+| `page` | int | 1 | Page number, 1-indexed on the wire (page-based only) |
 | `limit` | int | 20 | Items per page (max 100) |
 | `cursor` | string | — | Opaque cursor from the previous response (cursor-based only) |
 
-| Response (`pagination`) | Type | Description |
+| Response (`meta`) | Type | Description |
 |---|---|---|
-| `page` | int | Current page number (page-based only) |
+| `page` | int | Current page number, 1-indexed (page-based only) |
 | `limit` | int | Items per page used |
 | `total` | int | Total matching records (page-based only) |
 | `totalPages` | int | Total page count (page-based only) |
@@ -92,9 +92,13 @@ GET /api/v1/work-orders?limit=20&cursor=v1.eyJ2IjoxLCJrZXlzIjpbImlkIl0sInZhbHMiO
 
 ### 2.4 Rules
 
-- The response envelope is **always** `{ data, pagination }`. Both styles share it; the `pagination` members differ.
+- The response envelope is **always** `{ data, meta }`. Both styles share it; the `meta` members differ.
 - `data` is an array even when empty — never `null`.
 - Field names are `camelCase` (see §4).
+- The wire `page` is **1-indexed** (`?page=1` is the first page); a value below 1 is
+  `PAGE_NUMBER_OUT_OF_RANGE` (400). Internally the index base stays 0-indexed
+  (e.g. Spring Data's native numbering) — a single adapter at the REST boundary
+  converts each way, so the two bases never coexist in one layer.
 - Invalid pagination input returns **400** with an error `code`; see §5.4 and [ERROR_HANDLING.md](ERROR_HANDLING.md).
 
 ---

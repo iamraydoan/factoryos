@@ -229,6 +229,7 @@ These apply to every service and must be resolvable without a domain context:
 | `UNSUPPORTED_CURSOR_VERSION` | `INVALID_CURSOR` | Cursor version not supported |
 | `CURSOR_SORT_KEY_MISMATCH` | `INVALID_CURSOR` | Cursor does not match the query's sort keys |
 | `PAGE_SIZE_OUT_OF_RANGE` | `VALIDATION` | Page size outside the permitted range |
+| `PAGE_NUMBER_OUT_OF_RANGE` | `VALIDATION` | Wire page number below 1 (pages are 1-indexed) |
 
 Domain codes are owned by the domain that defines them and must never be reused across domains.
 

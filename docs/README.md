@@ -71,8 +71,11 @@ docs/
 │   └── 📄 0003-material-genealogy-tracking.md
 │
 ├── 📁 07-api/                     # API & Event Contracts Catalog
+│   ├── 📄 README.md               # API & Contract Governance Guide
 │   ├── 📄 ASYNC_EVENT_CATALOG.md  # Async Kafka Event Specification Catalog
-│   └── 📄 PAGINATION_DESIGN.md   # Pagination Standard (gRPC cursor / REST page)
+│   ├── 📄 PAGINATION_DESIGN.md   # Pagination Standard (gRPC cursor / REST page)
+│   ├── 📄 QUERY_CONVENTIONS.md   # Collection Query Standard (filter / sort / search / fields)
+│   └── 📄 ERROR_HANDLING.md      # Error Handling Design Standard (RFC 9457 taxonomy)
 │
 ├── 📁 08-roadmap/                 # Evolutionary Roadmap & Milestones
 │   └── 📄 MILESTONES.md           # Milestone 1 to 5 Deliverables & Timelines
