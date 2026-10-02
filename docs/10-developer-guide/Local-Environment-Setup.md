@@ -161,18 +161,21 @@ The production-service uses Spring profiles for behavior flags only:
 
 ### Running Java Services
 
-```bash
-cd services/production-service
+Spring reads OS env, not `.env` files — always run via `make` so the
+`.env` is sourced first. Raw `mvn spring-boot:run` ignores `.env` and
+falls back to `localhost`.
 
-# Local (default)
-mvn spring-boot:run
+```bash
+# Host machine (DB at localhost)
+make setup-production-host
+make run-production
 
 # With SQL logging
-mvn spring-boot:run -Dspring-boot.run.profiles=local
+make run-production-local
 
-# Inside devcontainer / Docker network (DB_HOST=factoryos-db via .env)
-cp .env.docker.example .env
-mvn spring-boot:run
+# Inside devcontainer / Docker network (DB at factoryos-db)
+make setup-production-docker
+make run-production
 ```
 
 ---
@@ -215,7 +218,7 @@ For developers who prefer using `make`, a top-level `Makefile` is provided with 
 | **Run all Go tests** | `make test` | `go test ./...` |
 | **Test Analytics Engine** | `make test-analytics` | `cd services/analytics-engine && go test -race -cover -v ./...` |
 | **Coverage Report** | `make test-coverage` | `go test -coverprofile=... && go tool cover -func=...` |
-| **Run Service Locally** | `make run-analytics`<br>`make run-edge`<br>`make run-simulator` | `go run main.go` |
+| **Run Service Locally** | `make run-analytics`<br>`make run-edge`<br>`make run-simulator`<br>`make run-production`<br>`make run-production-local` | `go run main.go`<br>`mvn spring-boot:run` (with `.env` sourced) |
 | **Protobuf Lint / Gen** | `make proto-lint`<br>`make proto-gen` | `cd api/contracts && buf lint`<br>`cd api/contracts && buf generate` |
 | **Docker Infra** | `make infra-up`<br>`make infra-down`<br>`make infra-logs` | `docker compose up -d`<br>`docker compose down`<br>`docker compose logs -f` |
 | **Cleanup** | `make clean` | `rm -rf bin/ *.out` |
