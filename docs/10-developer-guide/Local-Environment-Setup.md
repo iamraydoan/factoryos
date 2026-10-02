@@ -127,10 +127,15 @@ Java services (Production, Warehouse, Quality, Maintenance) use environment vari
 
 ### Environment Files
 
+Connection details and secrets live in env files only — never in `application-*.yml`
+profiles. Profiles carry behavior flags (e.g. `show-sql`) while hosts and
+credentials come from the environment.
+
 | File | Purpose |
 |------|---------|
-| Root `.env.example` | Optional Docker Compose ports and local infrastructure credentials |
-| `services/<service>/.env.example` | Service-specific configuration template |
+| Root `.env.example` / `.env.docker.example` | Docker Compose ports and local infrastructure credentials (host-run vs container network) |
+| `services/<service>/.env.example` | Service-specific template for host-local runs (`DB_HOST=localhost`) |
+| `services/<service>/.env.docker.example` | Service-specific template for runs inside the Docker network (`DB_HOST=factoryos-db`) |
 
 ### Setup
 
@@ -138,20 +143,21 @@ Java services (Production, Warehouse, Quality, Maintenance) use environment vari
 # Optional: Docker Compose infrastructure settings, from the repository root
 cp .env.example .env
 
-# Java service settings remain service-specific
+# Java service settings remain service-specific — pick the template
+# matching where the service process runs:
 cd services/production-service
-cp .env.example .env
+cp .env.example .env                 # host machine (DB at localhost)
+cp .env.docker.example .env         # devcontainer / Docker network (DB at factoryos-db)
 ```
 
 ### Spring Profiles
 
-The production-service uses Spring profiles to switch between environments:
+The production-service uses Spring profiles for behavior flags only:
 
-| Profile | Use Case | DB Host | Kafka Host |
-|---------|----------|---------|------------|
-| *(none)* | Default — works locally out of the box | `localhost` | `localhost` |
-| `local` | Local dev with `show-sql` enabled | `localhost` | `localhost` |
-| `docker` | Devcontainer / Docker network | `factoryos-db` | `kafka` |
+| Profile | Use Case |
+|---------|----------|
+| *(none)* | Default — works out of the box, connection from env (`DB_HOST`, default `localhost`) |
+| `local` | Local dev with `show-sql` enabled |
 
 ### Running Java Services
 
@@ -164,8 +170,9 @@ mvn spring-boot:run
 # With SQL logging
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 
-# Inside devcontainer / Docker network
-mvn spring-boot:run -Dspring-boot.run.profiles=docker
+# Inside devcontainer / Docker network (DB_HOST=factoryos-db via .env)
+cp .env.docker.example .env
+mvn spring-boot:run
 ```
 
 ---
