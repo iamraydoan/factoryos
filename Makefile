@@ -11,8 +11,9 @@ OPENAPI_OVERLAY_BIN ?= $(shell go env GOPATH)/bin/openapi
 .PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator build-resource \
         test test-all test-analytics test-ingestion test-edge test-sdk test-resource \
         test-coverage test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk \
-        run-analytics run-ingestion run-edge run-simulator run-resource \
-		install-tools \
+        run-analytics run-ingestion run-edge run-simulator run-resource run-production run-production-local \
+        setup-production-host setup-production-docker \
+        install-tools \
         proto-lint proto-gen openapi-lint openapi-bundle openapi-gateway openapi-gen \
         infra-up infra-down infra-ps infra-logs docs-up docs-down clean
 
@@ -168,6 +169,37 @@ run-simulator:
 run-resource: build-resource
 	@echo "[RUN] Starting $(BIN_DIR)/resource-service..."
 	@$(BIN_DIR)/resource-service
+
+# ==============================================================================
+# Java Services (Maven + .env)
+# ==============================================================================
+# Spring reads OS env, not `.env` files — each target sources
+# services/production-service/.env first so DB_HOST/DB_USER/DB_PASSWORD
+# reach application.yml. Pick the template matching where the JVM runs:
+# .env.example (host, DB at localhost) vs .env.docker.example
+# (devcontainer / Docker network, DB at factoryos-db).
+
+## setup-production-host: Copy host-local .env template for production-service (DB at localhost)
+setup-production-host:
+	@cp services/production-service/.env.example services/production-service/.env
+	@echo "[SETUP] production-service .env -> host-local (DB_HOST=localhost)"
+
+## setup-production-docker: Copy docker-network .env template for production-service (DB at factoryos-db)
+setup-production-docker:
+	@cp services/production-service/.env.docker.example services/production-service/.env
+	@echo "[SETUP] production-service .env -> docker network (DB_HOST=factoryos-db)"
+
+## run-production: Run production-service with .env sourced (works on host and in devcontainer)
+run-production:
+	@echo "[RUN] Starting production-service (sourcing .env)..."
+	@set -a; [ -f services/production-service/.env ] && . services/production-service/.env; set +a; \
+	cd services && mvn -pl production-service spring-boot:run
+
+## run-production-local: Run production-service with .env sourced + local profile (show-sql)
+run-production-local:
+	@echo "[RUN] Starting production-service with local profile (sourcing .env)..."
+	@set -a; [ -f services/production-service/.env ] && . services/production-service/.env; set +a; \
+	cd services && mvn -pl production-service spring-boot:run -Dspring-boot.run.profiles=local
 
 # ==============================================================================
 # Protobuf / Schema Targets
