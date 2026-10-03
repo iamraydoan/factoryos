@@ -8,6 +8,11 @@ BIN_DIR := bin
 # Explicit path: npm ships an `openapi` alias that collides, so never rely on bare `openapi` on PATH.
 OPENAPI_OVERLAY_BIN ?= $(shell go env GOPATH)/bin/openapi
 
+# Compose file sets. Base = infra only (never starts app/docs).
+COMPOSE_BASE := -f docker-compose.yml
+COMPOSE_SERVICES := -f docker-compose.yml -f docker-compose.services.yml
+COMPOSE_DOCS := -f docker-compose.yml -f docker-compose.docs.yml
+
 .PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator build-resource \
         test test-all test-analytics test-ingestion test-edge test-sdk test-resource \
         test-coverage test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk \
@@ -15,7 +20,8 @@ OPENAPI_OVERLAY_BIN ?= $(shell go env GOPATH)/bin/openapi
         setup-production-host setup-production-docker \
         install-tools \
         proto-lint proto-gen openapi-lint openapi-bundle openapi-gateway openapi-gen \
-        infra-up infra-down infra-ps infra-logs docs-up docs-down clean
+        setup-env-host setup-env-docker setup-env-devcontainer \
+        infra-up infra-down infra-ps infra-logs services-up services-down services-logs docs-up docs-down docs-logs clean
 
 all: help
 
@@ -189,6 +195,34 @@ setup-production-docker:
 	@cp services/production-service/.env.docker.example services/production-service/.env
 	@echo "[SETUP] production-service .env -> docker network (DB_HOST=factoryos-db)"
 
+# ==============================================================================
+# Environment profiles (root .env + services/production-service/.env)
+# ==============================================================================
+# Three supported profiles — pick the one matching where processes run:
+#
+#   host         DB=localhost            gateway=host.docker.internal  (service on host)
+#   docker       DB=factoryos-db         gateway=production-service    (service as container)
+#   devcontainer DB=factoryos-db         gateway=host.docker.internal  (service on host side,
+#                                                                      devcontainer joins factoryos_net)
+
+## setup-env-host: Install HOST profile env (root .env + service .env: DB=localhost, gateway=host.docker.internal)
+setup-env-host:
+	@cp .env.example .env
+	@cp services/production-service/.env.example services/production-service/.env
+	@echo "[SETUP] HOST profile -> .env + services/production-service/.env (DB=localhost, gateway=host.docker.internal)"
+
+## setup-env-docker: Install DOCKER profile env (root .env + service .env: DB + gateway = container names)
+setup-env-docker:
+	@cp .env.docker.example .env
+	@cp services/production-service/.env.docker.example services/production-service/.env
+	@echo "[SETUP] DOCKER profile -> .env + services/production-service/.env (DB + gateway = container names)"
+
+## setup-env-devcontainer: Install DEVCONTAINER profile env (root .env + service .env: DB=name, gateway=host.docker.internal)
+setup-env-devcontainer:
+	@cp .env.devcontainer.example .env
+	@cp services/production-service/.env.devcontainer.example services/production-service/.env
+	@echo "[SETUP] DEVCONTAINER profile -> .env + services/production-service/.env (DB=factoryos-db, gateway=host.docker.internal)"
+
 ## run-production: Run production-service with .env sourced (works on host and in devcontainer)
 run-production:
 	@echo "[RUN] Starting production-service (sourcing .env)..."
@@ -215,101 +249,93 @@ proto-gen:
 	@echo "[BUF] Generating code from api/contracts..."
 	@cd api/contracts && buf generate
 
-## openapi-lint: Lint all OpenAPI domain contracts with Redocly
-##   Auto-discovers every api/contracts/openapi/<domain>/<version>/openapi.yaml
+## openapi-lint: Lint the unified platform OpenAPI contract with Redocly
+##   Single entrypoint: api/contracts/openapi/openapi.yaml
 openapi-lint:
-	@echo "[OPENAPI] Linting domain specs in api/contracts/openapi/..."
-	@specs=$$(find api/contracts/openapi -name "openapi.yaml" -not -path "*/dist/*"); \
-	for spec in $$specs; do \
-		redocly lint "$$spec" || exit 1; \
-	done
+	@echo "[OPENAPI] Linting api/contracts/openapi/openapi.yaml..."
+	@redocly lint api/contracts/openapi/openapi.yaml
 
-## openapi-bundle: Lint and bundle all multi-file OpenAPI domain contracts into dist/ (via Redocly)
-##   Auto-discovers every api/contracts/openapi/<domain>/<version>/openapi.yaml
+## openapi-bundle: Lint and bundle the unified platform contract into dist/ (via Redocly)
+##   Input:  api/contracts/openapi/openapi.yaml (pure, auth-free)
+##   Output: api/contracts/openapi/dist/openapi.bundled.yaml
 openapi-bundle: openapi-lint
-	@echo "[OPENAPI] Bundling all domain specs in api/contracts/openapi/..."
-	@set -e; \
-	find api/contracts/openapi -name "openapi.yaml" -not -path "*/dist/*" -print0 | \
-	while IFS= read -r -d '' spec; do \
-		dir=$$(dirname "$$spec"); \
-		mkdir -p "$$dir/dist"; \
-		echo "  [BUNDLE] $$spec"; \
-		redocly bundle "$$spec" -o "$$dir/dist/openapi.bundled.yaml"; \
-	done
-	@echo "[OPENAPI] Bundle complete -> api/contracts/openapi/**/dist/openapi.bundled.yaml"
+	@echo "[OPENAPI] Bundling api/contracts/openapi/openapi.yaml..."
+	@mkdir -p api/contracts/openapi/dist
+	@redocly bundle api/contracts/openapi/openapi.yaml -o api/contracts/openapi/dist/openapi.bundled.yaml
+	@echo "[OPENAPI] Bundle complete -> api/contracts/openapi/dist/openapi.bundled.yaml"
 
-## openapi-gateway: Validate and apply gateway overlays to bundled specs (Swagger UI only, never codegen)
-##   Input:  api/contracts/openapi/<domain>/<version>/dist/openapi.bundled.yaml (pure, auth-free)
-##   Overlay: api/contracts/openapi/overlays/<env>.gateway.overlay.yaml
-##   Output: api/contracts/openapi/<domain>/<version>/dist/openapi.gateway.<env>.yaml
+## openapi-gateway: Validate and apply the gateway overlay to the bundled spec (Swagger UI only, never codegen)
+##   Input:   api/contracts/openapi/dist/openapi.bundled.yaml (pure, auth-free)
+##   Overlay: api/contracts/openapi/overlays/gateway.overlay.yaml
+##   Output:  api/contracts/openapi/dist/openapi.gateway.yaml
 openapi-gateway: openapi-bundle
-	@echo "[OPENAPI] Applying gateway overlays..."
+	@echo "[OPENAPI] Applying gateway overlay..."
 	@set -e; \
 	if [ ! -x "$(OPENAPI_OVERLAY_BIN)" ]; then \
 		echo "[OPENAPI][ERROR] overlay CLI not found at $(OPENAPI_OVERLAY_BIN). Run 'make install-tools' first." >&2; \
 		exit 1; \
 	fi; \
-	for overlay in api/contracts/openapi/overlays/*.gateway.overlay.yaml; do \
-		env=$$(basename "$$overlay" | sed 's|\.gateway\.overlay\.yaml$$||'); \
-		echo "  [OVERLAY] env=$$env overlay=$$overlay"; \
-		"$(OPENAPI_OVERLAY_BIN)" overlay validate --overlay "$$overlay" || exit 1; \
-		find api/contracts/openapi -name "openapi.bundled.yaml" -path "*/dist/*" -print0 | \
-		while IFS= read -r -d '' bundle; do \
-			dir=$$(dirname "$$bundle"); \
-			out="$$dir/openapi.gateway.$$env.yaml"; \
-			echo "  [OVERLAY] $$bundle + $$overlay -> $$out"; \
-			"$(OPENAPI_OVERLAY_BIN)" overlay apply --overlay "$$overlay" --schema "$$bundle" --out "$$out" || exit 1; \
-		done; \
-	done
-	@echo "[OPENAPI] Gateway overlays complete -> api/contracts/openapi/**/dist/openapi.gateway.<env>.yaml"
+	"$(OPENAPI_OVERLAY_BIN)" overlay validate --overlay api/contracts/openapi/overlays/gateway.overlay.yaml; \
+	"$(OPENAPI_OVERLAY_BIN)" overlay apply --overlay api/contracts/openapi/overlays/gateway.overlay.yaml --schema api/contracts/openapi/dist/openapi.bundled.yaml --out api/contracts/openapi/dist/openapi.gateway.yaml
+	@echo "[OPENAPI] Gateway overlay complete -> api/contracts/openapi/dist/openapi.gateway.yaml"
 
-## openapi-gen: Bundle all OpenAPI domain contracts then generate Go SDKs for each
-##   Output: platform/platform-sdk/go/gen/openapi/<domain>/<version>/<domain>.gen.go
-##   NOTE: consumes pure openapi.bundled.yaml only -- never openapi.gateway.*.yaml
+## openapi-gen: Bundle the unified platform contract then generate the single Go SDK
+##   Output: platform/platform-sdk/go/gen/openapi/platform/v1/platform.gen.go (package platformv1)
+##   NOTE: consumes pure dist/openapi.bundled.yaml only -- never dist/openapi.gateway.yaml
 openapi-gen: openapi-bundle
-	@echo "[OPENAPI] Generating Go SDKs from all bundled domain specs..."
-	@find api/contracts/openapi -name "openapi.bundled.yaml" | while read bundle; do \
-		version_dir=$$(dirname $$bundle | sed 's|/dist$$||'); \
-		domain=$$(echo $$version_dir | awk -F'/' '{print $$(NF-1)}'); \
-		version=$$(echo $$version_dir | awk -F'/' '{print $$NF}'); \
-		pkg=$${domain}$${version}; \
-		out_dir=platform/platform-sdk/go/gen/openapi/$$domain/$$version; \
-		out_file=$$out_dir/$$domain.gen.go; \
-		mkdir -p $$out_dir; \
-		echo "  [GEN] $$domain/$$version -> $$out_file (package: $$pkg)"; \
-		oapi-codegen -package $$pkg -generate types,client,chi-server,spec \
-			-o $$out_file $$bundle; \
-	done
-	@echo "[OPENAPI] Success -> platform/platform-sdk/go/gen/openapi/"
+	@echo "[OPENAPI] Generating Go SDK from api/contracts/openapi/dist/openapi.bundled.yaml..."
+	@mkdir -p platform/platform-sdk/go/gen/openapi/platform/v1
+	@oapi-codegen -package platformv1 -generate types,client,chi-server,spec \
+		-o platform/platform-sdk/go/gen/openapi/platform/v1/platform.gen.go api/contracts/openapi/dist/openapi.bundled.yaml
+	@echo "[OPENAPI] Success -> platform/platform-sdk/go/gen/openapi/platform/v1/platform.gen.go"
 
 # ==============================================================================
-# Infrastructure Helpers (Docker Compose)
+# Docker Compose (split files)
 # ==============================================================================
+# docker-compose.yml            = infra only (traefik, db, kafka, ...)
+# docker-compose.services.yml   = domain services overlay (opt-in)
+# docker-compose.docs.yml       = swagger-ui overlay (opt-in, Traefik-ready)
 
-## infra-up: Start all backing infrastructure containers in background
+## infra-up: Start backing infrastructure only (never app services or docs)
 infra-up:
-	@docker compose up -d
+	@docker compose $(COMPOSE_BASE) up -d
 
-## infra-down: Stop all backing infrastructure containers
+## infra-down: Stop backing infrastructure
 infra-down:
-	@docker compose down
+	@docker compose $(COMPOSE_BASE) down
 
 ## infra-ps: Check running infrastructure container status
 infra-ps:
-	@docker compose ps
+	@docker compose $(COMPOSE_BASE) ps
 
 ## infra-logs: Follow logs from infrastructure containers
 infra-logs:
-	@docker compose logs -f
+	@docker compose $(COMPOSE_BASE) logs -f
 
-## docs-up: Bundle specs + apply gateway overlays then start dev-only Swagger UI (http://localhost:8082/docs)
+## services-up: Build and start containerized domain services (on top of infra)
+services-up:
+	@docker compose $(COMPOSE_SERVICES) up -d --build
+
+## services-down: Stop containerized domain services (infra keeps running)
+services-down:
+	@docker compose $(COMPOSE_SERVICES) stop production-service || true
+
+## services-logs: Follow logs from containerized domain services
+services-logs:
+	@docker compose $(COMPOSE_SERVICES) logs -f production-service
+
+## docs-up: Bundle specs + apply gateway overlays then start dev-only Swagger UI (http://localhost:3080/docs)
 docs-up: openapi-gateway
-	@docker compose --profile docs up -d swagger-ui
-	@echo "[DOCS] Swagger UI -> http://localhost:8082/docs"
+	@docker compose $(COMPOSE_DOCS) up -d swagger-ui
+	@echo "[DOCS] Swagger UI -> http://localhost:3080/docs"
 
 ## docs-down: Stop dev-only Swagger UI
 docs-down:
-	@docker compose --profile docs stop swagger-ui || true
+	@docker compose $(COMPOSE_DOCS) stop swagger-ui || true
+
+## docs-logs: Follow logs from dev-only Swagger UI
+docs-logs:
+	@docker compose $(COMPOSE_DOCS) logs -f swagger-ui
 
 # ==============================================================================
 # Cleanup
