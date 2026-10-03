@@ -1,0 +1,19 @@
+# Traefik static config. Routes live in ./dynamic/ (file provider, not Docker
+# labels, so host-run `./mvnw` processes stay routable).
+
+api:
+  insecure: true # Dashboard on :8080. Local-dev only — lock down before any shared env.
+
+providers:
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true # Pick up *.yaml edits without restarting Traefik.
+
+entryPoints:
+  web:
+    address: ":80"
+  grpc:
+    address: ":50051"
+
+log:
+  level: INFO

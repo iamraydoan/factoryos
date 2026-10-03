@@ -1,0 +1,18 @@
+# Shared CORS middleware for browser clients (Swagger UI, web frontend).
+# Attached per-router (see dynamic/*.yaml) — Traefik's CORS middleware
+# answers OPTIONS preflight itself, so backends never see it.
+#
+# Allow-list comes from the CORS_ALLOW_ORIGIN_LIST env var (compose passes it
+# into the Traefik container; set it in .env). Rendered as a YAML list, so the
+# value must use list syntax, e.g.:
+#   CORS_ALLOW_ORIGIN_LIST=[http://localhost:3080,http://localhost:5173]
+
+http:
+  middlewares:
+    api-cors:
+      headers:
+        accessControlAllowOriginList: {{ default "[http://localhost:3080,http://127.0.0.1:3080]" (env "CORS_ALLOW_ORIGIN_LIST") }}
+        accessControlAllowMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
+        accessControlAllowHeaders: [Authorization, Content-Type, Accept, X-Request-Id]
+        accessControlAllowCredentials: true
+        accessControlMaxAge: 3600

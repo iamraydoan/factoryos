@@ -1,0 +1,29 @@
+# Production service gateway routes. Backends come from the Traefik container
+# environment (see `environment:` on traefik in docker-compose.yml).
+#
+# REST  :80 /api/v1/work-orders -> ${PRODUCTION_REST_BACKEND}
+# gRPC  :50051 /production.v1.ProductionService -> ${PRODUCTION_GRPC_BACKEND}
+
+http:
+  routers:
+    production-rest:
+      entryPoints: ["web"]
+      rule: "PathPrefix(`/api/v1/work-orders`)"
+      middlewares: ["api-cors"]
+      service: production-rest
+
+    production-grpc:
+      entryPoints: ["grpc"]
+      rule: "PathPrefix(`/production.v1.ProductionService`)"
+      service: production-grpc
+
+  services:
+    production-rest:
+      loadBalancer:
+        servers:
+          - url: '{{ default "http://production-service:3001" (env "PRODUCTION_REST_BACKEND") }}'
+
+    production-grpc:
+      loadBalancer:
+        servers:
+          - url: '{{ default "h2c://production-service:4001" (env "PRODUCTION_GRPC_BACKEND") }}'
