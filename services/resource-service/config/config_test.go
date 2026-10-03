@@ -28,11 +28,11 @@ func TestLoadConfig_Success(t *testing.T) {
 	}
 
 	// Verify server defaults
-	if cfg.Server.Port != ":50052" {
-		t.Errorf("Server.Port = %s, want :50052", cfg.Server.Port)
+	if cfg.Server.Port != ":4050" {
+		t.Errorf("Server.Port = %s, want :4050", cfg.Server.Port)
 	}
-	if cfg.Server.MetricsPort != ":9092" {
-		t.Errorf("Server.MetricsPort = %s, want :9092", cfg.Server.MetricsPort)
+	if cfg.Server.MetricsPort != ":3050" {
+		t.Errorf("Server.MetricsPort = %s, want :3050", cfg.Server.MetricsPort)
 	}
 }
 

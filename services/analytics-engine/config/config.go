@@ -23,7 +23,7 @@ type Config struct {
 
 // ServerConfig holds HTTP server parameters.
 type ServerConfig struct {
-	MetricsPort     string        `env:"METRICS_PORT" envDefault:":8082" validate:"required"`
+	MetricsPort     string        `env:"METRICS_PORT" envDefault:":3052" validate:"required"`
 	ShutdownTimeout time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"5s" validate:"gt=0"`
 }
 

@@ -19,8 +19,8 @@ type Config struct {
 
 // ServerConfig holds gRPC and HTTP metrics server parameters.
 type ServerConfig struct {
-	GRPCPort        string        `env:"GRPC_PORT" envDefault:":50051" validate:"required"`
-	MetricsPort     string        `env:"METRICS_PORT" envDefault:":8083" validate:"required"`
+	GRPCPort        string        `env:"GRPC_PORT" envDefault:":4051" validate:"required"`
+	MetricsPort     string        `env:"METRICS_PORT" envDefault:":3051" validate:"required"`
 	ShutdownTimeout time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"5s" validate:"gt=0"`
 }
 

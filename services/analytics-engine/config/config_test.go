@@ -132,7 +132,7 @@ func TestLoadConfig_MissingRequiredEnv(t *testing.T) {
 func TestConfig_ValidateErrors(t *testing.T) {
 	// Invalid: batch size <= 0
 	cfg := &Config{
-		Server: ServerConfig{MetricsPort: ":8082", ShutdownTimeout: 5 * time.Second},
+		Server: ServerConfig{MetricsPort: ":3052", ShutdownTimeout: 5 * time.Second},
 		Kafka: KafkaConfig{
 			Brokers:        []string{"localhost:9092"},
 			Topic:          "topic",

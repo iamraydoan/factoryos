@@ -1,22 +1,21 @@
 server:
-  port: 8084
+  port: ${SERVER_PORT:3003}
 
 spring:
   application:
     name: warehouse-service
+  grpc:
+    server:
+      port: ${GRPC_SERVER_PORT:4003}
   datasource:
-    url: jdbc:postgresql://localhost:5432/factoryos
-    username: factoryos
-    password: factoryos_password
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/factoryos
+    username: ${DB_USER:factoryos}
+    password: ${DB_PASSWORD:factoryos_password}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
-
-grpc:
-  server:
-    port: 9092
 
 kafka:
   bootstrap-servers: localhost:9092

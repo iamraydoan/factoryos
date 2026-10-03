@@ -39,5 +39,5 @@ FROM eclipse-temurin:21-jre-jammy AS runtime
 RUN useradd -r -u 10001 appuser
 USER appuser
 COPY --from=build /app.jar /app/app.jar
-EXPOSE 8082 9090
+EXPOSE 3001 4001
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

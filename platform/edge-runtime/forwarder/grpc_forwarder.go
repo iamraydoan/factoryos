@@ -18,7 +18,7 @@ import (
 
 // GRPCForwarderConfig holds configuration for the Edge gRPC forwarder.
 type GRPCForwarderConfig struct {
-	TargetAddress string        // e.g. "localhost:50051" or "gateway.factoryos.com:443"
+	TargetAddress string        // e.g. "localhost:4051" or "gateway.factoryos.com:443"
 	EdgeNodeID    string        // e.g. "factory-edge-site-01"
 	UseTLS        bool          // enable TLS encryption
 	Timeout       time.Duration // RPC timeout per batch

@@ -40,7 +40,7 @@ func run(ctx context.Context, dbPath string) (*sync.WaitGroup, error) {
 	var publisher collector.CloudPublisher
 	gatewayURL := os.Getenv("INGESTION_GATEWAY_URL")
 	if gatewayURL == "" {
-		gatewayURL = "localhost:50051"
+		gatewayURL = "localhost:4051"
 	}
 	edgeNodeID := os.Getenv("EDGE_NODE_ID")
 	if edgeNodeID == "" {
