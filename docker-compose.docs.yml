@@ -1,0 +1,25 @@
+# FactoryOS API docs overlay — opt-in via `make docs-up` (never on `infra-up`).
+# Merged with docker-compose.yml (`-f docker-compose.yml -f docker-compose.docs.yml`).
+# File inclusion is the opt-in (no Compose `profiles:`); the service stays on
+# factoryos_net so a future Traefik route (PathPrefix `/docs` ->
+# http://swagger-ui:8080) works without touching infra.
+# Prerequisite: `make openapi-bundle` (dist/*.bundled.yaml is gitignored).
+
+services:
+  # ==========================================
+  # API Docs (Swagger UI, dev-only)
+  # ==========================================
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.33.0
+    container_name: factoryos_swagger_ui
+    environment:
+      # Unified platform spec. SWAGGER_SPEC_FILE remains as an optional
+      # override for a per-domain bundled file if ever needed.
+      SWAGGER_JSON: /spec/${SWAGGER_SPEC_FILE:-dist/openapi.gateway.yaml}
+      BASE_URL: /docs
+    volumes:
+      - ./api/contracts/openapi/:/spec/:ro
+    ports:
+      - "${SWAGGER_UI_PORT:-3080}:8080"
+    networks:
+      - factoryos_net

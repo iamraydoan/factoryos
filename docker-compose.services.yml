@@ -1,0 +1,30 @@
+# FactoryOS domain services overlay — opt-in via `make services-up`.
+# Merged with docker-compose.yml (`-f docker-compose.yml -f docker-compose.services.yml`).
+# Networks/volumes resolve from the base file; nothing is redeclared here.
+# Traefik-ready: services join factoryos_net, file-provider routes in
+# deploy/traefik/dynamic/*.yaml resolve them by service name.
+
+services:
+  # ==========================================
+  # Production Service (Spring Boot: REST + gRPC)
+  # Routed via Traefik: REST on :80, gRPC on :50051.
+  # Service ports: REST 3001, gRPC 4001.
+  # ==========================================
+  production-service:
+    build:
+      context: .
+      dockerfile: services/production-service/Dockerfile
+    container_name: production_service
+    depends_on:
+      - factoryos-db
+    environment:
+      DB_HOST: factoryos-db
+      DB_USER: "${FACTORYOS_DB_USER:-factoryos}"
+      DB_PASSWORD: "${FACTORYOS_DB_PASSWORD:-factoryos_password}"
+      SERVER_PORT: 3001
+      GRPC_SERVER_PORT: 4001
+    ports:
+      - "${PRODUCTION_REST_PORT:-3001}:3001"
+      - "${PRODUCTION_GRPC_PORT:-4001}:4001"
+    networks:
+      - factoryos_net
