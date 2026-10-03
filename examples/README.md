@@ -50,7 +50,7 @@ The simulator reads configuration settings from [config.json](mock-plc-simulator
 
 ### 🚀 Running the Simulator
 
-1. Ensure the MQTT Broker is running (e.g. via `docker compose up -d mosquitto`).
+1. Ensure the MQTT Broker is running (e.g. via `make infra-up`, or `docker compose -f docker-compose.yml up -d mosquitto`).
 2. Run the simulator from the repository root:
 
 ```bash

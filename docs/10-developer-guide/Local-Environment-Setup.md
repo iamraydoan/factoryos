@@ -52,7 +52,17 @@ npm install --global --no-fund --no-audit @redocly/cli@1.34.0
 
 ## 2. Spinning Up the Infrastructure
 
-FactoryOS relies on a comprehensive local infrastructure stack (Kafka, Postgres, Zitadel, Valkey). To start the entire stack:
+FactoryOS relies on a comprehensive local infrastructure stack (Kafka, Postgres, Zitadel, Valkey). Compose is split into three files sharing `factoryos_net`:
+
+| File | Contains | Started by |
+|------|----------|------------|
+| `docker-compose.yml` | Infra only (traefik, db, kafka, valkey, mosquitto) | `make infra-up` |
+| `docker-compose.services.yml` | Containerized domain services (opt-in) | `make services-up` |
+| `docker-compose.docs.yml` | Swagger UI (opt-in, Traefik-ready) | `make docs-up` |
+
+`infra-up` never starts app services or docs. Run services on the host
+via `make run-production` during development; use `services-up` only to
+test the containerized build.
 
 1. Open your terminal at the root of the `factoryos` project.
 2. (Optional) Configure local infrastructure ports and credentials. Defaults work without this file:
@@ -66,14 +76,21 @@ Edit `.env` before starting the stack if any default host port is already in use
 3. Start the infrastructure:
 
 ```bash
-docker compose up -d
+make infra-up
 ```
 
 4. (First time only) Docker will pull all the latest images. This may take a few minutes depending on your internet connection.
 5. Verify all containers are running and healthy:
 
 ```bash
-docker compose ps
+make infra-ps
+```
+
+6. (Optional) Start containerized domain services or docs:
+
+```bash
+make services-up   # builds + starts production-service container
+make docs-up       # bundles OpenAPI specs, starts Swagger UI on :3080/docs
 ```
 
 ---
@@ -93,30 +110,53 @@ Once the stack is up, the following services and ports are available on your `lo
 | **Valkey (Cache)** | `6379` (`VALKEY_PORT`) | Redis drop-in replacement | `localhost:6379` |
 | **Mosquitto MQTT** | `1883` (`MQTT_PORT`) | Edge MQTT Broker for IIoT telemetry | `localhost:1883` |
 | **Zitadel Console** | `8081` (`ZITADEL_PORT`) | IAM Web Interface | http://localhost:8081/ui/console (User: `zitadel-admin@zitadel.localhost` / Pass: `Password123!`) |
-| **Swagger UI (docs profile, opt-in)** | `8082` (`SWAGGER_UI_PORT`) | Dev/tester-only OpenAPI viewer (telemetry, no Traefik) | http://localhost:8082/docs — start with `make docs-up` after `make openapi-bundle` |
+| **Swagger UI (opt-in, `docker-compose.docs.yml`)** | `3080` (`SWAGGER_UI_PORT`) | Dev/tester-only OpenAPI viewer (telemetry, Traefik-ready) | http://localhost:3080/docs — start with `make docs-up` after `make openapi-bundle` |
+
+### Domain Service Port Scheme
+
+REST on **3xxx**, gRPC on **4xxx** (host = container). Infra keeps its
+standard ports (`80/8080/50051/5432/...`). Every Java `application.yml`
+uses `${SERVER_PORT:<default>}` / `${GRPC_SERVER_PORT:<default>}` — no
+hardcoded ports.
+
+| Service | REST | gRPC |
+|---|---|---|
+| production (Java) | `3001` | `4001` |
+| quality (Java) | `3002` | `4002` |
+| warehouse (Java) | `3003` | `4003` |
+| maintenance (Java) | `3004` | `4004` |
+| planning (Java) | `3005` | `4005` |
+| resource (Go) | `3050` (health) | `4050` |
+| ingestion (Go) | `3051` (metrics) | `4051` |
+| analytics (Go) | `3052` (metrics) | — |
 
 ---
 
 ## 4. Troubleshooting & Useful Commands
 
-**View logs for all services:**
+**View logs for all infra services:**
 ```bash
-docker compose logs -f
+make infra-logs
 ```
 
 **View logs for a specific service (e.g., Kafka):**
 ```bash
-docker compose logs -f kafka
+docker compose -f docker-compose.yml logs -f kafka
+```
+
+**View containerized domain service logs:**
+```bash
+make services-logs
 ```
 
 **Shut down the infrastructure:**
 ```bash
-docker compose down
+make infra-down
 ```
 
 **Completely wipe database data (Use with caution!):**
 ```bash
-docker compose down -v
+docker compose -f docker-compose.yml down -v
 ```
 
 ---
@@ -133,21 +173,29 @@ credentials come from the environment.
 
 | File | Purpose |
 |------|---------|
-| Root `.env.example` / `.env.docker.example` | Docker Compose ports and local infrastructure credentials (host-run vs container network) |
-| `services/<service>/.env.example` | Service-specific template for host-local runs (`DB_HOST=localhost`) |
-| `services/<service>/.env.docker.example` | Service-specific template for runs inside the Docker network (`DB_HOST=factoryos-db`) |
+| Root `.env.example` | **HOST** profile — Compose ports + credentials; gateway backends `host.docker.internal` |
+| Root `.env.docker.example` | **DOCKER** profile — gateway backends as container names (`production-service`) |
+| Root `.env.devcontainer.example` | **DEVCONTAINER** profile — gateway backends `host.docker.internal`; DB reachable by container name |
+| `services/<service>/.env.example` | **HOST** — `DB_HOST=localhost` |
+| `services/<service>/.env.docker.example` | **DOCKER** — `DB_HOST=factoryos-db` |
+| `services/<service>/.env.devcontainer.example` | **DEVCONTAINER** — `DB_HOST=factoryos-db` (joins `factoryos_net`) |
 
 ### Setup
 
-```bash
-# Optional: Docker Compose infrastructure settings, from the repository root
-cp .env.example .env
+One command installs both files for a profile (root `.env` + service `.env`):
 
-# Java service settings remain service-specific — pick the template
-# matching where the service process runs:
-cd services/production-service
-cp .env.example .env                 # host machine (DB at localhost)
-cp .env.docker.example .env         # devcontainer / Docker network (DB at factoryos-db)
+```bash
+# Pick the profile matching where processes run:
+make setup-env-host            # DB=localhost, gateway=host.docker.internal
+make setup-env-docker          # DB + gateway = container names
+make setup-env-devcontainer    # DB=factoryos-db, gateway=host.docker.internal
+```
+
+Manual equivalent (repository root):
+
+```bash
+cp .env.example .env                                    # root: Compose ports + credentials
+cp services/production-service/.env.example services/production-service/.env
 ```
 
 ### Spring Profiles
@@ -167,15 +215,19 @@ falls back to `localhost`.
 
 ```bash
 # Host machine (DB at localhost)
-make setup-production-host
+make setup-env-host
 make run-production
 
 # With SQL logging
 make run-production-local
 
 # Inside devcontainer / Docker network (DB at factoryos-db)
-make setup-production-docker
+make setup-env-devcontainer
 make run-production
+
+# Fully containerized service (DB + gateway = container names)
+make setup-env-docker
+make services-up
 ```
 
 ---
@@ -186,7 +238,7 @@ To test end-to-end telemetry ingestion locally:
 
 1. **Start MQTT Broker:**
    ```bash
-   docker compose up -d mosquitto
+   docker compose -f docker-compose.yml up -d mosquitto
    ```
 
 2. **Start Edge Runtime (Ingestion & SQLite Buffer):**
@@ -220,7 +272,8 @@ For developers who prefer using `make`, a top-level `Makefile` is provided with 
 | **Coverage Report** | `make test-coverage` | `go test -coverprofile=... && go tool cover -func=...` |
 | **Run Service Locally** | `make run-analytics`<br>`make run-edge`<br>`make run-simulator`<br>`make run-production`<br>`make run-production-local` | `go run main.go`<br>`mvn spring-boot:run` (with `.env` sourced) |
 | **Protobuf Lint / Gen** | `make proto-lint`<br>`make proto-gen` | `cd api/contracts && buf lint`<br>`cd api/contracts && buf generate` |
-| **Docker Infra** | `make infra-up`<br>`make infra-down`<br>`make infra-logs` | `docker compose up -d`<br>`docker compose down`<br>`docker compose logs -f` |
+| **Docker Infra** | `make infra-up`<br>`make infra-down`<br>`make infra-logs` | `docker compose -f docker-compose.yml up -d`<br>`docker compose -f docker-compose.yml down`<br>`docker compose -f docker-compose.yml logs -f` |
+| **Docker Services** | `make services-up`<br>`make services-down`<br>`make services-logs` | `docker compose -f docker-compose.yml -f docker-compose.services.yml up -d --build`<br>`... stop production-service`<br>`... logs -f production-service` |
 | **Cleanup** | `make clean` | `rm -rf bin/ *.out` |
 
 ---
@@ -247,6 +300,11 @@ When adding a new backing service (e.g., Temporal, OpenTelemetry) to `docker-com
 2. Add a **named volume** if the service requires persistent state.
 3. Update the "Local Service Directory" table above so the team knows the new ports.
 
-> **Docs profile:** `swagger-ui` runs under Compose profile `docs` and is not part of
-> default `docker compose up -d`. Use `make docs-up` / `make docs-down`.
+When adding a new domain service, put it in `docker-compose.services.yml`
+(never in the infra file) so `infra-up` stays infra-only.
+
+> **Docs overlay:** `swagger-ui` lives in `docker-compose.docs.yml` and is not part of
+> `infra-up`. Use `make docs-up` / `make docs-down`. File inclusion is the opt-in
+> (no Compose `profiles:`). The service stays on `factoryos_net` so a future
+> Traefik route (`PathPrefix /docs` -> `http://swagger-ui:8080`) needs no infra change.
 > Prerequisite: `make openapi-bundle` (the `dist/*.bundled.yaml` output is gitignored).

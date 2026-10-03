@@ -34,8 +34,8 @@ For full product strategy, technical architecture, governance standards, and lon
 
 1. **Spin up local infrastructure (Docker):**
    ```bash
-   docker compose up -d
-   # or optionally: make infra-up
+   make infra-up
+   # raw equivalent: docker compose -f docker-compose.yml up -d
    ```
 
 2. **Run tests across modules:**
