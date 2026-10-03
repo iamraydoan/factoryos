@@ -36,7 +36,7 @@ install-tools:
 	@go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 	@go install github.com/bufbuild/buf/cmd/buf@latest
 	@go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1
-	@npm install --global --no-fund --no-audit @redocly/cli@1.34.0
+	@npm install --global --no-fund --no-audit @redocly/cli@2.54.2
 	@go install github.com/speakeasy-api/openapi/cmd/openapi@latest
 
 # ==============================================================================

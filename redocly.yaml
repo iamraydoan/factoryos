@@ -2,6 +2,5 @@
 # Contract sources are intentionally auth-free: security lives in the
 # gateway overlay (api/contracts/openapi/overlays/), not in versioned specs.
 apis: {}
-lint:
-  rules:
-    security-defined: off
+rules:
+  security-defined: off
