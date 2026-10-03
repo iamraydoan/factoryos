@@ -1,0 +1,74 @@
+overlay: 1.0.0
+info:
+  title: FactoryOS Platform Gateway Overlay
+  version: 1.0.0
+  description: |
+    Gateway view for Swagger UI. Never used for oapi-codegen.
+    Applies the local Traefik host, the Zitadel openIdConnect scheme, and
+    per-operation scopes on top of the pure auth-free bundled contract.
+actions:
+  - target: $.servers[0]
+    update:
+      url: http://localhost/api/v1
+      description: Local Traefik API gateway
+  - target: $.components
+    update:
+      securitySchemes:
+        zitadel:
+          type: openIdConnect
+          openIdConnectUrl: http://localhost:8081/.well-known/openid-configuration
+          description: |
+            Canonical FactoryOS REST identity scheme. Gateway overlay only.
+            Clients send the issued access token as an HTTP Bearer token.
+  - target: $.paths['/work-orders'].get
+    update:
+      security:
+        - zitadel: [production.read]
+  - target: $.paths['/work-orders'].post
+    update:
+      security:
+        - zitadel: [production.write]
+  - target: $.paths['/work-orders/{id}'].get
+    update:
+      security:
+        - zitadel: [production.read]
+  - target: $.paths['/work-orders/{id}/release'].post
+    update:
+      security:
+        - zitadel: [production.write]
+  - target: $.paths['/work-orders/{id}/dispatch'].post
+    update:
+      security:
+        - zitadel: [production.write]
+  - target: $.paths['/work-orders/{id}/start'].post
+    update:
+      security:
+        - zitadel: [production.write]
+  - target: $.paths['/work-orders/{id}/hold'].post
+    update:
+      security:
+        - zitadel: [production.write]
+  - target: $.paths['/work-orders/{id}/resume'].post
+    update:
+      security:
+        - zitadel: [production.write]
+  - target: $.paths['/work-orders/{id}/complete'].post
+    update:
+      security:
+        - zitadel: [production.write]
+  - target: $.paths['/work-orders/{id}/close'].post
+    update:
+      security:
+        - zitadel: [production.write]
+  - target: $.paths['/telemetry/latest'].get
+    update:
+      security:
+        - zitadel: [telemetry.read]
+  - target: $.paths['/telemetry/history'].get
+    update:
+      security:
+        - zitadel: [telemetry.read]
+  - target: $.paths['/telemetry/alerts'].get
+    update:
+      security:
+        - zitadel: [alerts.read]

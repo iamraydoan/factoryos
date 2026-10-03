@@ -1,0 +1,109 @@
+openapi: 3.0.3
+info:
+  title: FactoryOS Platform API
+  description: |
+    Contract-first REST contract for the FactoryOS platform: Production
+    Operations work-order lifecycle (ISA-95 Job Order) plus Telemetry &
+    Analytics queries (real-time readings, aggregates, alerts, health).
+
+    HTTP projections of `api/contracts/production/v1/production.proto`
+    (`ProductionService`) and the telemetry query surface. This contract
+    carries no security requirements; authentication and authorization are
+    enforced at the API gateway and documented via the gateway overlay
+    artifact (`api/contracts/openapi/overlays/gateway.overlay.yaml`).
+  version: 1.0.0
+  contact:
+    name: FactoryOS Architecture Team
+    url: https://github.com/iamraydoan/factoryos
+  license:
+    name: FactoryOS Proprietary License
+    url: https://github.com/iamraydoan/factoryos/blob/main/LICENSE
+
+externalDocs:
+  description: FactoryOS API governance documentation
+  url: https://github.com/iamraydoan/factoryos/tree/main/docs/07-api
+
+servers:
+  - url: /api/v1
+    description: FactoryOS REST API v1 (relative; gateway host applied via overlay)
+
+tags:
+  - name: WorkOrders
+    description: Work order lifecycle (create, query, state-machine transitions)
+  - name: Telemetry
+    description: Real-time equipment telemetry queries
+  - name: Analytics
+    description: Historical and aggregated telemetry analytics
+  - name: Alerts
+    description: Active telemetry threshold alerts
+
+paths:
+  /work-orders:
+    $ref: './production/v1/paths/work-orders.yaml'
+  /work-orders/{id}:
+    $ref: './production/v1/paths/work-orders.yaml#/~1{id}'
+  /work-orders/{id}/release:
+    $ref: './production/v1/paths/work-orders.yaml#/~1{id}~1release'
+  /work-orders/{id}/dispatch:
+    $ref: './production/v1/paths/work-orders.yaml#/~1{id}~1dispatch'
+  /work-orders/{id}/start:
+    $ref: './production/v1/paths/work-orders.yaml#/~1{id}~1start'
+  /work-orders/{id}/hold:
+    $ref: './production/v1/paths/work-orders.yaml#/~1{id}~1hold'
+  /work-orders/{id}/resume:
+    $ref: './production/v1/paths/work-orders.yaml#/~1{id}~1resume'
+  /work-orders/{id}/complete:
+    $ref: './production/v1/paths/work-orders.yaml#/~1{id}~1complete'
+  /work-orders/{id}/close:
+    $ref: './production/v1/paths/work-orders.yaml#/~1{id}~1close'
+  /telemetry/latest:
+    $ref: './telemetry/v1/paths/latest.yaml'
+  /telemetry/history:
+    $ref: './telemetry/v1/paths/history.yaml'
+  /telemetry/alerts:
+    $ref: './telemetry/v1/paths/alerts.yaml'
+
+components:
+  responses:
+    BadRequestError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+    UnauthorizedError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+    ForbiddenError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+    NotFoundError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/NotFoundError'
+    ConflictError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/ConflictError'
+    TooManyRequestsError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
+    InternalServerError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+    ServiceUnavailableError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'
+
+  schemas:
+    WorkOrder:
+      $ref: './production/v1/schemas/work-order.yaml#/components/schemas/WorkOrder'
+    WorkOrderState:
+      $ref: './production/v1/schemas/work-order.yaml#/components/schemas/WorkOrderState'
+    WorkOrderPriority:
+      $ref: './production/v1/schemas/work-order.yaml#/components/schemas/WorkOrderPriority'
+    CreateWorkOrder:
+      $ref: './production/v1/schemas/work-order.yaml#/components/schemas/CreateWorkOrder'
+    DispatchWorkOrder:
+      $ref: './production/v1/schemas/work-order.yaml#/components/schemas/DispatchWorkOrder'
+    HoldWorkOrder:
+      $ref: './production/v1/schemas/work-order.yaml#/components/schemas/HoldWorkOrder'
+    WorkOrderOffsetPage:
+      $ref: './production/v1/schemas/work-order.yaml#/components/schemas/WorkOrderOffsetPage'
+    WorkOrderCursorPage:
+      $ref: './production/v1/schemas/work-order.yaml#/components/schemas/WorkOrderCursorPage'
+    SensorQuality:
+      $ref: './telemetry/v1/schemas/telemetry.yaml#/components/schemas/SensorQuality'
+    TelemetryReading:
+      $ref: './telemetry/v1/schemas/telemetry.yaml#/components/schemas/TelemetryReading'
+    TelemetryAggregateBucket:
+      $ref: './telemetry/v1/schemas/aggregate.yaml#/components/schemas/TelemetryAggregateBucket'
+    ActiveAlert:
+      $ref: './telemetry/v1/schemas/alert.yaml#/components/schemas/ActiveAlert'

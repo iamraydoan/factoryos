@@ -1,0 +1,250 @@
+# All work-order operations in one file (one controller, one file).
+# HTTP projection of production.proto ProductionService (CRUD + state machine).
+
+post:
+  summary: Create a work order
+  description: |-
+    Creates a work order in `draft` state.
+
+    Required: `materialDefinitionId`, `routingSpecId`, `workCenterId`,
+    `targetQuantity`, `unitOfMeasure`, `priority`. Optional: `description`,
+    `dueDate`. Cross-service FKs are not resolved here (bounded context —
+    validation happens against resource-service).
+  operationId: createWorkOrder
+  tags:
+    - WorkOrders
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../schemas/work-order.yaml#/components/schemas/CreateWorkOrder'
+  responses:
+    '201':
+      description: Work order created
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/work-order.yaml#/components/schemas/WorkOrder'
+    '400':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+    '401':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+    '403':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+    '409':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ConflictError'
+    '429':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
+    '500':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+    '503':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'
+
+get:
+  summary: List work orders
+  description: |-
+    Returns work orders on the `{ data, meta }` envelope.
+
+    Two pagination styles on one path ([PAGINATION_DESIGN.md](../../../../docs/07-api/PAGINATION_DESIGN.md)):
+    omit `cursor` for page-based (`page`, `limit` → `page`, `limit`, `total`,
+    `totalPages`); send `cursor` for keyset (`limit`, `cursor` → `limit`,
+    `nextCursor`, empty = last page). Fixed sort: `createdAt DESC, id DESC`.
+
+    Query conventions ([QUERY_CONVENTIONS.md](../../../../docs/07-api/QUERY_CONVENTIONS.md)):
+    filterable fields — `workCenterId` (eq), `state` (eq). No `sort`, `q`,
+    or `fields`. Violations are INVALID_FILTER_* / INVALID_SORT_FIELD /
+    INVALID_FIELD_SELECTION / PAGE_SIZE_OUT_OF_RANGE /
+    PAGE_NUMBER_OUT_OF_RANGE / INVALID_CURSOR (400).
+  operationId: listWorkOrders
+  tags:
+    - WorkOrders
+  parameters:
+    - $ref: '../../../common/v1/parameters/query.yaml#/components/parameters/Page'
+    - $ref: '../../../common/v1/parameters/query.yaml#/components/parameters/Limit'
+    - $ref: '../../../common/v1/parameters/query.yaml#/components/parameters/Cursor'
+    - name: workCenterId
+      in: query
+      required: false
+      description: Filter by Work Center UUID (eq)
+      schema:
+        type: string
+        format: uuid
+        example: 0194eb82-8234-789a-bcde-0123456789ab
+    - name: state
+      in: query
+      required: false
+      description: Filter by work order state (eq)
+      schema:
+        $ref: '../schemas/work-order.yaml#/components/schemas/WorkOrderState'
+  responses:
+    '200':
+      description: Work order list (page-based when `cursor` is omitted, cursor-based when sent)
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: '../schemas/work-order.yaml#/components/schemas/WorkOrderOffsetPage'
+              - $ref: '../schemas/work-order.yaml#/components/schemas/WorkOrderCursorPage'
+    '400':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+    '401':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+    '403':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+    '429':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
+    '500':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+    '503':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'
+
+/{id}:
+  get:
+    summary: Get a work order
+    description: Returns a single work order by UUIDv7.
+    operationId: getWorkOrder
+    tags:
+      - WorkOrders
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Work order UUIDv7
+        schema:
+          type: string
+          format: uuid
+          example: 0194eb82-8234-789a-bcde-0123456789ab
+    responses:
+      '200':
+        description: Work order found
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/work-order.yaml#/components/schemas/WorkOrder'
+      '400':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/NotFoundError'
+      '429':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
+      '500':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+      '503':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'
+
+/{id}/release:
+  post:
+    summary: Release a work order
+    description: |-
+      `draft` → `released`. Illegal transition → 409 `WORK_ORDER_INVALID_TRANSITION`.
+    operationId: releaseWorkOrder
+    tags:
+      - WorkOrders
+    parameters:
+      - $ref: '../schemas/work-order.yaml#/components/parameters/WorkOrderId'
+    responses:
+      $ref: '../schemas/work-order.yaml#/components/responses/TransitionResponses'
+
+/{id}/dispatch:
+  post:
+    summary: Dispatch a work order to a work unit
+    description: |-
+      `released` → `dispatched`. Requires `workUnitId`.
+
+      Dispatch rules ([Work-Order.md](../../../../docs/03-domain/02-production-operations/Work-Order.md)):
+      the Work Unit's Work Center must have the required EquipmentClass, the
+      operator must hold a valid QualificationRecord, and all required material
+      lots must be staged. Violations → 409.
+    operationId: dispatchWorkOrder
+    tags:
+      - WorkOrders
+    parameters:
+      - $ref: '../schemas/work-order.yaml#/components/parameters/WorkOrderId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/work-order.yaml#/components/schemas/DispatchWorkOrder'
+    responses:
+      $ref: '../schemas/work-order.yaml#/components/responses/TransitionResponses'
+
+/{id}/start:
+  post:
+    summary: Start a work order
+    description: |-
+      `dispatched` → `in_progress`. Emergency re-priority may also land here.
+      Illegal transition → 409 `WORK_ORDER_INVALID_TRANSITION`.
+    operationId: startWorkOrder
+    tags:
+      - WorkOrders
+    parameters:
+      - $ref: '../schemas/work-order.yaml#/components/parameters/WorkOrderId'
+    responses:
+      $ref: '../schemas/work-order.yaml#/components/responses/TransitionResponses'
+
+/{id}/hold:
+  post:
+    summary: Hold a work order
+    description: |-
+      `in_progress` → `held` (quality hold, material shortage, maintenance fault).
+      Requires `reason`. Illegal transition → 409 `WORK_ORDER_INVALID_TRANSITION`.
+    operationId: holdWorkOrder
+    tags:
+      - WorkOrders
+    parameters:
+      - $ref: '../schemas/work-order.yaml#/components/parameters/WorkOrderId'
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '../schemas/work-order.yaml#/components/schemas/HoldWorkOrder'
+    responses:
+      $ref: '../schemas/work-order.yaml#/components/responses/TransitionResponses'
+
+/{id}/resume:
+  post:
+    summary: Resume a held work order
+    description: |-
+      `held` → `in_progress`. Illegal transition → 409 `WORK_ORDER_INVALID_TRANSITION`.
+    operationId: resumeWorkOrder
+    tags:
+      - WorkOrders
+    parameters:
+      - $ref: '../schemas/work-order.yaml#/components/parameters/WorkOrderId'
+    responses:
+      $ref: '../schemas/work-order.yaml#/components/responses/TransitionResponses'
+
+/{id}/complete:
+  post:
+    summary: Complete a work order
+    description: |-
+      `in_progress` → `completed`. Quantity confirmed.
+      Illegal transition → 409 `WORK_ORDER_INVALID_TRANSITION`.
+    operationId: completeWorkOrder
+    tags:
+      - WorkOrders
+    parameters:
+      - $ref: '../schemas/work-order.yaml#/components/parameters/WorkOrderId'
+    responses:
+      $ref: '../schemas/work-order.yaml#/components/responses/TransitionResponses'
+
+/{id}/close:
+  post:
+    summary: Close a work order
+    description: |-
+      `completed` → `closed` (results reported back to ERP).
+      Illegal transition → 409 `WORK_ORDER_INVALID_TRANSITION`.
+    operationId: closeWorkOrder
+    tags:
+      - WorkOrders
+    parameters:
+      - $ref: '../schemas/work-order.yaml#/components/parameters/WorkOrderId'
+    responses:
+      $ref: '../schemas/work-order.yaml#/components/responses/TransitionResponses'

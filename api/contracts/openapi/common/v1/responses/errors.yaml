@@ -34,6 +34,13 @@ components:
           schema:
             $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
 
+    ConflictError:
+      description: The request conflicts with the current state of the resource (e.g. illegal state transition)
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
+
     TooManyRequestsError:
       description: The caller exceeded the configured request quota
       headers:

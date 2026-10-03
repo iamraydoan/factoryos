@@ -1,0 +1,10 @@
+# oapi-codegen configuration for the unified FactoryOS Platform OpenAPI.
+# Single spec entrypoint: api/contracts/openapi/openapi.yaml (pure, auth-free).
+# Gateway overlay output (dist/openapi.gateway.yaml) is Swagger UI only — never codegen.
+package: platformv1
+generate:
+  models: true
+  client: true
+  server: true
+  embedded-spec: true
+output: ../../../platform/platform-sdk/go/gen/openapi/platform/v1/platform.gen.go

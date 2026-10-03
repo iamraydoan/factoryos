@@ -1,0 +1,231 @@
+components:
+  schemas:
+    WorkOrderState:
+      type: string
+      description: Closed work order state machine (ISA-95 Job Order)
+      enum: [draft, released, dispatched, in_progress, held, completed, closed]
+      example: released
+
+    WorkOrderPriority:
+      type: string
+      enum: [low, medium, high, urgent]
+      default: medium
+      example: high
+
+    WorkOrder:
+      type: object
+      required:
+        - id
+        - materialDefinitionId
+        - routingSpecId
+        - workCenterId
+        - targetQuantity
+        - unitOfMeasure
+        - state
+        - priority
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Work order UUIDv7
+          example: 0194eb82-8234-789a-bcde-0123456789ab
+        materialDefinitionId:
+          type: string
+          format: uuid
+          description: FK to MaterialDefinition (the product to produce)
+          example: 0194eb82-8234-789a-bcde-0123456789ab
+        routingSpecId:
+          type: string
+          format: uuid
+          description: FK to ProductRoutingSpec (the routing to follow)
+          example: 0194eb82-8234-789a-bcde-0123456789ab
+        workCenterId:
+          type: string
+          format: uuid
+          description: FK to WorkCenter (where to produce)
+          example: 0194eb82-8234-789a-bcde-0123456789ab
+        targetQuantity:
+          type: string
+          description: Target quantity as a decimal string (e.g. "100") — never a JSON number
+          example: '100'
+        unitOfMeasure:
+          type: string
+          description: e.g. pcs, kg
+          example: pcs
+        state:
+          $ref: '#/components/schemas/WorkOrderState'
+        priority:
+          $ref: '#/components/schemas/WorkOrderPriority'
+        description:
+          type: string
+          nullable: true
+          description: Optional description or notes
+        dueDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the work order must be completed (RFC3339)
+          example: '2026-09-15T00:00:00Z'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-09-01T08:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-09-02T08:00:00Z'
+
+    CreateWorkOrder:
+      type: object
+      description: Projection of production.proto CreateWorkOrderRequest onto REST (camelCase)
+      required:
+        - materialDefinitionId
+        - routingSpecId
+        - workCenterId
+        - targetQuantity
+        - unitOfMeasure
+        - priority
+      properties:
+        materialDefinitionId:
+          type: string
+          format: uuid
+        routingSpecId:
+          type: string
+          format: uuid
+        workCenterId:
+          type: string
+          format: uuid
+        targetQuantity:
+          type: string
+          description: Target quantity as a decimal string (e.g. "100")
+          example: '100'
+        unitOfMeasure:
+          type: string
+          example: pcs
+        priority:
+          $ref: '#/components/schemas/WorkOrderPriority'
+        description:
+          type: string
+          description: Optional description or notes
+        dueDate:
+          type: string
+          format: date-time
+          description: When the work order must be completed (RFC3339)
+          example: '2026-09-15T00:00:00Z'
+
+    DispatchWorkOrder:
+      type: object
+      required:
+        - workUnitId
+      properties:
+        workUnitId:
+          type: string
+          format: uuid
+          description: FK to WorkUnit (which station executes the order)
+          example: 0194eb82-8234-789a-bcde-0123456789ab
+
+    HoldWorkOrder:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          description: Why execution is paused (quality hold, material shortage, maintenance fault)
+          example: awaiting material lot staging
+
+    WorkOrderOffsetPage:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkOrder'
+        meta:
+          type: object
+          required:
+            - page
+            - limit
+            - total
+            - totalPages
+          properties:
+            page:
+              type: integer
+              minimum: 1
+              example: 1
+            limit:
+              type: integer
+              example: 20
+            total:
+              type: integer
+              minimum: 0
+              example: 150
+            totalPages:
+              type: integer
+              minimum: 0
+              example: 8
+
+    WorkOrderCursorPage:
+      type: object
+      required:
+        - data
+        - meta
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkOrder'
+        meta:
+          type: object
+          required:
+            - limit
+            - nextCursor
+          properties:
+            limit:
+              type: integer
+              example: 20
+            nextCursor:
+              type: string
+              description: Opaque cursor for the next request; empty on the last page
+
+  # Shared pieces for the 7 state-machine operations (identical except body).
+  parameters:
+    WorkOrderId:
+      name: id
+      in: path
+      required: true
+      description: Work order UUIDv7
+      schema:
+        type: string
+        format: uuid
+        example: 0194eb82-8234-789a-bcde-0123456789ab
+
+  responses:
+    TransitionResponses:
+      '200':
+        description: Transition applied; returns the work order in its new state
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkOrder'
+      '400':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+      '401':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
+      '403':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
+      '404':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/NotFoundError'
+      '409':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ConflictError'
+      '429':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
+      '500':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/InternalServerError'
+      '503':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ServiceUnavailableError'
