@@ -38,13 +38,12 @@ For full product strategy, technical architecture, governance standards, and lon
    # raw equivalent: docker compose -f docker-compose.yml up -d
    ```
 
-2. **Run tests across modules:**
+2. **Run tests across all services (Go + Java):**
    ```bash
-   cd services/analytics-engine && go test ./...
-   # or optionally: make test
+   make test          # all Go modules + the Java/Maven reactor
    ```
 
-3. **Check available shortcut commands (Optional):**
+3. **Check available commands:**
    ```bash
    make help
    ```

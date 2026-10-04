@@ -267,9 +267,13 @@ For developers who prefer using `make`, a top-level `Makefile` is provided with 
 | **Install dev toolchain** | `make install-tools` | `go install ...` + `npm install --global @redocly/cli` |
 | **Build all binaries** | `make build` | `go build ./...` |
 | **Build specific service** | `make build-analytics`<br>`make build-edge`<br>`make build-simulator` | `go build -o bin/<service> ./...` |
-| **Run all Go tests** | `make test` | `go test ./...` |
+| **Run all tests (Go + Java)** | `make test` / `make test-all` | `go test ./...` then `cd services && mvn verify` |
+| **Run all Go tests only** | `make test-go` | `go test ./...` |
+| **Run all Java tests only (+ coverage gate)** | `make test-java` | `cd services && mvn verify` |
+| **Test one Java service** | `make test-java-service SERVICE=production-service` | `cd services && mvn -pl production-service verify` |
+| **Java coverage report** | `make test-java` then open `services/*/target/site/jacoco/index.html` | `mvn verify` then open the JaCoCo HTML report |
 | **Test Analytics Engine** | `make test-analytics` | `cd services/analytics-engine && go test -race -cover -v ./...` |
-| **Coverage Report** | `make test-coverage` | `go test -coverprofile=... && go tool cover -func=...` |
+| **Coverage Report (Go)** | `make test-coverage` | `go test -coverprofile=... && go tool cover -func=...` |
 | **Run Service Locally** | `make run-analytics`<br>`make run-edge`<br>`make run-simulator`<br>`make run-production`<br>`make run-production-local` | `go run main.go`<br>`mvn spring-boot:run` (with `.env` sourced) |
 | **Protobuf Lint / Gen** | `make proto-lint`<br>`make proto-gen` | `cd api/contracts && buf lint`<br>`cd api/contracts && buf generate` |
 | **Docker Infra** | `make infra-up`<br>`make infra-down`<br>`make infra-logs` | `docker compose -f docker-compose.yml up -d`<br>`docker compose -f docker-compose.yml down`<br>`docker compose -f docker-compose.yml logs -f` |

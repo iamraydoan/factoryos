@@ -27,7 +27,7 @@ Welcome to the FactoryOS engineering repository. This document outlines developm
 
 * All PRs must pass automated linting (`buf lint`, `buf breaking`, and `buf generate && git diff --exit-code`, or `make proto-lint`).
 * When modifying `.proto` files under `api/contracts/`, developers MUST run `buf generate` (or `make proto-gen`) locally and commit the updated generated SDK code in `platform/platform-sdk/`.
-* All unit tests must pass locally with code coverage >= 80% (`go test` in respective module, or `make test-all` / `make test-coverage`).
+* All unit tests must pass locally with coverage gated — Go at >= 80% (`make test-go`), Java at >= 60% (`make test-java`, JaCoCo via `mvn verify`; generated protobuf is excluded from the Java ratio). `make test-all` runs both. Thresholds are floors to ratchet up.
 * Major features require an approved RFC under `docs/06-rfc/` using `0000-rfc-template.md`.
 * Architectural decisions must include an ADR under `docs/05-adr/` using `0000-adr-template.md`.
 * Public API changes must demonstrate backward compatibility verification.
