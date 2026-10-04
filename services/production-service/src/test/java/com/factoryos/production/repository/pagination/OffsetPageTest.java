@@ -17,12 +17,11 @@ class OffsetPageTest {
 
     @Test
     void constructor_validParams_succeeds() {
-        OffsetPage<String> page = new OffsetPage<>(List.of("a", "b"), 0, 20, 100, 5);
+        OffsetPage<String> page = new OffsetPage<>(List.of("a", "b"), 0, 20, 100);
         assertEquals(List.of("a", "b"), page.items());
         assertEquals(0, page.page());
         assertEquals(20, page.pageSize());
         assertEquals(100, page.total());
-        assertEquals(5, page.totalPages());
     }
 
     @Test
@@ -39,7 +38,6 @@ class OffsetPageTest {
         assertEquals(2, page.page());
         assertEquals(10, page.pageSize());
         assertEquals(55, page.total());
-        assertEquals(6, page.totalPages());
     }
 
     @Test
@@ -55,7 +53,6 @@ class OffsetPageTest {
         assertTrue(page.items().isEmpty());
         assertEquals(0, page.page());
         assertEquals(0, page.total());
-        assertEquals(0, page.totalPages());
     }
 
     // ========================================================================
@@ -64,37 +61,37 @@ class OffsetPageTest {
 
     @Test
     void hasNext_middlePage_returnsTrue() {
-        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 2, 10, 100, 10);
+        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 2, 10, 100);
         assertTrue(page.hasNext());
     }
 
     @Test
     void hasNext_lastPage_returnsFalse() {
-        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 9, 10, 100, 10);
+        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 9, 10, 100);
         assertFalse(page.hasNext());
     }
 
     @Test
     void hasNext_singlePage_returnsFalse() {
-        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 0, 10, 5, 1);
+        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 0, 10, 5);
         assertFalse(page.hasNext());
     }
 
     @Test
     void hasPrevious_firstPage_returnsFalse() {
-        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 0, 10, 100, 10);
+        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 0, 10, 100);
         assertFalse(page.hasPrevious());
     }
 
     @Test
     void hasPrevious_middlePage_returnsTrue() {
-        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 2, 10, 100, 10);
+        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 2, 10, 100);
         assertTrue(page.hasPrevious());
     }
 
     @Test
     void hasPrevious_lastPage_returnsTrue() {
-        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 9, 10, 100, 10);
+        OffsetPage<String> page = new OffsetPage<>(List.of("a"), 9, 10, 100);
         assertTrue(page.hasPrevious());
     }
 
@@ -105,25 +102,25 @@ class OffsetPageTest {
     @Test
     void constructor_negativePage_throwsIllegalArgument() {
         assertThrows(IllegalArgumentException.class,
-            () -> new OffsetPage<>(List.of(), -1, 10, 0, 0));
+            () -> new OffsetPage<>(List.of(), -1, 10, 0));
     }
 
     @Test
     void constructor_zeroPageSize_throwsIllegalArgument() {
         assertThrows(IllegalArgumentException.class,
-            () -> new OffsetPage<>(List.of(), 0, 0, 0, 0));
+            () -> new OffsetPage<>(List.of(), 0, 0, 0));
     }
 
     @Test
     void constructor_negativeTotal_throwsIllegalArgument() {
         assertThrows(IllegalArgumentException.class,
-            () -> new OffsetPage<>(List.of(), 0, 10, -1, 0));
+            () -> new OffsetPage<>(List.of(), 0, 10, -1));
     }
 
     @Test
     void constructor_nullItems_throwsNullPointer() {
         assertThrows(NullPointerException.class,
-            () -> new OffsetPage<>(null, 0, 10, 0, 0));
+            () -> new OffsetPage<>(null, 0, 10, 0));
     }
 
     @Test

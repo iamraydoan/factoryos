@@ -13,7 +13,7 @@ import com.factoryos.production.repository.pagination.OffsetPage;
  * <pre>
  * {
  *   "data": [ ... ],
- *   "meta": { "page": 1, "limit": 20, "total": 150, "totalPages": 8 }
+ *   "meta": { "page": 1, "limit": 20, "total": 150 }
  * }
  * </pre>
  *
@@ -24,12 +24,11 @@ public record OffsetPageResponse<T>(List<T> data, Meta meta) {
     /**
      * Pagination metadata for page-based responses.
      *
-     * @param page       current page number (1-indexed on the wire)
-     * @param limit      items per page
-     * @param total      total matching records
-     * @param totalPages total page count
+     * @param page  current page number (1-indexed on the wire)
+     * @param limit items per page
+     * @param total total matching records
      */
-    public record Meta(int page, int limit, long total, int totalPages) {
+    public record Meta(int page, int limit, long total) {
     }
 
     /**
@@ -57,6 +56,6 @@ public record OffsetPageResponse<T>(List<T> data, Meta meta) {
      */
     public static <T> OffsetPageResponse<T> from(OffsetPage<T> page) {
         return new OffsetPageResponse<>(page.items(),
-                new Meta(page.page() + 1, page.pageSize(), page.total(), page.totalPages()));
+                new Meta(page.page() + 1, page.pageSize(), page.total()));
     }
 }

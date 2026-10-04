@@ -13,7 +13,7 @@ import org.springframework.data.domain.Page;
  *
  * @param <T> the entity type
  */
-public record OffsetPage<T>(List<T> items, int page, int pageSize, long total, int totalPages) {
+public record OffsetPage<T>(List<T> items, int page, int pageSize, long total) {
 
     /**
      * Compact constructor with validation.
@@ -47,8 +47,7 @@ public record OffsetPage<T>(List<T> items, int page, int pageSize, long total, i
                 springPage.getContent(),
                 springPage.getNumber(),
                 springPage.getSize(),
-                springPage.getTotalElements(),
-                springPage.getTotalPages()
+                springPage.getTotalElements()
         );
     }
 
@@ -58,7 +57,7 @@ public record OffsetPage<T>(List<T> items, int page, int pageSize, long total, i
      * @return true if not on the last page
      */
     public boolean hasNext() {
-        return page < totalPages - 1;
+        return (long) (page + 1) * pageSize < total;
     }
 
     /**
