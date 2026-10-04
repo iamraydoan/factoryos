@@ -30,9 +30,17 @@
 
     <build>
         <plugins>
+            <!--
+              No src/ yet — this module is a placeholder. spring-boot:repackage needs a
+              main class and fails the whole reactor's `verify` phase without one. Remove
+              this <skip> once a PlanningServiceApplication class exists.
+            -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
             </plugin>
         </plugins>
     </build>
