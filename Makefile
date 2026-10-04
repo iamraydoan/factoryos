@@ -14,7 +14,8 @@ COMPOSE_SERVICES := -f docker-compose.yml -f docker-compose.services.yml
 COMPOSE_DOCS := -f docker-compose.yml -f docker-compose.docs.yml
 
 .PHONY: all help build build-all build-analytics build-ingestion build-edge build-simulator build-resource \
-        test test-all test-analytics test-ingestion test-edge test-sdk test-resource \
+        test test-all test-go test-java test-java-service \
+        test-analytics test-ingestion test-edge test-sdk test-resource \
         test-coverage test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk \
         run-analytics run-ingestion run-edge run-simulator run-resource run-production run-production-local \
         setup-production-host setup-production-docker \
@@ -88,11 +89,25 @@ build-resource:
 # Test Targets
 # ==============================================================================
 
-## test: Run unit tests across all Go modules
+## test: Run unit tests across all services (Go + Java)
 test: test-all
 
-## test-all: Run all unit tests for Analytics Engine, Ingestion Service, Edge Runtime, Platform SDK, and Resource Service
-test-all: test-edge test-sdk test-ingestion test-analytics test-resource
+## test-all: Run all unit tests — Go modules and the Java/Maven reactor
+test-all: test-go test-java
+
+## test-go: Run all Go workspace module tests
+test-go: test-edge test-sdk test-ingestion test-analytics test-resource
+
+## test-java: Test all Java services + enforce the JaCoCo coverage gate (runs `verify`)
+test-java:
+	@echo "[TEST] Running tests for Java services (reactor) with coverage gate..."
+	@cd services && mvn -B verify
+
+## test-java-service: Test one Java service + coverage gate (usage: make test-java-service SERVICE=production-service)
+test-java-service:
+	@test -n "$(SERVICE)" || { echo "usage: make test-java-service SERVICE=<name>"; exit 1; }
+	@echo "[TEST] Running tests for $(SERVICE) with coverage gate..."
+	@cd services && mvn -B -pl $(SERVICE) verify
 
 ## test-analytics: Run unit tests for Analytics Engine (with coverage & race detector)
 test-analytics:
@@ -121,7 +136,6 @@ test-resource:
 
 ## test-coverage: Run tests with coverage for all modules
 test-coverage: test-coverage-analytics test-coverage-resource test-coverage-ingestion test-coverage-edge test-coverage-sdk
-
 ## test-coverage-analytics: Generate coverage for analytics-engine
 test-coverage-analytics:
 	@echo "[COVERAGE] analytics-engine..."
