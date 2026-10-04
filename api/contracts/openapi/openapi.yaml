@@ -67,6 +67,8 @@ components:
   responses:
     BadRequestError:
       $ref: './common/v1/responses/errors.yaml#/components/responses/BadRequestError'
+    UnprocessableEntityError:
+      $ref: './common/v1/responses/errors.yaml#/components/responses/UnprocessableEntityError'
     UnauthorizedError:
       $ref: './common/v1/responses/errors.yaml#/components/responses/UnauthorizedError'
     ForbiddenError:

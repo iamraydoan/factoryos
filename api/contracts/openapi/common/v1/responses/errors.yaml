@@ -1,7 +1,14 @@
 components:
   responses:
     BadRequestError:
-      description: Invalid request parameters or payload
+      description: Malformed request — the body could not be parsed, or a cursor is invalid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../schemas/errors.yaml#/components/schemas/ErrorResponse'
+
+    UnprocessableEntityError:
+      description: The request parsed but is semantically invalid (validation failure)
       content:
         application/problem+json:
           schema:

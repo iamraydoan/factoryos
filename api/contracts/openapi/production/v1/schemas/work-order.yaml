@@ -152,7 +152,6 @@ components:
             - page
             - limit
             - total
-            - totalPages
           properties:
             page:
               type: integer
@@ -165,10 +164,6 @@ components:
               type: integer
               minimum: 0
               example: 150
-            totalPages:
-              type: integer
-              minimum: 0
-              example: 8
 
     WorkOrderCursorPage:
       type: object
@@ -223,6 +218,8 @@ components:
         $ref: '../../../common/v1/responses/errors.yaml#/components/responses/NotFoundError'
       '409':
         $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ConflictError'
+      '422':
+        $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnprocessableEntityError'
       '429':
         $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
       '500':

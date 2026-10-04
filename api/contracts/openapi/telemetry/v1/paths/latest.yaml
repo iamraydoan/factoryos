@@ -183,7 +183,6 @@ get:
                   - page
                   - limit
                   - total
-                  - totalPages
                 properties:
                   page:
                     type: integer
@@ -196,10 +195,6 @@ get:
                     type: integer
                     minimum: 0
                     example: 2
-                  totalPages:
-                    type: integer
-                    minimum: 0
-                    example: 1
     '400':
       $ref: '../../../common/v1/responses/errors.yaml#/components/responses/BadRequestError'
     '401':

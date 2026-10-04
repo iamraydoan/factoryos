@@ -34,6 +34,8 @@ post:
       $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ForbiddenError'
     '409':
       $ref: '../../../common/v1/responses/errors.yaml#/components/responses/ConflictError'
+    '422':
+      $ref: '../../../common/v1/responses/errors.yaml#/components/responses/UnprocessableEntityError'
     '429':
       $ref: '../../../common/v1/responses/errors.yaml#/components/responses/TooManyRequestsError'
     '500':
@@ -47,8 +49,8 @@ get:
     Returns work orders on the `{ data, meta }` envelope.
 
     Two pagination styles on one path ([PAGINATION_DESIGN.md](../../../../docs/07-api/PAGINATION_DESIGN.md)):
-    omit `cursor` for page-based (`page`, `limit` → `page`, `limit`, `total`,
-    `totalPages`); send `cursor` for keyset (`limit`, `cursor` → `limit`,
+    omit `cursor` for page-based (`page`, `limit` → `page`, `limit`, `total`);
+    send `cursor` for keyset (`limit`, `cursor` → `limit`,
     `nextCursor`, empty = last page). Fixed sort: `createdAt DESC, id DESC`.
 
     Query conventions ([QUERY_CONVENTIONS.md](../../../../docs/07-api/QUERY_CONVENTIONS.md)):
