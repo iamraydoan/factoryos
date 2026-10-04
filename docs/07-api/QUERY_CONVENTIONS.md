@@ -96,7 +96,7 @@ Naming: query params and properties are `camelCase` (`assetId`, `createdAt`).
 
 ## Paging with queries
 
-- First page is `?page=1`. Page-based responses return `{ data, meta }` with `page`, `limit`, `total`, `totalPages`.
+- First page is `?page=1`. Page-based responses return `{ data, meta }` with `page`, `limit`, `total`.
 - When following cursor pages, keep the same filters and `sort`.
 
 ---

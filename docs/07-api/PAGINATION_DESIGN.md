@@ -16,7 +16,7 @@
 
 | Type | Use Case | Request | Response |
 |---|---|---|---|
-| **Page-based** | UI tables with page controls | `page`, `limit` | `page`, `limit`, `total`, `totalPages` |
+| **Page-based** | UI tables with page controls | `page`, `limit` | `page`, `limit`, `total` |
 | **Cursor-based** | Infinite scroll, mobile, large datasets | `limit`, `cursor` | `limit`, `nextCursor` |
 
 | Style | Requires `COUNT` | Stable under concurrent writes | Use when |
@@ -46,8 +46,7 @@ GET /api/v1/work-orders?page=1&limit=20&state=released
   "meta": {
     "page": 1,
     "limit": 20,
-    "total": 150,
-    "totalPages": 8
+    "total": 150
   }
 }
 ```
@@ -87,7 +86,6 @@ GET /api/v1/work-orders?limit=20&cursor=v1.eyJ2IjoxLCJrZXlzIjpbImlkIl0sInZhbHMiO
 | `page` | int | Current page number, 1-indexed (page-based only) |
 | `limit` | int | Items per page used |
 | `total` | int | Total matching records (page-based only) |
-| `totalPages` | int | Total page count (page-based only) |
 | `nextCursor` | string | Pass as `cursor` in the next request; empty = last page (cursor-based only) |
 
 ### 2.4 Rules
@@ -145,7 +143,6 @@ The same concept has a different name in each protocol and language. This table 
 | `cursor` | `page_token` | `pageToken` | `PageToken` | Input cursor |
 | `nextCursor` | `next_page_token` | `nextPageToken` | `NextPageToken` | Output cursor |
 | `total` | — | `total` | `Total` | Total records (REST page-based only) |
-| `totalPages` | — | `totalPages` | `TotalPages` | Total pages (REST page-based only) |
 
 > **Rule:** REST JSON uses `camelCase`. gRPC proto uses `snake_case`. Java uses `camelCase`. Go uses `PascalCase` (exported).
 >

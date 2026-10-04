@@ -45,7 +45,8 @@ The category is the single input to both transport projections.
 
 | Category | Meaning | gRPC | HTTP | Retryable | Log |
 |---|---|---|---|---|---|
-| `VALIDATION` | Malformed or missing request data | `INVALID_ARGUMENT` (3) | 400 | no | INFO |
+| `MALFORMED` | The request body could not be parsed | `INVALID_ARGUMENT` (3) | 400 | no | INFO |
+| `VALIDATION` | Parsed, but semantically invalid or missing data | `INVALID_ARGUMENT` (3) | 422 | no | INFO |
 | `INVALID_CURSOR` | Bad, expired, or mismatched pagination cursor | `INVALID_ARGUMENT` (3) | 400 | no | INFO |
 | `AUTHENTICATION` | No credentials, or credentials rejected | `UNAUTHENTICATED` (16) | 401 | no | WARNING |
 | `AUTHORIZATION` | Authenticated, but not permitted | `PERMISSION_DENIED` (7) | 403 | no | WARNING |
@@ -55,7 +56,15 @@ The category is the single input to both transport projections.
 | `DEPENDENCY` | A downstream service or datastore is unavailable | `UNAVAILABLE` (14) | 503 | yes | ERROR |
 | `INTERNAL` | Bug, corrupt data, or unhandled failure | `INTERNAL` (13) | 500 | no | CRITICAL |
 
-`INVALID_CURSOR` is separate from `VALIDATION` because pagination cursors are the one error class with a dedicated specification and an already-defined message set (see [PAGINATION_DESIGN.md](PAGINATION_DESIGN.md) §5.5).
+`MALFORMED` and `VALIDATION` are separate because they project to different HTTP statuses: an
+unparseable body is a **400**, while a parsed-but-invalid body is a **422**. The distinction
+matches HTTP semantics — 400 is "the request was not understood", 422 is "the request was
+understood but the data is not processable". Cursors keep their own category
+(`INVALID_CURSOR`) because pagination is the one error class with a dedicated specification
+and an already-defined message set (see [PAGINATION_DESIGN.md](PAGINATION_DESIGN.md) §5.5).
+
+`INVALID_CURSOR` stays at **400** — a cursor is a malformed input token, not a semantic
+validation of a body, so it belongs with `MALFORMED` rather than `VALIDATION`.
 
 **Categories are a closed set.** Adding one means editing every adapter — that is the point. Prefer adding a new *code* within an existing category.
 
@@ -207,7 +216,8 @@ Suffixes carry meaning, because some mappings are derived from them (§3.2):
 | `_ALREADY_EXISTS` | `CONFLICT` | 409 / gRPC 9 |
 | `_INVALID_TRANSITION` | `CONFLICT` | 409 / gRPC 9 — permanent |
 | `_CONCURRENT_MODIFICATION` | `CONFLICT` | 409 / gRPC **10** — retryable |
-| `_REQUIRED`, `INVALID_*`, `MALFORMED_*` | `VALIDATION` | 400 / gRPC 3 |
+| `_REQUIRED`, `INVALID_*` | `VALIDATION` | 422 / gRPC 3 |
+| `MALFORMED_*` | `MALFORMED` | 400 / gRPC 3 |
 | `*_UNAVAILABLE` | `DEPENDENCY` | 503 / gRPC 14 |
 
 > **`_CONCURRENT_MODIFICATION` is load-bearing.** It is the only signal separating a retryable conflict from a permanent one. Renaming a code with this suffix changes its gRPC status code, so every such code must be asserted explicitly in tests.
@@ -223,7 +233,7 @@ These apply to every service and must be resolvable without a domain context:
 | `RESOURCE_EXHAUSTED` | `RATE_LIMIT` | A quota was exceeded |
 | `UNAUTHENTICATED` | `AUTHENTICATION` | No credentials, or rejected |
 | `PERMISSION_DENIED` | `AUTHORIZATION` | Not permitted |
-| `MALFORMED_REQUEST` | `VALIDATION` | The request could not be parsed |
+| `MALFORMED_REQUEST` | `MALFORMED` | The request could not be parsed |
 | `MISSING_REQUIRED_FIELD` | `VALIDATION` | A required field is absent |
 | `INVALID_CURSOR` | `INVALID_CURSOR` | Cursor malformed or undecodable |
 | `UNSUPPORTED_CURSOR_VERSION` | `INVALID_CURSOR` | Cursor version not supported |
