@@ -4,12 +4,6 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!--
-      One Spring Boot for the whole build. Every service inherits from here, so a
-      service that declares spring-boot-starter-parent directly would resolve a
-      different Boot major than its siblings. See docs/10-developer-guide/
-      ERROR_HANDLING_TUTORIAL.md Part 2.
-    -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -30,11 +24,6 @@
         <factoryos-common-error.version>0.1.0-SNAPSHOT</factoryos-common-error.version>
     </properties>
 
-    <!--
-      The two libs/ modules are NOT listed until they exist: a <module> pointing at
-      a directory with no pom.xml fails the whole reactor. Part 3 of the tutorial
-      adds factoryos-common-error here, and Part 4 adds the adapters.
-    -->
     <modules>
         <module>production-service</module>
         <module>warehouse-service</module>
