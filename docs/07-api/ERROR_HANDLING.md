@@ -30,7 +30,7 @@ Four consequences:
 
 1. **A domain error carries no transport status.** One failure must project to *both* an HTTP 409 and a gRPC `FAILED_PRECONDITION`. A single status field cannot express that, so it would force one adapter to ignore it and guess.
 2. **A new entity adds no adapter logic.** It declares codes referencing an existing category and inherits the entire mapping.
-3. **Both adapters derive from the category and nothing else**, so the two projections can never disagree about what kind of error occurred.
+3. **Both adapters derive from the category** — with an optional code-level override when protocol semantics require it (§3.2) — so the two projections can never disagree about what kind of error occurred.
 4. **The mapping must be exhaustive over categories** — adding one is a deliberate act that forces both adapters to be updated, not a silently-defaulted case.
 
 ### Why not use transport codes as the shared vocabulary?
@@ -41,13 +41,12 @@ gRPC has only 17 codes, and they are too coarse to be a *contract*: `INVALID_ARG
 
 ## 2. Error Categories
 
-The category is the single input to both transport projections.
+The category is the single input to both transport projections. This table is the contract; each adapter implements its column as an exhaustive `switch` (adding a category fails to compile until every adapter is updated — §1).
 
 | Category | Meaning | gRPC | HTTP | Retryable | Log |
 |---|---|---|---|---|---|
-| `MALFORMED` | The request body could not be parsed | `INVALID_ARGUMENT` (3) | 400 | no | INFO |
+| `MALFORMED_REQUEST` | The request could not be parsed | `INVALID_ARGUMENT` (3) | 400 | no | INFO |
 | `VALIDATION` | Parsed, but semantically invalid or missing data | `INVALID_ARGUMENT` (3) | 422 | no | INFO |
-| `INVALID_CURSOR` | Bad, expired, or mismatched pagination cursor | `INVALID_ARGUMENT` (3) | 400 | no | INFO |
 | `AUTHENTICATION` | No credentials, or credentials rejected | `UNAUTHENTICATED` (16) | 401 | no | WARNING |
 | `AUTHORIZATION` | Authenticated, but not permitted | `PERMISSION_DENIED` (7) | 403 | no | WARNING |
 | `NOT_FOUND` | Entity does not exist **in this service** | `NOT_FOUND` (5) | 404 | no | INFO |
@@ -56,15 +55,16 @@ The category is the single input to both transport projections.
 | `DEPENDENCY` | A downstream service or datastore is unavailable | `UNAVAILABLE` (14) | 503 | yes | ERROR |
 | `INTERNAL` | Bug, corrupt data, or unhandled failure | `INTERNAL` (13) | 500 | no | CRITICAL |
 
-`MALFORMED` and `VALIDATION` are separate because they project to different HTTP statuses: an
-unparseable body is a **400**, while a parsed-but-invalid body is a **422**. The distinction
+`MALFORMED_REQUEST` and `VALIDATION` are separate because they project to different HTTP statuses: an
+unparseable request is a **400**, while a parsed-but-invalid body is a **422**. The distinction
 matches HTTP semantics — 400 is "the request was not understood", 422 is "the request was
-understood but the data is not processable". Cursors keep their own category
-(`INVALID_CURSOR`) because pagination is the one error class with a dedicated specification
-and an already-defined message set (see [PAGINATION_DESIGN.md](PAGINATION_DESIGN.md) §5.5).
+understood but the data is not processable".
 
-`INVALID_CURSOR` stays at **400** — a cursor is a malformed input token, not a semantic
-validation of a body, so it belongs with `MALFORMED` rather than `VALIDATION`.
+A bad cursor is **malformed input**, so its codes belong to `MALFORMED_REQUEST` rather than a
+category of their own — the cursor error class has its own *codes*
+(`INVALID_CURSOR`, `UNSUPPORTED_CURSOR_VERSION`, `CURSOR_SORT_KEY_MISMATCH`; see
+[PAGINATION_DESIGN.md](PAGINATION_DESIGN.md) §5.5), and clients distinguish them by that code,
+which is what they branch on regardless of status.
 
 **Categories are a closed set.** Adding one means editing every adapter — that is the point. Prefer adding a new *code* within an existing category.
 
@@ -90,7 +90,13 @@ Returning `UNAVAILABLE` for a missing work order tells the client *"the server i
 | Illegal state transition | `FAILED_PRECONDITION` (9) | Permanent — retrying will fail forever |
 | Duplicate entity | `FAILED_PRECONDITION` (9) | Permanent unless the input changes |
 
-Conflating these causes retry storms against requests that cannot succeed. Because the distinction is not expressible in the category alone, it must be derivable from the **code** — which is why code naming carries meaning (see §6).
+Conflating these causes retry storms against requests that cannot succeed. The category alone cannot express the split, so a specific code may **override** its category's mapping. Precedence:
+
+```
+code override  →  category mapping  →  transport status
+```
+
+`CONFLICT` defaults to `FAILED_PRECONDITION` (9); a lost optimistic lock overrides it to `ABORTED` (10). The override is a table entry in the adapter, keyed by the code string — never a naming convention (see §6).
 
 ### 3.3 A downstream `NOT_FOUND` is not this service's `NOT_FOUND`
 
@@ -208,19 +214,19 @@ The name should read as the sentence *"<what> <went wrong>"*. Prefix domain-spec
 
 ### Naming convention by suffix
 
-Suffixes carry meaning, because some mappings are derived from them (§3.2):
+Suffixes are a naming convention only — they document intent and recommend a category. No behaviour is derived from a name; the projection comes from the category, plus an optional code-level override (§3.2).
 
-| Suffix | Category | Effect |
+| Suffix | Category | Projection |
 |---|---|---|
 | `_NOT_FOUND` | `NOT_FOUND` | 404 / gRPC 5 |
 | `_ALREADY_EXISTS` | `CONFLICT` | 409 / gRPC 9 |
-| `_INVALID_TRANSITION` | `CONFLICT` | 409 / gRPC 9 — permanent |
-| `_CONCURRENT_MODIFICATION` | `CONFLICT` | 409 / gRPC **10** — retryable |
+| `_INVALID_TRANSITION` | `CONFLICT` | 409 / gRPC 9 |
+| `_CONCURRENT_MODIFICATION` | `CONFLICT` | 409 / gRPC **10** — needs an override |
 | `_REQUIRED`, `INVALID_*` | `VALIDATION` | 422 / gRPC 3 |
-| `MALFORMED_*` | `MALFORMED` | 400 / gRPC 3 |
+| `MALFORMED_*` | `MALFORMED_REQUEST` | 400 / gRPC 3 |
 | `*_UNAVAILABLE` | `DEPENDENCY` | 503 / gRPC 14 |
 
-> **`_CONCURRENT_MODIFICATION` is load-bearing.** It is the only signal separating a retryable conflict from a permanent one. Renaming a code with this suffix changes its gRPC status code, so every such code must be asserted explicitly in tests.
+> **A retryable conflict needs an override, not a suffix.** `_CONCURRENT_MODIFICATION` reads well but does nothing on its own — the code must be listed in the adapter's override table to project to `ABORTED` (10). Renaming the code changes nothing.
 
 ### Shared codes
 
@@ -233,11 +239,11 @@ These apply to every service and must be resolvable without a domain context:
 | `RESOURCE_EXHAUSTED` | `RATE_LIMIT` | A quota was exceeded |
 | `UNAUTHENTICATED` | `AUTHENTICATION` | No credentials, or rejected |
 | `PERMISSION_DENIED` | `AUTHORIZATION` | Not permitted |
-| `MALFORMED_REQUEST` | `MALFORMED` | The request could not be parsed |
+| `MALFORMED_REQUEST` | `MALFORMED_REQUEST` | The request could not be parsed |
 | `MISSING_REQUIRED_FIELD` | `VALIDATION` | A required field is absent |
-| `INVALID_CURSOR` | `INVALID_CURSOR` | Cursor malformed or undecodable |
-| `UNSUPPORTED_CURSOR_VERSION` | `INVALID_CURSOR` | Cursor version not supported |
-| `CURSOR_SORT_KEY_MISMATCH` | `INVALID_CURSOR` | Cursor does not match the query's sort keys |
+| `INVALID_CURSOR` | `MALFORMED_REQUEST` | Cursor malformed or undecodable |
+| `UNSUPPORTED_CURSOR_VERSION` | `MALFORMED_REQUEST` | Cursor version not supported |
+| `CURSOR_SORT_KEY_MISMATCH` | `MALFORMED_REQUEST` | Cursor does not match the query's sort keys |
 | `PAGE_SIZE_OUT_OF_RANGE` | `VALIDATION` | Page size outside the permitted range |
 | `PAGE_NUMBER_OUT_OF_RANGE` | `VALIDATION` | Wire page number below 1 (pages are 1-indexed) |
 
@@ -246,10 +252,10 @@ Domain codes are owned by the domain that defines them and must never be reused 
 ### Adding a code
 
 1. **Reuse an existing category.** Adding a category means editing every adapter — a deliberate act, not a convenience.
-2. **Name it per the convention above**, and pick the suffix deliberately — it may drive the mapping.
+2. **Name it per the convention above.** The suffix reads well; it does not drive behaviour.
 3. **Define** its title, category, severity, and retryable flag in one place, in the owning domain's taxonomy.
-4. **Do not add mapping logic.** The category is the only input to the adapters; if a new code needs a new mapping, the design is wrong.
-5. **Assert it.** Every code must have a test asserting its category and both transport projections. Codes whose suffix affects the mapping must be asserted explicitly.
+4. **Add an override only if the protocol needs one.** A code-level override (e.g. a retryable conflict → gRPC `ABORTED`) goes in the adapter's override table, keyed by the code string — never a new category, never a suffix rule.
+5. **Assert it.** Every code must have a test asserting its category and both transport projections; a code with an override must be asserted against it.
 6. **Document it** in this table set if it is shared, or in the owning domain's design doc if it is domain-specific.
 
 ---

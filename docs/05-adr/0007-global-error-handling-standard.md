@@ -54,7 +54,7 @@ Rationale:
 The standard calls out two exceptions to the category mapping, because a blanket rule produces a client-visible defect:
 
 * **`NOT_FOUND` → gRPC `NOT_FOUND` (5)**, never `UNAVAILABLE` (14). The general "non-request errors are dependency failures → 14" rule is wrong here: it tells a client *"server down, retry"* for an entity that can never appear, and clients with retry logic will hammer it.
-* **`CONFLICT` → `ABORTED` (10) only for a lost optimistic lock**, else `FAILED_PRECONDITION` (9). `ABORTED` means *"retry the whole transaction"* — correct for a concurrency loss, wrong for a permanent state-machine rejection. Conflating them causes retry storms. The distinction is carried by the code's naming suffix, which is therefore load-bearing and directly tested.
+* **`CONFLICT` → gRPC `FAILED_PRECONDITION` (9) by default, with a code-level override to `ABORTED` (10) for a lost optimistic lock.** `ABORTED` means *"retry the whole transaction"* — correct for a concurrency loss, wrong for a permanent state-machine rejection. Conflating them causes retry storms. Because the category alone cannot express the split, the specific code carries an **explicit override** in the gRPC adapter's mapping table (precedence: code override → category → status). A naming suffix was rejected: it is silent and untyped, so a rename would change behaviour with no compile error.
 
 A third rule resolves cross-service ambiguity: a downstream service's `NOT_FOUND` is **not** this service's 404. It is a `DEPENDENCY` failure, because it means our own data is inconsistent with a dependency.
 
