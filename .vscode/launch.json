@@ -6,28 +6,32 @@
             "name": "Launch Production Service",
             "request": "launch",
             "mainClass": "com.factoryos.production.ProductionServiceApplication",
-            "projectName": "production-service"
+            "projectName": "production-service",
+            "envFile": "${workspaceFolder}/services/production-service/.env"
         },
         {
             "type": "java",
             "name": "Launch Quality Service",
             "request": "launch",
             "mainClass": "com.factoryos.quality.QualityServiceApplication",
-            "projectName": "quality-service"
+            "projectName": "quality-service",
+            "envFile": "${workspaceFolder}/services/quality-service/.env"
         },
         {
             "type": "java",
             "name": "Launch Warehouse Service",
             "request": "launch",
             "mainClass": "com.factoryos.warehouse.WarehouseServiceApplication",
-            "projectName": "warehouse-service"
+            "projectName": "warehouse-service",
+            "envFile": "${workspaceFolder}/services/warehouse-service/.env"
         },
         {
             "type": "java",
             "name": "Launch Maintenance Service",
             "request": "launch",
             "mainClass": "com.factoryos.maintenance.MaintenanceServiceApplication",
-            "projectName": "maintenance-service"
+            "projectName": "maintenance-service",
+            "envFile": "${workspaceFolder}/services/maintenance-service/.env"
         }
     ]
 }
