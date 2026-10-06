@@ -7,6 +7,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.factoryos.common.error.CommonErrorCode;
+import com.factoryos.common.error.DomainException;
 import com.factoryos.production.entity.WorkOrder;
 import com.factoryos.production.proto.ListWorkOrdersRequest;
 import com.factoryos.production.proto.ListWorkOrdersResponse;
@@ -31,7 +33,16 @@ public class WorkOrderGrpcService extends ProductionServiceGrpc.ProductionServic
     @Override
     @Transactional(readOnly = true)
     public void listWorkOrders(ListWorkOrdersRequest req, StreamObserver<ListWorkOrdersResponse> responseObserver) {
-        UUID workCenterId = req.getWorkCenterId().isEmpty() ? null : UUID.fromString(req.getWorkCenterId());
+        UUID workCenterId = null;
+        if (!req.getWorkCenterId().isEmpty()) {
+            try {
+                workCenterId = UUID.fromString(req.getWorkCenterId());
+            } catch (IllegalArgumentException e) {
+                throw new DomainException(CommonErrorCode.MALFORMED_REQUEST,
+                        "workCenterId is not a valid UUID: " + req.getWorkCenterId(),
+                        List.of(), e);
+            }
+        }
         String state = req.getState().isEmpty() ? null : req.getState();
 
         // TODO: Use sort from gRPC
