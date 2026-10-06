@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.factoryos.common.error.CommonErrorCode;
+
 class CursorTest {
 
     // ========================================================================
@@ -125,20 +127,20 @@ class CursorTest {
     // ========================================================================
 
     @Test
-    void decode_missingVersionPrefix_throwsInvalidCursor() {
+    void decode_missingVersionPrefix_throwsUnsupportedCursorVersion() {
         InvalidCursorException ex = assertThrows(InvalidCursorException.class,
             () -> Cursor.decode("not-a-cursor", List.of(SortKey.id())));
-        assertTrue(ex.getMessage().contains("version prefix"));
+        assertEquals(CommonErrorCode.UNSUPPORTED_CURSOR_VERSION, ex.code());
     }
 
     @Test
-    void decode_wrongVersionPrefix_throwsInvalidCursor() {
+    void decode_wrongVersionPrefix_throwsUnsupportedCursorVersion() {
         // Valid base64 JSON, but prefix is v2 instead of v1
         String base64 = java.util.Base64.getUrlEncoder().withoutPadding()
             .encodeToString("{\"keys\":[\"id\"],\"vals\":[\"550e8400-e29b-41d4-a716-446655440000\"]}".getBytes());
         InvalidCursorException ex = assertThrows(InvalidCursorException.class,
             () -> Cursor.decode("v2." + base64, List.of(SortKey.id())));
-        assertTrue(ex.getMessage().contains("version prefix"));
+        assertEquals(CommonErrorCode.UNSUPPORTED_CURSOR_VERSION, ex.code());
     }
 
     @Test
@@ -156,11 +158,13 @@ class CursorTest {
     }
 
     @Test
-    void decode_keysMismatch_throwsInvalidCursor() {
+    void decode_keysMismatch_throwsCursorSortKeyMismatch() {
         String token = Cursor.of(List.of(SortKey.id()), List.of(UUID.randomUUID())).encode();
         InvalidCursorException ex = assertThrows(InvalidCursorException.class,
             () -> Cursor.decode(token, List.of(SortKey.ofTimestamp("createdAt"), SortKey.id())));
-        assertTrue(ex.getMessage().contains("mismatch"));
+        assertEquals(CommonErrorCode.CURSOR_SORT_KEY_MISMATCH, ex.code());
+        assertEquals(1, ex.fieldErrors().size());
+        assertEquals("cursor", ex.fieldErrors().get(0).field());
     }
 
     @Test

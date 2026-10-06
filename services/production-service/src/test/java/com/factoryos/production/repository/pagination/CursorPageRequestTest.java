@@ -8,6 +8,10 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
+import com.factoryos.common.error.CommonErrorCode;
+import com.factoryos.common.error.DomainException;
+import com.factoryos.common.error.ErrorCategory;
+
 class CursorPageRequestTest {
 
     private static final List<SortCriteria> SORT_BY_ID_ASC = List.of(
@@ -27,15 +31,18 @@ class CursorPageRequestTest {
     }
 
     @Test
-    void of_negativePageSize_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+    void of_negativePageSize_throwsPageSizeOutOfRange() {
+        DomainException ex = assertThrows(DomainException.class,
             () -> CursorPageRequest.of(-5, null, SORT_BY_ID_ASC));
+        assertEquals(CommonErrorCode.PAGE_SIZE_OUT_OF_RANGE, ex.code());
+        assertEquals(ErrorCategory.VALIDATION, ex.code().category());
     }
 
     @Test
-    void of_pageSizeOver100_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+    void of_pageSizeOver100_throwsPageSizeOutOfRange() {
+        DomainException ex = assertThrows(DomainException.class,
             () -> CursorPageRequest.of(150, null, SORT_BY_ID_ASC));
+        assertEquals(CommonErrorCode.PAGE_SIZE_OUT_OF_RANGE, ex.code());
     }
 
     @Test
@@ -146,9 +153,10 @@ class CursorPageRequestTest {
     }
 
     @Test
-    void of_pageSize101_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+    void of_pageSize101_throwsPageSizeOutOfRange() {
+        DomainException ex = assertThrows(DomainException.class,
             () -> CursorPageRequest.of(101, null, SORT_BY_ID_ASC));
+        assertEquals(CommonErrorCode.PAGE_SIZE_OUT_OF_RANGE, ex.code());
     }
 
     // ========================================================================

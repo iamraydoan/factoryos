@@ -6,6 +6,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.factoryos.common.error.CommonErrorCode;
+import com.factoryos.common.error.DomainException;
+import com.factoryos.common.error.ErrorCategory;
+
 class OffsetPageRequestTest {
 
     private static final List<SortCriteria> SORT_BY_ID_ASC = List.of(
@@ -25,15 +29,18 @@ class OffsetPageRequestTest {
     }
 
     @Test
-    void of_negativePageSize_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+    void of_negativePageSize_throwsPageSizeOutOfRange() {
+        DomainException ex = assertThrows(DomainException.class,
             () -> OffsetPageRequest.of(0, -5, SORT_BY_ID_ASC));
+        assertEquals(CommonErrorCode.PAGE_SIZE_OUT_OF_RANGE, ex.code());
+        assertEquals(ErrorCategory.VALIDATION, ex.code().category());
     }
 
     @Test
-    void of_pageSizeOver100_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+    void of_pageSizeOver100_throwsPageSizeOutOfRange() {
+        DomainException ex = assertThrows(DomainException.class,
             () -> OffsetPageRequest.of(0, 150, SORT_BY_ID_ASC));
+        assertEquals(CommonErrorCode.PAGE_SIZE_OUT_OF_RANGE, ex.code());
     }
 
     @Test
@@ -43,9 +50,11 @@ class OffsetPageRequestTest {
     }
 
     @Test
-    void of_negativePage_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+    void of_negativePage_throwsPageSizeOutOfRange() {
+        DomainException ex = assertThrows(DomainException.class,
             () -> OffsetPageRequest.of(-5, 20, SORT_BY_ID_ASC));
+        assertEquals(CommonErrorCode.PAGE_SIZE_OUT_OF_RANGE, ex.code());
+        assertEquals(ErrorCategory.VALIDATION, ex.code().category());
     }
 
     @Test
@@ -71,15 +80,18 @@ class OffsetPageRequestTest {
     }
 
     @Test
-    void ofApiPage_zero_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+    void ofApiPage_zero_throwsPageSizeOutOfRange() {
+        DomainException ex = assertThrows(DomainException.class,
             () -> OffsetPageRequest.ofApiPage(0, 20, SORT_BY_ID_ASC));
+        assertEquals(CommonErrorCode.PAGE_SIZE_OUT_OF_RANGE, ex.code());
+        assertEquals(ErrorCategory.VALIDATION, ex.code().category());
     }
 
     @Test
-    void ofApiPage_negative_throwsIllegalArgument() {
-        assertThrows(IllegalArgumentException.class,
+    void ofApiPage_negative_throwsPageSizeOutOfRange() {
+        DomainException ex = assertThrows(DomainException.class,
             () -> OffsetPageRequest.ofApiPage(-2, 20, SORT_BY_ID_ASC));
+        assertEquals(CommonErrorCode.PAGE_SIZE_OUT_OF_RANGE, ex.code());
     }
 
     @Test
@@ -131,5 +143,29 @@ class OffsetPageRequestTest {
     void of_pageSize1_valid() {
         OffsetPageRequest pr = OffsetPageRequest.of(0, 1, SORT_BY_ID_ASC);
         assertEquals(1, pr.pageSize());
+    }
+
+    // ========================================================================
+    // Classification: a bad page size is the caller's mistake, not a 5xx
+    // ========================================================================
+
+    @Test
+    void badPageSize_isClientError_notServerError() {
+        DomainException ex = assertThrows(DomainException.class,
+            () -> OffsetPageRequest.of(0, 500, SORT_BY_ID_ASC));
+        // The category is the client-error class; the HTTP status itself (400, not a
+        // 5xx) is the adapter's projection and is asserted in Part 7.
+        assertEquals(ErrorCategory.VALIDATION, ex.code().category(),
+            "an out-of-range page size is the caller's mistake, so must not be a 5xx");
+        assertFalse(ex.code().retryable(), "retrying the identical request cannot succeed");
+    }
+
+    @Test
+    void badPageSize_carriesFieldLevelDetail() {
+        DomainException ex = assertThrows(DomainException.class,
+            () -> OffsetPageRequest.of(0, 500, SORT_BY_ID_ASC));
+        assertEquals(1, ex.fieldErrors().size());
+        assertEquals("limit", ex.fieldErrors().get(0).field());
+        assertEquals("500", ex.fieldErrors().get(0).current());
     }
 }
