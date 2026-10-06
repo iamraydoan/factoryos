@@ -68,6 +68,16 @@
             <version>6.1.1</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.factoryos</groupId>
+            <artifactId>factoryos-common-error</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.factoryos</groupId>
+            <artifactId>factoryos-common-error-adapters</artifactId>
+        </dependency>
+
         <!--
           Spring Boot 4 splits the test starters, so spring-boot-starter-test alone is
           not enough: each slice needs its own. The plain spring-boot-starter-test is
