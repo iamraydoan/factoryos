@@ -58,8 +58,10 @@ public class Cursor {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Cursor other)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof Cursor other))
+            return false;
         return keyNames.equals(other.keyNames) && values.equals(other.values);
     }
 
@@ -86,7 +88,7 @@ public class Cursor {
             return null;
         }
         if (!token.startsWith(VERSION_PREFIX)) {
-            throw new InvalidCursorException("Invalid cursor token: missing version prefix");
+            throw InvalidCursorException.unsupportedVersion();
         }
 
         try {
@@ -98,17 +100,18 @@ public class Cursor {
             List<String> actualVals = payload.get("vals");
 
             if (actualKeys == null || actualVals == null) {
-                throw new InvalidCursorException("Invalid cursor token: missing keys or vals");
+                throw InvalidCursorException.malformed(
+                        "Cursor payload is missing 'keys' or 'vals'.", null);
             }
             if (actualKeys.size() != actualVals.size()) {
-                throw new InvalidCursorException("Invalid cursor token: keys and vals size mismatch");
+                throw InvalidCursorException.malformed(
+                        "Cursor payload has mismatched 'keys' and 'vals' lengths.", null);
             }
 
             // Validate keys match expected sort keys
             List<String> expectedKeys = sortKeys.stream().map(SortKey::fieldName).toList();
             if (!actualKeys.equals(expectedKeys)) {
-                throw new InvalidCursorException(
-                        "Cursor keys mismatch: expected %s but got %s".formatted(expectedKeys, actualKeys));
+                throw InvalidCursorException.sortKeyMismatch(expectedKeys, actualKeys);
             }
 
             // Parse each value using the corresponding SortKey
@@ -121,7 +124,7 @@ public class Cursor {
         } catch (InvalidCursorException e) {
             throw e;
         } catch (Exception e) {
-            throw new InvalidCursorException("Invalid cursor token: " + e.getMessage(), e);
+            throw InvalidCursorException.malformed("Invalid cursor token: " + e.getMessage(), e);
         }
     }
 }
