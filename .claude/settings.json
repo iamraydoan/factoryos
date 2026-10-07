@@ -1,14 +1,5 @@
 {
   "enabledPlugins": {
-    "ponytail@ponytail": true,
-    "ecc@ecc": true
-  },
-  "extraKnownMarketplaces": {
-    "ecc": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/affaan-m/ECC.git"
-      }
-    }
+    "ponytail@ponytail": true
   }
 }
