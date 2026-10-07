@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v0.4.1] - 2026-10-07
+
+### Fixed
+- **Release pipeline (`release.yml`):** `v0.4.0`'s tag pointed at a workflow that pinned Go 1.22 and never generated the gitignored protobuf SDK, so `edge-runtime` failed to build (`does not contain package .../go/gen/telemetry/v1`). The job now takes its toolchain from `go.work` and runs `make proto-gen` before cross-compiling.
+- **Go toolchain and protobuf/grpc versions (`go.work`, all `go.mod`):** CI's Go pin (1.22) was below `go.work`'s `go 1.26.5`, which makes Go ignore the workspace and silently drop the cross-module `replace` directives. CI and release now use `go-version-file: go.work`. Protobuf and gRPC were also pinned inconsistently across the six modules (protobuf v1.34.1–v1.36.12, grpc v1.64.0–v1.82.1); all now use protobuf v1.36.12 and gRPC v1.84.0, matching the codegen plugins.
+
+---
+
 ## [v0.4.0] - 2026-10-07
 
 ### Added
